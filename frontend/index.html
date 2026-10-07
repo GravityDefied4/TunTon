@@ -1,11 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TunTon | Lost Pet Recovery for Dagupan City</title>
+  <meta name="description" content="TunTon helps Dagupan City pet owners find lost pets using attribute matching and geofencing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-    
+
+  <header class="header" id="header">
+    <div class="container nav">
+      <a href="#home" class="logo" aria-label="TunTon home">
+        <!-- Replace with: <img src="logo.png" alt="TunTon"> -->
+        <span class="logo-placeholder">LOGO</span>
+      </a>
+      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="menu" class="menu">
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#how">How it works</a>
+        <a href="#pets">Pets</a>
+        <a href="#reports">Reports</a>
+        <a href="#contact">Contact</a>
+        <div class="auth" id="auth">
+          <!-- Logged out -->
+          <div class="auth-out">
+            <button type="button" class="btn btn-small btn-plain" data-open-auth="login">Log in</button>
+            <button type="button" class="btn btn-small" data-open-auth="signup">Sign up</button>
+          </div>
+          <!-- Logged in -->
+          <div class="auth-in" hidden>
+            <img id="user-avatar" class="avatar" alt="" referrerpolicy="no-referrer">
+            <span id="user-name" class="user-name"></span>
+            <button type="button" class="btn btn-small btn-plain" id="logout-btn">Log out</button>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <h1 id="hero-title">TunTon</h1>
+          <p class="lead">A Lost Pet Recovery System with Attribute Matching and Geofencing for Dagupan City</p>
+          <div class="actions">
+            <button type="button" class="btn btn-sun" data-requires-auth data-target="#pets">Report a lost pet</button>
+            <a href="#how" class="btn btn-ghost">How it works</a>
+          </div>
+        </div>
+        <div class="hero-card" role="img" aria-label="Featured image placeholder">
+          <div class="hero-art"><span>Featured image</span></div>
+        </div>
+      </div>
+      <svg class="wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0,64 C240,120 480,0 720,48 C960,96 1200,110 1440,40 L1440,120 L0,120 Z"/></svg>
+    </section>
+
+    <section class="container quick" aria-label="Quick actions">
+      <div class="quick-label"><strong>Pet missing?</strong><span>The first 24 hours matter most</span></div>
+      <div class="quick-actions">
+        <button type="button" class="btn btn-sun" data-requires-auth data-target="#pets">Report lost pet</button>
+        <button type="button" class="btn btn-ghost" data-requires-auth data-target="#pets">Report found pet</button>
+        <a href="#pets" class="btn btn-ghost">Search pets</a>
+      </div>
+    </section>
+
+    <section class="section section-mint" id="about">
+      <div class="container two-col">
+        <div>
+          <h2>Bringing pets home, faster</h2>
+          <p class="lead">TunTon connects pet owners and finders across Dagupan City in one place.</p>
+          <p>Post a lost or found pet with its photo, breed, color and markings. TunTon compares reports and alerts you when a likely match appears near you.</p>
+        </div>
+        <ul class="facts">
+          <li><h3>Coverage</h3><p>Dagupan City</p></li>
+          <li><h3>Matching</h3><p>Breed, color, size and markings</p></li>
+          <li><h3>Alerts</h3><p>Only for reports inside your area</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="container">
+        <h2 class="center">How it works</h2>
+        <div class="cards">
+          <article class="card card-sun">
+            <h3>Attribute matching</h3>
+            <p>Lost and found reports are compared by species, breed, color, size and markings.</p>
+          </article>
+          <article class="card card-leaf">
+            <h3>Geofencing</h3>
+            <p>Draw a zone around where your pet went missing. Reports inside it are prioritized.</p>
+          </article>
+          <article class="card card-orange">
+            <h3>Instant alerts</h3>
+            <p>Get notified the moment a possible match is posted.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-forest" id="pets">
+      <div class="container">
+        <div class="section-head">
+          <h2>Lost and found pets</h2>
+          <a href="#" class="link-light">Browse all</a>
+        </div>
+        <div class="gallery">
+          <figure class="shot shot-1"><figcaption>Lost: brown dog, near Poblacion</figcaption></figure>
+          <figure class="shot shot-2"><figcaption>Found: orange cat, Bonuan</figcaption></figure>
+          <figure class="shot shot-3"><figcaption>Lost: white rabbit, Lucao</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="reports">
+      <div class="container">
+        <h2>Recent reports</h2>
+        <ul class="news">
+          <li><a href="#">Reunited: Mocha the beagle is home</a><time datetime="2026-10-06">Oct 6, 2026</time></li>
+          <li><a href="#">Possible match: black cat with white paws</a><time datetime="2026-10-04">Oct 4, 2026</time></li>
+          <li><a href="#">Tips: add a clear photo and a collar tag</a><time datetime="2026-10-01">Oct 1, 2026</time></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section-sky" id="contact">
+      <div class="container two-col">
+        <div>
+          <h2>Contact us</h2>
+          <p class="lead">Questions or need help with a report? Send us a message.</p>
+          <p>Dagupan City, Pangasinan<br>hello@tunton.example</p>
+        </div>
+        <form class="form" id="contact-form" novalidate>
+          <label>Name <input type="text" name="name" required></label>
+          <label>Email <input type="email" name="email" required></label>
+          <label>Message <textarea name="message" rows="4" required></textarea></label>
+          <button type="submit" class="btn btn-sun">Send message</button>
+          <p class="form-note" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <nav class="footer-links">
+        <a href="#">Privacy policy</a>
+        <a href="#">Terms of use</a>
+      </nav>
+      <p>&copy; <span id="year">2026</span> TunTon. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Login / Sign up dialog -->
+  <dialog id="auth-dialog" class="dialog" aria-labelledby="auth-title">
+    <button type="button" class="dialog-close" id="auth-close" aria-label="Close">&times;</button>
+    <h2 id="auth-title">Welcome to TunTon</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" class="tab" data-tab="login" aria-selected="true">Log in</button>
+      <button type="button" role="tab" class="tab" data-tab="signup" aria-selected="false">Sign up</button>
+    </div>
+    <div class="tab-panel" data-panel="login">
+      <p>Log in with your Google account to manage your reports.</p>
+      <div id="google-login" class="google-slot"></div>
+    </div>
+    <div class="tab-panel" data-panel="signup" hidden>
+      <p>Create your TunTon account in one click with Google.</p>
+      <div id="google-signup" class="google-slot"></div>
+    </div>
+    <p class="form-note" id="auth-message" role="status" aria-live="polite"></p>
+  </dialog>
+
+  <script src="script.js"></script>
 </body>
 </html>
