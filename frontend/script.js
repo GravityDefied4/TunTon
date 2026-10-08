@@ -53,6 +53,24 @@ form.addEventListener('submit', e => {
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
+/* ---------- Hero image slideshow ---------- */
+const heroImg = document.querySelector('.hero-img');
+if (heroImg) {
+  const heroSlides = ['Pet1.jpg', 'Pet2.jpg', 'Pet3.jpg'];
+  let heroIndex = 0;
+
+  setInterval(() => {
+    heroIndex = (heroIndex + 1) % heroSlides.length;
+    heroImg.classList.add('is-changing');
+
+    setTimeout(() => {
+      heroImg.src = heroSlides[heroIndex];
+      heroImg.alt = `Featured pet image ${heroIndex + 1}`;
+      heroImg.classList.remove('is-changing');
+    }, 180);
+  }, 3500);
+}
+
 /* =========================================================
    Authentication
    ========================================================= */
@@ -92,7 +110,7 @@ function setTab(name) {
 
 function openAuth(tab = 'login') {
   setTab(tab);
-  if (GOOGLE_CLIENT_ID.startsWith('YOUR_CLIENT_ID')) showMessage('Add your Google Client ID in script.js to enable sign-in.', true);
+  if (GOOGLE_CLIENT_ID.startsWith('YOUR_CLIENT_ID')) showMessage('Sir hindi pa po namin naiimplement hehehehe. Stay tuned for more updates!', true);
   closeMenu();
   if (!dialog.open) dialog.showModal();
 }
