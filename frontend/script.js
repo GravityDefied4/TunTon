@@ -36,38 +36,17 @@ const observer = new IntersectionObserver(entries => {
 }, { rootMargin: '-45% 0px -50% 0px' });
 document.querySelectorAll('main section[id]').forEach(s => observer.observe(s));
 
-/* ---------- Contact form (front-end only) ---------- */
-const form = document.getElementById('contact-form');
-const note = form.querySelector('.form-note');
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  if (!form.checkValidity()) {
-    note.textContent = 'Please fill in your name, a valid email and a message.';
-    note.classList.add('error');
-    return;
-  }
-  note.classList.remove('error');
-  note.textContent = 'Thanks! Your message was sent.';
-  form.reset();
-});
-
 document.getElementById('year').textContent = new Date().getFullYear();
 
-/* ---------- Hero image slideshow ---------- */
-const heroImg = document.querySelector('.hero-img');
-if (heroImg) {
-  const heroSlides = ['Pet1.jpg', 'Pet2.jpg', 'Pet3.jpg'];
-  let heroIndex = 0;
-
+/* ---------- Hero stacked cards ---------- */
+const stackCards = [...document.querySelectorAll('.stack-card')];
+if (stackCards.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  let front = 0;
   setInterval(() => {
-    heroIndex = (heroIndex + 1) % heroSlides.length;
-    heroImg.classList.add('is-changing');
-
-    setTimeout(() => {
-      heroImg.src = heroSlides[heroIndex];
-      heroImg.alt = `Featured pet image ${heroIndex + 1}`;
-      heroImg.classList.remove('is-changing');
-    }, 180);
+    front = (front + 1) % stackCards.length;
+    stackCards.forEach((card, i) => {
+      card.dataset.pos = (i - front + stackCards.length) % stackCards.length;
+    });
   }, 3500);
 }
 

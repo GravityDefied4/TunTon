@@ -16,9 +16,8 @@
 
   <header class="header" id="header">
     <div class="container nav">
-      <a href="#home" class="logo" aria-label="TunTon home">
-        <!-- Replace with: <img src="logo.png" alt="TunTon"> -->
-        <img src="tunton-v2.png" alt="TunTon">
+      <a href="#home" class="header-logo" aria-label="TunTon home">
+        <img src="img/tunton.png" alt="TunTon">
       </a>
       <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
         <span></span><span></span><span></span>
@@ -27,9 +26,8 @@
         <a href="#home">Home</a>
         <a href="#about">About</a>
         <a href="#how">How it works</a>
-        <a href="#pets">Pets</a>
-        <a href="#reports">Reports</a>
-        <a href="#contact">Contact</a>
+        <a href="#pets">Lost pets</a>
+        <a href="#reports">Found pets</a>
         <div class="auth" id="auth">
           <!-- Logged out -->
           <div class="auth-out">
@@ -51,37 +49,40 @@
     <section class="hero" id="home">
       <div class="container hero-inner">
         <div class="hero-text">
-            <img src="tunton-v1.png" alt="TunTon" class="hero-logo">
+            <img src="img/tunton-white.png" alt="TunTon" class="hero-logo">
             <p class="lead">A Lost Pet Recovery System with Attribute Matching and Geofencing for Dagupan City</p>
             <div class="actions">
                 <button type="button" class="btn btn-sun" data-requires-auth data-target="#pets">Report a lost pet</button>
                 <a href="#how" class="btn btn-ghost">How it works</a>
             </div>
         </div>
-        <div class="hero-card" role="img" aria-label="Featured pet image">
-          <img class="hero-img" src="Pet1.jpg" alt="Featured pet image">
-
+        <div class="hero-card" role="img" aria-label="Featured lost and found pets">
+          <figure class="stack-card" data-pos="0"><img src="img/Pet1.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="1"><img src="img/Pet2.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="2"><img src="img/Pet3.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="3"><img src="img/Pet4.jpg" alt=""></figure>
         </div>
       </div>
       <svg class="wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0,64 C240,120 480,0 720,48 C960,96 1200,110 1440,40 L1440,120 L0,120 Z"/></svg>
     </section>
 
     <section class="section section-mint" id="about">
-      <div class="container two-col">
+      <div class="container two-col about">
         <div>
+          <span class="eyebrow">About TunTon</span>
           <h2>Bringing pets home, faster</h2>
           <p class="lead">TunTon connects pet owners and finders across Dagupan City in one place.</p>
           <p>Post a lost or found pet with its photo, breed, color and markings. TunTon compares reports and alerts you when a likely match appears near you.</p>
         </div>
         <ul class="facts">
-          <li><h3>Coverage</h3><p>Dagupan City</p></li>
-          <li><h3>Matching</h3><p>Breed, color, size and markings</p></li>
-          <li><h3>Alerts</h3><p>Only for reports inside your area</p></li>
+          <li><span class="fact-icon" aria-hidden="true">📍</span><div><h3>Coverage</h3><p>Dagupan City</p></div></li>
+          <li><span class="fact-icon" aria-hidden="true">🐕</span><div><h3>Matching</h3><p>Breed, color, size and markings</p></div></li>
+          <li><span class="fact-icon" aria-hidden="true">🔔</span><div><h3>Alerts</h3><p>Only for reports inside your area</p></div></li>
         </ul>
       </div>
     </section>
 
-    <section class="section" id="how">
+    <section class="section section-mint" id="how">
       <div class="container">
         <h2 class="center">How it works</h2>
         <div class="cards">
@@ -104,56 +105,72 @@
     <section class="section section-forest" id="pets">
       <div class="container">
         <div class="section-head">
-          <h2>Lost and found pets</h2>
+          <h2>Lost pets</h2>
           <a href="#" class="link-light">Browse all</a>
         </div>
         <div class="gallery">
           <figure class="shot shot-1">
-            <img src="Pet1.jpg" alt="Lost white and brown dog near Mangaldan">
+            <img src="img/Pet1.jpg" alt="Lost white and brown dog near Pantal">
             <figcaption>Lost: white and brown dog, near Pantal</figcaption>
           </figure>
           <figure class="shot shot-2">
-            <img src="Pet2.jpg" alt="Found black dog in Bonuan">
-            <figcaption>Found: black dog, Bonuan</figcaption>
-          </figure>
-          <figure class="shot shot-3">
-            <img src="Pet3.jpg" alt="Lost tilapia cat in Lucao">
+            <img src="img/Pet3.jpg" alt="Lost tilapia cat in Lucao">
             <figcaption>Lost: tilapia cat, Lucao</figcaption>
           </figure>
+          <figure class="shot shot-3">
+            <img src="img/Pet4.jpg" alt="Lost pet">
+            <figcaption>Lost: edit this caption, location</figcaption>
+          </figure>
         </div>
       </div>
     </section>
 
-    <section class="section" id="reports">
+    <section class="section section-mint" id="reports">
       <div class="container">
-        <h2>Recent reports</h2>
-        <ul class="news">
-          <li><a href="#">Reunited: Mocha the beagle is home</a><time datetime="2026-10-06">Oct 6, 2026</time></li>
-          <li><a href="#">Possible match: black cat with white paws</a><time datetime="2026-10-04">Oct 4, 2026</time></li>
-          <li><a href="#">Tips: add a clear photo and a collar tag</a><time datetime="2026-10-01">Oct 1, 2026</time></li>
-        </ul>
+        <div class="section-head">
+          <h2>Found pets</h2>
+          <a href="#" class="link-dark">Browse all</a>
+        </div>
+        <p class="lead">Recognize one of these? Contact the finder to claim your pet.</p>
+
+        <div class="found-grid">
+          <article class="found-card">
+            <div class="found-thumb"><img src="img/Pet2.jpg" alt="Found black dog in Bonuan"></div>
+            <div class="found-body">
+              <span class="badge">Found</span>
+              <h3>Black dog</h3>
+              <p class="found-meta">Bonuan &middot; <time datetime="2026-10-06">Oct 6, 2026</time></p>
+              <a href="#" class="btn btn-small">View details</a>
+            </div>
+          </article>
+
+          <article class="found-card">
+            <div class="found-thumb found-thumb--empty" aria-hidden="true">🐾</div>
+            <div class="found-body">
+              <span class="badge">Found</span>
+              <h3>Black cat with white paws</h3>
+              <p class="found-meta">Tapuac &middot; <time datetime="2026-10-04">Oct 4, 2026</time></p>
+              <a href="#" class="btn btn-small">View details</a>
+            </div>
+          </article>
+
+          <article class="found-card">
+            <div class="found-thumb found-thumb--empty" aria-hidden="true">🐾</div>
+            <div class="found-body">
+              <span class="badge">Found</span>
+              <h3>Brown puppy with collar</h3>
+              <p class="found-meta">Mayombo &middot; <time datetime="2026-10-01">Oct 1, 2026</time></p>
+              <a href="#" class="btn btn-small">View details</a>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="section section-sky" id="contact">
-      <div class="container two-col">
-        <div>
-          <h2>Contact us</h2>
-          <p class="lead">Questions or need help with a report? Send us a message.</p>
-          <p>Dagupan City, Pangasinan<br>hello@tunton.example</p>
-        </div>
-        <form class="form" id="contact-form" novalidate>
-          <label>Name <input type="text" name="name" required></label>
-          <label>Email <input type="email" name="email" required></label>
-          <label>Message <textarea name="message" rows="4" required></textarea></label>
-          <button type="submit" class="btn btn-sun">Send message</button>
-          <p class="form-note" role="status" aria-live="polite"></p>
-        </form>
-      </div>
-    </section>
   </main>
 
-  <footer class="footer">
+  <footer class="footer has-wave">
+    <svg class="wave-top wave-top--flip" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0,64 C240,120 480,0 720,48 C960,96 1200,110 1440,40 L1440,120 L0,120 Z"/></svg>
     <div class="container">
       <nav class="footer-links">
         <a href="#">Privacy policy</a>
