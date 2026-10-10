@@ -8,6 +8,7 @@
     --logo-lime: #c9ce50;    /* sampled from the TunTon logo (bottom of letters) */
     --mint: #d9f2c2;
     --sun: #ffc61a;      /* the only accent: main buttons */
+    --alert: #d93636;    /* MISSING tag: the one urgent color */
     --ink: #17342a;
     --muted: #5b7a6c;
     --white: #ffffff;
@@ -563,7 +564,7 @@ p {
 
 .pet-thumb {
     width: 180px;
-    min-height: 130px;
+    min-height: 200px;
     flex-shrink: 0;
     background: var(--mint);
 }
@@ -630,33 +631,111 @@ p {
     color: var(--forest);
 }
 
-/* Vertical grid variant (Lost pets): short rectangle cards, 3 per row */
+/* Vertical grid variant (Lost pets): large photo, MISSING tag, 3 per row */
 .pet-list--grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    gap: 1.75rem;
 }
 
 .pet-list--grid .pet-card {
     flex-direction: column;
-    border: 1px solid var(--mint);
+    flex-wrap: nowrap;
+    border: 0;
+    transition: transform .25s ease, box-shadow .25s ease;
 }
 
+.pet-list--grid .pet-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(15, 107, 63, .28);
+}
+
+/* Big portrait photo so the pet is easy to recognise */
 .pet-list--grid .pet-thumb {
+    position: relative;
     width: 100%;
-    height: 160px;
     min-height: 0;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+}
+
+.pet-list--grid .pet-thumb img {
+    transition: transform .5s ease;
+}
+
+.pet-list--grid .pet-card:hover .pet-thumb img {
+    transform: scale(1.05);
+}
+
+/* subtle fade at the top so the tag stays readable on any photo */
+.pet-list--grid .pet-thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 60% 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .28), transparent);
+    pointer-events: none;
+}
+
+/* MISSING tag */
+.tag-missing {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: .5em;
+    background: var(--alert);
+    color: var(--white);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: .9rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: .4em 1em .4em .8em;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+}
+
+.tag-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--white);
+    animation: tag-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tag-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .35; transform: scale(.7); }
 }
 
 .pet-list--grid .pet-body {
     flex: 1;
     justify-content: flex-start;
-    padding: 1rem 1.25rem .5rem;
+    gap: .5rem;
+    padding: 1.25rem 1.5rem .5rem;
+}
+
+.pet-list--grid .pet-body h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.pet-info {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: .25rem;
+    color: var(--muted);
+    font-size: .98rem;
+    font-weight: 600;
 }
 
 .pet-list--grid .pet-card .btn {
-    flex: none;
-    align-self: flex-start;
-    margin: .25rem 1.25rem 1.25rem;
+    align-self: stretch;
+    margin: .75rem 1.5rem 1.5rem;
+    text-align: center;
 }
 
 /* ---------- Divider between Lost and Recovered ---------- */
@@ -896,6 +975,21 @@ p {
         margin: 0 1rem 1rem;
         text-align: center;
     }
+
+    /* Lost cards stay full-width vertical on phones (overrides the rules above) */
+    .pet-list--grid .pet-thumb {
+        width: 100%;
+        min-height: 0;
+    }
+
+    .pet-list--grid .pet-body {
+        padding: 1.25rem 1.5rem .5rem;
+    }
+
+    .pet-list--grid .pet-card .btn {
+        flex: none;
+        margin: .75rem 1.5rem 1.5rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -905,5 +999,9 @@ p {
 
     * {
         transition: none !important;
+    }
+
+    .tag-dot {
+        animation: none;
     }
 }
