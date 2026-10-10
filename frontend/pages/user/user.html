@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | TunTon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="/frontend/css/style.css">
+  <link rel="icon" type="image/png" href="/frontend/assets/logo/tunton-paw.png">
+  <link rel="stylesheet" href="user.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar" id="sidebar">
+    <a href="/frontend/index.html" class="side-logo" aria-label="TunTon home"><img src="/frontend/assets/logo/tunton.png" alt="TunTon"></a>
+    <nav class="side-nav" aria-label="Dashboard">
+      <a href="#map" data-view="map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Map</a>
+      <a href="#lost" data-view="lost"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>File a lost report</a>
+      <a href="#found" data-view="found"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>File a found report</a>
+    </nav>
+    <div class="side-user">
+      <div class="who"><img id="user-avatar" class="avatar" alt="" hidden referrerpolicy="no-referrer"><span id="user-name">Guest</span></div>
+      <a href="/frontend/index.html" class="home-link">&larr; Back to home</a>
+      <button type="button" class="btn btn-small btn-plain" id="logout">Log out</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="dash-main">
+    <div class="dash-top">
+      <a href="/frontend/index.html" aria-label="TunTon home"><img src="/frontend/assets/logo/tunton.png" alt="TunTon"></a>
+      <button class="nav-toggle" id="side-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar"><span></span><span></span><span></span></button>
+    </div>
+    <main>
+      <section class="view" id="view-map">
+        <div class="view-head"><h1>Map</h1><p>Lost pet reports near your current location.</p></div>
+        <div class="toolbar">
+          <span class="chip" id="status">Finding your location&hellip;</span>
+          <label>Show within
+            <select id="radius" class="btn btn-small btn-plain" style="padding:.4em .8em">
+              <option value="1">1 km</option><option value="3">3 km</option><option value="5" selected>5 km</option><option value="10">10 km</option><option value="all">All reports</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-small" id="locate">My location</button>
+          <span class="chip" id="count"></span>
+        </div>
+        <div id="map" role="application" aria-label="Map of lost pet reports"></div>
+        <div class="legend"><span><i style="background:var(--alert)"></i>Lost</span><span><i style="background:var(--leaf)"></i>Potentially found</span><span><i style="background:#2f7bf0"></i>You</span></div>
+      </section>
+      <section class="view" id="view-lost" hidden></section>
+      <section class="view" id="view-found" hidden></section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="user.js"></script>
+</body>
+</html>
