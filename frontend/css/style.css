@@ -47,6 +47,11 @@ body {
     background: var(--white);
 }
 
+html,
+body {
+  overscroll-behavior: none;
+}
+
 img {
     max-width: 100%;
     display: block;
