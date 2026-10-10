@@ -1,0 +1,45 @@
+/* All reports view */
+.rsearch {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: .5em 1em;
+  border: 2px solid #cfe8b8;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.rsearch:focus {
+  outline: 3px solid var(--leaf);
+  outline-offset: 1px;
+  border-color: var(--leaf);
+}
+
+.rempty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* All reports uses the same card as the home page (.pet-list--grid in style.css) */
+#all-list {
+  margin-top: 0;
+}
+
+.tag-found {
+  background: var(--leaf);
+}
+
+/* Two buttons at the bottom of each report card */
+.pet-list--grid .pet-card .pet-actions {
+  display: grid;
+  gap: .5rem;
+  padding: .25rem 1.5rem 1.5rem;
+}
+
+.pet-list--grid .pet-card .pet-actions .btn {
+  margin: 0;
+  text-align: center;
+}

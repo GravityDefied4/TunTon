@@ -1,0 +1,106 @@
+/* Report details dialog */
+.dialog.detail {
+  padding: 0;
+  width: min(560px, 94vw);
+  max-height: 92vh;
+  overflow: auto;
+  text-align: left;
+}
+
+.detail .dialog-close,
+.preview .dialog-close {
+  z-index: 3;
+  top: .8rem;
+  right: .8rem;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--white);
+  font-size: 1.6rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}
+
+.d-photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--mint);
+}
+
+.d-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Extra photos inside the details dialog */
+.d-thumbs {
+  display: flex;
+  gap: .5rem;
+  padding: .75rem 1.75rem 0;
+  overflow-x: auto;
+}
+
+.d-thumbs:empty {
+  display: none;
+}
+
+.d-thumbs button {
+  flex: none;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 14px;
+  background: none;
+  line-height: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.d-thumbs button.on {
+  border-color: var(--leaf);
+}
+
+.d-thumbs img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}
+
+.d-body {
+  padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.d-body h2 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+
+.d-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .45rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.d-list dt {
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.d-list dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.d-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.d-actions .btn {
+  flex: 1 1 180px;
+  text-align: center;
+}

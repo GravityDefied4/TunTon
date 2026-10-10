@@ -1,0 +1,142 @@
+/* Profile view */
+#view-profile .box {
+  margin-top: 1.25rem;
+}
+
+#view-profile h2 {
+  font-size: 1.4rem;
+  margin-bottom: .8rem;
+}
+
+.pf-head {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.pf-head h2,
+.pf-head p {
+  margin: 0;
+}
+
+.pf-avatar {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--grad-mid);
+  color: var(--white);
+  font: 600 2.2rem var(--font-display);
+  border: 4px solid var(--lime);
+}
+
+.pf-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.pf-stats .box {
+  text-align: center;
+}
+
+.pf-stats b {
+  display: block;
+  font: 600 2.4rem/1.1 var(--font-display);
+  color: var(--forest);
+}
+
+.pf-stats span {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* "My reports" list */
+.rep-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .9rem;
+}
+
+.rep-list .empty {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.rep {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .75rem;
+  border: 2px solid #e3f3d3;
+  border-radius: 20px;
+}
+
+.rep img {
+  width: 76px;
+  height: 76px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.rep-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.rep-body h3 {
+  font-size: 1.1rem;
+  margin: .2em 0 0;
+}
+
+.rep-body p {
+  margin: 0;
+  font-size: .92rem;
+  color: var(--muted);
+  font-weight: 600;
+  max-width: none;
+}
+
+.rep-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  justify-content: flex-end;
+}
+
+.rep-actions .btn {
+  padding: .35em .9em;
+  font-size: .9rem;
+}
+
+.btn-plain.danger {
+  color: var(--alert);
+  border-color: var(--alert);
+}
+
+@media (max-width: 640px) {
+  .pf-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .rep {
+    flex-wrap: wrap;
+  }
+
+  .rep-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

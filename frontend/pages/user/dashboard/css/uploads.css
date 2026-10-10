@@ -1,0 +1,158 @@
+/* Photo upload box, uploaded file list and photo preview dialog */
+
+/* ".form .drop" (not just ".drop") so it beats the ".form label" rule,
+   which was forcing display:block and jamming the text together. */
+.form .drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: .35rem;
+  min-height: 240px;
+  padding: 1.5rem;
+  margin: 0;
+  border: 3px dashed var(--leaf);
+  border-radius: var(--radius);
+  background: #f6fcf0;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background .2s ease;
+}
+
+.form .drop:hover {
+  background: var(--mint);
+}
+
+.form .drop::before {
+  content: "📷";
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.form .drop b {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--forest);
+}
+
+.form .drop .hint {
+  margin: 0;
+}
+
+.form .drop input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Uploaded photos are listed by file name */
+.files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .5rem;
+}
+
+.files:empty {
+  display: none;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .3rem .5rem .3rem .3rem;
+  border: 2px solid #cfe8b8;
+  border-radius: 16px;
+  background: var(--white);
+}
+
+.file-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .45rem .7rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--forest);
+  text-align: left;
+  cursor: pointer;
+}
+
+.file-open:hover {
+  background: var(--mint);
+}
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+}
+
+.file-size {
+  flex: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: .9rem;
+}
+
+.file-main {
+  flex: none;
+  padding: .15em .75em;
+  border-radius: var(--radius-sm);
+  background: var(--grad-mid);
+  color: var(--white);
+  font: 600 .8rem var(--font-display);
+}
+
+.file-remove {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--alert);
+  cursor: pointer;
+}
+
+.file-remove:hover {
+  background: #fdeaea;
+}
+
+/* Photo preview dialog */
+.dialog.preview {
+  padding: 1rem;
+  width: min(760px, 94vw);
+}
+
+.dialog.preview img {
+  width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 16px;
+  background: #f6fcf0;
+}
+
+.preview-name {
+  margin: .7rem auto 0;
+  max-width: none;
+  font-weight: 700;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

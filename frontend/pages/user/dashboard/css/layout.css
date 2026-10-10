@@ -1,0 +1,48 @@
+/* Dashboard shell: sidebar column + main column, mobile top bar and scrim */
+.dash {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+  transition: grid-template-columns .25s ease;
+}
+
+.dash-main {
+  min-width: 0;
+}
+
+.dash-top {
+  display: none;
+}
+
+.scrim {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .dash {
+    grid-template-columns: 1fr;
+  }
+
+  .scrim.open {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(10, 79, 46, .55);
+  }
+
+  .dash-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: .6rem 4%;
+    background: linear-gradient(90deg, var(--forest-dark), var(--forest));
+  }
+
+  .dash-top img {
+    height: 30px;
+    width: auto;
+  }
+}

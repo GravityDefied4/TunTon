@@ -1,0 +1,104 @@
+/* Map view and Leaflet overrides */
+#map {
+  height: min(68vh, 640px);
+  min-height: 360px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  position: relative;
+  z-index: 0;
+}
+
+.legend {
+  display: flex;
+  gap: 1.2rem;
+  margin-top: .8rem;
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: .4em;
+}
+
+.pin {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
+}
+
+.pin span {
+  transform: rotate(45deg);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pin--lost {
+  background: var(--alert);
+}
+
+.pin--found {
+  background: var(--leaf);
+}
+
+.me {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2f7bf0;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgba(47, 123, 240, .25);
+}
+
+.pop {
+  width: 200px;
+  font-family: var(--font-body);
+}
+
+.pop img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.pop h3 {
+  font-size: 1.05rem;
+  margin: .5rem 0 .15rem;
+}
+
+.pop p {
+  margin: 0 0 .2rem;
+  font-size: .9rem;
+  max-width: none;
+}
+
+/* Small map used to pick a location inside the report forms */
+.pick {
+  height: 300px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  z-index: 0;
+  border: 2px solid #cfe8b8;
+}
+
+/* style.css sets img { max-width: 100% }, which breaks Leaflet's map tiles */
+.leaflet-container img,
+.leaflet-container .leaflet-tile,
+.leaflet-container .leaflet-marker-icon {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container {
+  font-family: var(--font-body);
+}

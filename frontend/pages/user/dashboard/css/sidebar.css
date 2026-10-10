@@ -1,0 +1,255 @@
+/* Sidebar (the nav, turned vertical) */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem 1rem;
+  color: var(--white);
+  background: linear-gradient(180deg, var(--forest-dark), var(--forest));
+}
+
+.side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+/* Wordmark logo: capped so it can never blow up the sidebar */
+.side-logo {
+  height: 34px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  padding: 0 .5rem;
+}
+
+/* Paw logo, shown instead of the wordmark when the sidebar is minimized */
+.side-logo-mini {
+  display: none;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.side-collapse {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+  color: var(--white);
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.side-collapse:hover {
+  background: rgba(255, 255, 255, .24);
+}
+
+.side-collapse svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .25s ease;
+}
+
+.side-nav {
+  display: grid;
+  gap: .35rem;
+}
+
+.side-nav a {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-radius: 16px;
+  border-left: 4px solid transparent;
+  color: var(--white);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.side-nav a:hover {
+  background: rgba(255, 255, 255, .1);
+}
+
+.side-nav a[aria-current="page"] {
+  background: rgba(255, 255, 255, .16);
+  border-left-color: var(--lime);
+}
+
+.side-nav svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.side-user {
+  margin-top: auto;
+  display: grid;
+  gap: .75rem;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-weight: 700;
+  min-width: 0;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.who span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar .btn-plain {
+  background: transparent;
+  color: var(--white);
+  border-color: var(--white);
+  text-align: center;
+}
+
+.home-link {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  color: var(--mint);
+  font-weight: 700;
+  text-decoration: none;
+  padding: .4rem 1rem;
+  border-radius: 16px;
+}
+
+.home-link:hover {
+  color: var(--white);
+}
+
+.home-link svg,
+#logout svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+}
+
+
+.sidebar #logout:hover {
+  background: #b82a2a;
+  border-color: #b82a2a;
+}
+
+/* First-letter avatar, shown when the user has no Google photo */
+.avatar.initial {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--forest);
+  font: 600 1rem var(--font-display);
+}
+
+/* Mobile: sidebar becomes a slide-in drawer */
+@media (max-width: 1000px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 270px;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform .3s ease;
+  }
+
+  .sidebar.open {
+    transform: none;
+  }
+
+  /* The drawer always shows labels, so no collapse button there */
+  .side-collapse {
+    display: none;
+  }
+}
+
+/* Minimized sidebar (icons only), desktop only */
+@media (min-width: 1001px) {
+  .side-min .dash {
+    grid-template-columns: 80px 1fr;
+  }
+
+  .side-min .sidebar {
+    padding: 1.5rem .6rem;
+    align-items: center;
+  }
+
+  .side-min .side-head {
+    flex-direction: column;
+    gap: .9rem;
+  }
+
+  .side-min .side-logo {
+    display: none;
+  }
+
+  .side-min .side-logo-mini {
+    display: block;
+  }
+
+  .side-min .side-collapse svg {
+    transform: rotate(180deg);
+  }
+
+  .side-min .side-nav,
+  .side-min .side-user {
+    width: 100%;
+  }
+
+  .side-min .label,
+  .side-min #user-name {
+    display: none;
+  }
+
+  .side-min .side-nav a,
+  .side-min .home-link,
+  .side-min .who {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .side-min .side-nav a {
+    border-left-width: 0;
+  }
+
+  .side-min .btn-plain#logout {
+    padding-inline: 0;
+  }
+}

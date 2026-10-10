@@ -1,0 +1,111 @@
+/* Report forms (lost / found) */
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem 1.25rem;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.form label,
+.form legend {
+  display: block;
+  font-weight: 700;
+  margin-bottom: .35rem;
+  padding: 0;
+}
+
+.form input[type=text],
+.form input[type=date],
+.form select,
+.form textarea {
+  width: 100%;
+  padding: .7em 1em;
+  border: 2px solid #cfe8b8;
+  border-radius: 16px;
+  font: inherit;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.form input:focus,
+.form select:focus,
+.form textarea:focus {
+  outline: 3px solid var(--leaf);
+  outline-offset: 1px;
+  border-color: var(--leaf);
+}
+
+/* Pill-style radio / checkbox choices */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.chips label {
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+}
+
+.chips input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+}
+
+.chips span {
+  display: inline-block;
+  padding: .45em 1.1em;
+  border-radius: var(--radius-sm);
+  border: 2px solid #cfe8b8;
+  font-weight: 700;
+  background: var(--white);
+}
+
+.chips input:checked+span {
+  background: var(--grad-mid);
+  color: var(--white);
+  border-color: transparent;
+}
+
+.chips input:focus-visible+span {
+  outline: 3px solid var(--leaf);
+  outline-offset: 2px;
+}
+
+/* Banner shown on the found form when reporting a match for a lost pet */
+.match-banner {
+  margin-bottom: 1.25rem;
+  padding: .9rem 1.2rem;
+  border-radius: 20px;
+  border-left: 6px solid var(--leaf);
+  background: var(--mint);
+  font-weight: 700;
+}
+
+/* "Report sent" confirmation */
+.done {
+  text-align: center;
+}
+
+.done .actions {
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+@media (max-width: 1000px) {
+  .form {
+    grid-template-columns: 1fr;
+  }
+}
