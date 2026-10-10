@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" type="image/png" href="img/tunton-paw.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo/tunton-paw.png">
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -37,7 +37,7 @@
   <header class="header" id="header">
     <div class="container nav">
       <a href="#home" class="header-logo" aria-label="TunTon home">
-        <img src="img/tunton.png" alt="TunTon">
+        <img src="assets/logo/tunton.png" alt="TunTon">
       </a>
       <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
         <span></span><span></span><span></span>
@@ -69,7 +69,7 @@
     <section class="hero" id="home">
       <div class="container hero-inner">
         <div class="hero-text">
-          <img src="img/tunton-white.png" alt="TunTon" class="hero-logo">
+          <img src="assets/logo/tunton-white.png" alt="TunTon" class="hero-logo">
           <p class="lead">A Lost Pet Recovery System with Attribute Matching and Geofencing for Dagupan City</p>
           <div class="actions">
             <button type="button" class="btn btn-sun" data-requires-auth data-target="#pets">Report a lost pet</button>
@@ -77,10 +77,10 @@
           </div>
         </div>
         <div class="hero-card" role="img" aria-label="Featured lost and found pets">
-          <figure class="stack-card" data-pos="0"><img src="img/Pet1.jpg" alt=""></figure>
-          <figure class="stack-card" data-pos="1"><img src="img/Pet2.jpg" alt=""></figure>
-          <figure class="stack-card" data-pos="2"><img src="img/Pet3.jpg" alt=""></figure>
-          <figure class="stack-card" data-pos="3"><img src="img/Pet4.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="0"><img src="assets/img/Pet1.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="1"><img src="assets/img/Pet2.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="2"><img src="assets/img/Pet3.jpg" alt=""></figure>
+          <figure class="stack-card" data-pos="3"><img src="assets/img/Pet4.jpg" alt=""></figure>
         </div>
       </div>
       <svg class="wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0,64 C240,120 480,0 720,48 C960,96 1200,110 1440,40 L1440,120 L0,120 Z"/></svg>
@@ -135,7 +135,7 @@
         <div class="pet-list pet-list--grid">
           <article class="pet-card">
             <div class="pet-thumb">
-              <img src="img/Pet1.jpg" alt="Missing white and brown dog">
+              <img src="assets/img/Pet1.jpg" alt="Missing white and brown dog">
               <span class="tag-missing"><span class="tag-dot" aria-hidden="true"></span>Missing</span>
             </div>
             <div class="pet-body">
@@ -150,7 +150,7 @@
 
           <article class="pet-card">
             <div class="pet-thumb">
-              <img src="img/Pet3.jpg" alt="Missing tilapia cat">
+              <img src="assets/img/Pet2.jpg" alt="Missing tilapia cat">
               <span class="tag-missing"><span class="tag-dot" aria-hidden="true"></span>Missing</span>
             </div>
             <div class="pet-body">
@@ -165,7 +165,7 @@
 
           <article class="pet-card">
             <div class="pet-thumb">
-              <img src="img/Pet4.jpg" alt="Missing tabby cat">
+              <img src="assets/img/Pet4.jpg" alt="Missing tabby cat">
               <span class="tag-missing"><span class="tag-dot" aria-hidden="true"></span>Missing</span>
             </div>
             <div class="pet-body">
@@ -195,7 +195,7 @@
 
         <div class="pet-list">
           <article class="pet-card">
-            <div class="pet-thumb"><img src="img/Pet2.jpg" alt="Mocha the beagle, reunited"></div>
+            <div class="pet-thumb"><img src="assets/img/Pet2.jpg" alt="Mocha the beagle, reunited"></div>
             <div class="pet-body">
               <span class="badge badge--home">&#10003; Reunited</span>
               <h3>Mocha the beagle</h3>
@@ -206,7 +206,7 @@
           </article>
 
           <article class="pet-card">
-            <div class="pet-thumb"><img src="img/Pet4.jpg" alt="Black cat with white paws, reunited"></div>
+            <div class="pet-thumb"><img src="assets/img/Pet4.jpg" alt="Black cat with white paws, reunited"></div>
             <div class="pet-body">
               <span class="badge badge--home">&#10003; Reunited</span>
               <h3>Black cat with white paws</h3>
@@ -217,7 +217,7 @@
           </article>
 
           <article class="pet-card">
-            <div class="pet-thumb"><img src="img/Pet1.jpg" alt="Brown dog with collar, reunited"></div>
+            <div class="pet-thumb"><img src="assets/img/Pet1.jpg" alt="Brown dog with collar, reunited"></div>
             <div class="pet-body">
               <span class="badge badge--home">&#10003; Reunited</span>
               <h3>Brown dog with collar</h3>
@@ -273,6 +273,6 @@
     <p class="form-note" id="auth-message" role="status" aria-live="polite"></p>
   </dialog>
 
-  <script src="script.js"></script>
+  <script src="js/index.js"></script>
 </body>
 </html>
