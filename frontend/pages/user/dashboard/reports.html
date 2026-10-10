@@ -14,33 +14,9 @@
 </head>
 <body>
 <div class="dash">
-  <aside class="sidebar" id="sidebar">
-    <div class="side-head">
-      <img src="/frontend/assets/logo/tunton.png" alt="TunTon" class="side-logo">
-      <img src="/frontend/assets/logo/tunton-paw.png" alt="TunTon" class="side-logo-mini">
-      <button type="button" class="side-collapse" id="side-collapse" aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded="true">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-      </button>
-    </div>
-    <nav class="side-nav" aria-label="Dashboard">
-      <a href="dashboard.html" title="Map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span class="label">Map</span></a>
-      <a href="reports.html" title="All reports" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span class="label">All reports</span></a>
-      <a href="lost.html" title="File a lost report"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span class="label">File a lost report</span></a>
-      <a href="found.html" title="File a found report"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span class="label">File a found report</span></a>
-      <a href="profile.html" title="My profile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="label">My profile</span></a>
-    </nav>
-    <div class="side-user">
-      <a href="profile.html" class="who" title="My profile"><img id="user-avatar" class="avatar" alt="" hidden referrerpolicy="no-referrer"><span id="user-initial" class="avatar initial" aria-hidden="true">G</span><span id="user-name">Guest</span></a>
-      <button type="button" class="btn btn-small btn-plain" id="logout" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg><span class="label">Log out</span></button>
-    </div>
-  </aside>
-  <div class="scrim" id="scrim"></div>
+  <div id="app-nav"></div>
 
   <div class="dash-main">
-    <div class="dash-top">
-      <a href="../../../index.html" aria-label="TunTon home"><img src="/frontend/assets/logo/tunton.png" alt="TunTon"></a>
-      <button class="nav-toggle" id="side-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar"><span></span><span></span><span></span></button>
-    </div>
     <main>
       <section class="view" id="view-reports">
         <div class="view-head"><h1>All reports</h1><p>Every active lost and found report, without the map.</p></div>
@@ -77,6 +53,7 @@
   </div>
 </dialog>
 
+<script src="js/sidebar.js"></script>
 <script src="js/common.js"></script>
 <script src="js/api.js"></script>
 <script src="js/reports.js"></script>

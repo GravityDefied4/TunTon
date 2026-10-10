@@ -43,33 +43,41 @@ const prof = () => read(PROFILE_KEY, {});
 const myId = sess?.sub || 'guest';
 const shownName = () => prof().dname || sess?.given_name || sess?.name || 'Guest';
 const applyIdentity = () => {
-  $('#user-name').textContent = shownName();
-  $('#user-initial').textContent = shownName()[0].toUpperCase();
+  const name = $('#user-name'), initial = $('#user-initial');
+  if (!name || !initial) return; /* sidebar not on the page yet */
+  name.textContent = shownName();
+  initial.textContent = shownName()[0].toUpperCase();
 };
 
-applyIdentity();
-if (sess?.picture) { const a = $('#user-avatar'); a.src = sess.picture; a.hidden = false; $('#user-initial').hidden = true; }
-$('#logout').addEventListener('click', () => { localStorage.removeItem(SESSION_KEY); location.href = HOME; });
+/* Everything below touches the sidebar, which sidebar.js loads from
+   sidebar.html, so it has to wait until the sidebar is on the page. */
+(window.sidebarReady || Promise.resolve(false)).then(ok => {
+  if (!ok) return;
 
-/* ---------- Sidebar (mobile drawer) ---------- */
-const side = $('#sidebar'), scrim = $('#scrim'), tgl = $('#side-toggle');
-const setSide = open => { side.classList.toggle('open', open); scrim.classList.toggle('open', open); tgl.setAttribute('aria-expanded', open); };
-tgl.addEventListener('click', () => setSide(!side.classList.contains('open')));
-scrim.addEventListener('click', () => setSide(false));
+  applyIdentity();
+  if (sess?.picture) { const a = $('#user-avatar'); a.src = sess.picture; a.hidden = false; $('#user-initial').hidden = true; }
+  $('#logout').addEventListener('click', () => { localStorage.removeItem(SESSION_KEY); location.href = HOME; });
 
-/* ---------- Sidebar: minimize to icons only (desktop) ---------- */
-const SIDE_KEY = 'tunton_side';
-const collapseBtn = $('#side-collapse');
-const syncCollapse = () => {
-  const min = document.documentElement.classList.contains('side-min');
-  const label = min ? 'Expand sidebar' : 'Collapse sidebar';
-  collapseBtn.setAttribute('aria-expanded', String(!min));
-  collapseBtn.setAttribute('aria-label', label);
-  collapseBtn.title = label;
-};
-collapseBtn.addEventListener('click', () => {
-  const min = document.documentElement.classList.toggle('side-min');
-  try { localStorage.setItem(SIDE_KEY, min ? 'min' : 'full'); } catch { /* storage unavailable */ }
+  /* ---------- Sidebar (mobile drawer) ---------- */
+  const side = $('#sidebar'), scrim = $('#scrim'), tgl = $('#side-toggle');
+  const setSide = open => { side.classList.toggle('open', open); scrim.classList.toggle('open', open); tgl.setAttribute('aria-expanded', open); };
+  tgl.addEventListener('click', () => setSide(!side.classList.contains('open')));
+  scrim.addEventListener('click', () => setSide(false));
+
+  /* ---------- Sidebar: minimize to icons only (desktop) ---------- */
+  const SIDE_KEY = 'tunton_side';
+  const collapseBtn = $('#side-collapse');
+  const syncCollapse = () => {
+    const min = document.documentElement.classList.contains('side-min');
+    const label = min ? 'Expand sidebar' : 'Collapse sidebar';
+    collapseBtn.setAttribute('aria-expanded', String(!min));
+    collapseBtn.setAttribute('aria-label', label);
+    collapseBtn.title = label;
+  };
+  collapseBtn.addEventListener('click', () => {
+    const min = document.documentElement.classList.toggle('side-min');
+    try { localStorage.setItem(SIDE_KEY, min ? 'min' : 'full'); } catch { /* storage unavailable */ }
+    syncCollapse();
+  });
   syncCollapse();
 });
-syncCollapse();
