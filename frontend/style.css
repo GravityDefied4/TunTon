@@ -18,6 +18,12 @@
     --radius: 28px;
     --radius-sm: 999px;
     --shadow: 0 10px 30px rgba(15, 107, 63, .18);
+
+    /* Signature gradients (from the hero / logo).
+       Bright = decoration only. Dark and mid = anything that carries text. */
+    --grad-bright: linear-gradient(90deg, var(--leaf), var(--logo-green), var(--logo-lime));
+    --grad-mid: linear-gradient(135deg, var(--forest), var(--leaf));
+    --grad-dark: linear-gradient(135deg, var(--forest-dark), var(--forest));
 }
 
 /* ---------- Base ---------- */
@@ -116,12 +122,12 @@ p {
 }
 
 .btn-sun {
-    background: var(--sun);
+    background: linear-gradient(135deg, #ffd34d, var(--sun));
     color: var(--ink);
 }
 
 .btn-sun:hover {
-    background: #ffd34d;
+    background: linear-gradient(135deg, #ffdd73, #ffd34d);
 }
 
 .btn-ghost {
@@ -135,9 +141,16 @@ p {
 }
 
 .btn-small {
-    background: var(--forest);
+    background: var(--grad-mid);
+    background-size: 200% 100%;
+    background-position: 0% 0%;
     color: var(--white);
     padding: .5em 1.2em;
+    transition: transform .15s ease, background-position .3s ease;
+}
+
+.btn-small:hover {
+    background-position: 100% 0%;
 }
 
 .btn-plain {
@@ -151,13 +164,39 @@ p {
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(10, 79, 46, .96);
-    backdrop-filter: blur(8px);
-    transition: box-shadow .2s;
+    background: transparent;
+    transition: background .3s ease, box-shadow .3s ease;
 }
 
 .header.scrolled {
+    background: linear-gradient(90deg, rgba(10, 79, 46, .97), rgba(15, 107, 63, .97));
+    backdrop-filter: blur(8px);
     box-shadow: 0 4px 18px rgba(0, 0, 0, .18);
+}
+
+/* Soft dark-green fade behind the nav while it's transparent,
+   so the light logo and links stay readable on the hero */
+.header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 -28px 0;
+    z-index: -1;
+    background: linear-gradient(to bottom, rgba(10, 79, 46, .6), rgba(10, 79, 46, 0));
+    pointer-events: none;
+    transition: opacity .3s ease;
+}
+
+.header.scrolled::before {
+    opacity: 0;
+}
+
+/* Extra edge definition for the logo and links on the transparent nav */
+.header:not(.scrolled) .header-logo img {
+    filter: drop-shadow(0 2px 5px rgba(10, 79, 46, .6));
+}
+
+.header:not(.scrolled) .menu>a {
+    text-shadow: 0 1px 4px rgba(10, 79, 46, .55);
 }
 
 .nav {
@@ -278,7 +317,9 @@ p {
     position: relative;
     background: linear-gradient(135deg, var(--leaf) 0%, var(--logo-green) 55%, var(--logo-lime) 100%);
     color: var(--white);
-    padding: 4.5rem 0 8rem;
+    /* hero slides up behind the transparent header (header is 72px tall) */
+    margin-top: -72px;
+    padding: calc(4.5rem + 72px) 0 8rem;
     overflow: hidden;
 }
 
@@ -297,7 +338,7 @@ p {
 }
 
 .hero-logo {
-    max-width: 300px;
+    max-width: 380px;
     margin-bottom: 1.2rem;
     filter: drop-shadow(0 2px 6px rgba(10, 79, 46, .3));
 }
@@ -434,12 +475,11 @@ p {
     height: 5px;
     margin-top: .35em;
     border-radius: var(--radius-sm);
-    background: var(--leaf);
+    background: var(--grad-bright);
 }
 
 .panel h2::after {
     margin-inline: auto;
-    background: var(--lime);
 }
 
 .link-light {
@@ -455,7 +495,7 @@ p {
 /* ---------- About ---------- */
 .eyebrow {
     display: inline-block;
-    background: var(--forest);
+    background: var(--grad-mid);
     color: var(--white);
     font-family: var(--font-display);
     font-weight: 600;
@@ -613,7 +653,7 @@ p {
 .panel {
     position: relative;
     --panel-pad: clamp(.75rem, 3vw, 6rem);
-    background: var(--forest);
+    background: var(--grad-dark);
     color: var(--white);
     border-radius: var(--radius);
     padding: var(--panel-pad);
@@ -621,10 +661,23 @@ p {
     box-shadow: var(--shadow);
 }
 
-/* Cards inside the green panel are white so none of them vanish into it */
+/* Cards inside the green panel are white so none of them vanish into it,
+   each topped with the signature gradient bar */
 .panel .card {
+    position: relative;
+    overflow: hidden;
     background: var(--white);
     color: var(--ink);
+}
+
+.panel .card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: var(--grad-bright);
 }
 
 .panel .card h3 {
@@ -756,7 +809,7 @@ p {
     display: block;
     height: 4px;
     border-radius: var(--radius-sm);
-    background: var(--forest);
+    background: var(--grad-bright);
 }
 
 .badge {
@@ -774,7 +827,7 @@ p {
 }
 
 .badge--home {
-    background: var(--lime);
+    background: linear-gradient(135deg, var(--lime), var(--logo-lime));
     color: var(--forest-dark);
 }
 
@@ -848,7 +901,7 @@ p {
 }
 
 .tab[aria-selected="true"] {
-    background: var(--forest);
+    background: var(--grad-mid);
     color: var(--white);
 }
 
@@ -861,7 +914,7 @@ p {
 
 /* ---------- Footer ---------- */
 .footer {
-    background: var(--forest-dark);
+    background: linear-gradient(to bottom, var(--forest-dark) 0%, var(--forest-dark) 40%, var(--forest) 100%);
     color: var(--mint);
     text-align: center;
     padding: 6rem 0 2rem;

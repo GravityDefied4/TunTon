@@ -24,7 +24,9 @@ menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
 
 /* ---------- Header shadow + active section ---------- */
 const header = document.getElementById('header');
-window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 10), { passive: true });
+const updateHeader = () => header.classList.toggle('scrolled', window.scrollY > 10);
+updateHeader();
+window.addEventListener('scroll', updateHeader, { passive: true });
 
 const links = menu.querySelectorAll(':scope > a[href^="#"]');
 const observer = new IntersectionObserver(entries => {
