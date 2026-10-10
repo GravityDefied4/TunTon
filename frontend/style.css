@@ -4,6 +4,8 @@
     --forest-dark: #0a4f2e;
     --leaf: #2fa05a;
     --lime: #8fcf5a;
+    --logo-green: #68bf5a;   /* sampled from the TunTon logo (top of letters) */
+    --logo-lime: #c9ce50;    /* sampled from the TunTon logo (bottom of letters) */
     --mint: #d9f2c2;
     --sun: #ffc61a;      /* the only accent: main buttons */
     --ink: #17342a;
@@ -273,13 +275,15 @@ p {
 /* ---------- Hero ---------- */
 .hero {
     position: relative;
-    background: linear-gradient(180deg, var(--leaf) 0%, var(--forest) 100%);
+    background: linear-gradient(135deg, var(--leaf) 0%, var(--logo-green) 55%, var(--logo-lime) 100%);
     color: var(--white);
     padding: 4.5rem 0 8rem;
     overflow: hidden;
 }
 
 .hero-inner {
+    position: relative;
+    z-index: 2;
     display: grid;
     grid-template-columns: 1.1fr 1fr;
     gap: 3rem;
@@ -294,10 +298,12 @@ p {
 .hero-logo {
     max-width: 300px;
     margin-bottom: 1.2rem;
+    filter: drop-shadow(0 2px 6px rgba(10, 79, 46, .3));
 }
 
 .hero .lead {
     color: var(--white);
+    text-shadow: 0 1px 3px rgba(10, 79, 46, .4);
     font-size: clamp(1.1rem, 2vw, 1.5rem);
     margin-bottom: 1.6rem;
 }
@@ -340,6 +346,7 @@ p {
 
 /* Hero wave (bottom) */
 .wave {
+    z-index: 1;
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -408,6 +415,30 @@ p {
     justify-content: space-between;
     align-items: baseline;
     gap: 1rem;
+}
+
+
+.panel h2 {
+    margin-inline: auto; 
+    width: fit-content;
+    max-width: 100%;  /* keeps "How it works" centered */
+}
+
+/* Small accent bar under section headings */
+.section-head h2::after,
+.panel h2::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 5px;
+    margin-top: .35em;
+    border-radius: var(--radius-sm);
+    background: var(--leaf);
+}
+
+.panel h2::after {
+    margin-inline: auto;
+    background: var(--lime);
 }
 
 .link-light {
@@ -493,109 +524,160 @@ p {
     margin-bottom: .4em;
 }
 
+.card,
+.facts li {
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.card:hover,
+.facts li:hover {
+    transform: translateY(-4px);
+}
+
 /* Class names kept from the old theme; colors are now three greens */
 .card-sun    { background: var(--mint);   color: var(--ink); }
 .card-leaf   { background: var(--leaf);   color: var(--white); }
 .card-orange { background: var(--forest); color: var(--white); }
 
-/* ---------- Lost pets gallery ---------- */
-.gallery {
+/* ---------- Pet report cards (used by Lost AND Recovered) ---------- */
+.pet-list {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    gap: 1rem;
     margin-top: 1.5rem;
 }
 
-.shot {
-    position: relative;
-    margin: 0;
-    aspect-ratio: 4 / 3;
-    border-radius: 22px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    background: var(--forest-dark);
-    border: 5px solid var(--white);
-}
-
-.shot img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.shot figcaption {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 1rem;
-    font-family: var(--font-display);
-    font-weight: 600;
-    color: var(--white);
-    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .55));
-}
-
-/* ---------- Found pets ---------- */
-.found-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-top: 2rem;
-}
-
-.found-card {
+.pet-card {
     display: flex;
-    flex-direction: column;
+    align-items: stretch;
     background: var(--white);
+    color: var(--ink);
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: var(--shadow);
     transition: transform .2s ease;
 }
 
-.found-card:hover {
-    transform: translateY(-4px);
+.pet-card:hover {
+    transform: translateY(-3px);
 }
 
-.found-thumb {
-    aspect-ratio: 4 / 3;
+.pet-thumb {
+    width: 180px;
+    min-height: 130px;
+    flex-shrink: 0;
     background: var(--mint);
 }
 
-.found-thumb img {
+.pet-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.found-thumb--empty {
-    display: grid;
-    place-items: center;
-    font-size: 3.5rem;
-}
-
-.found-body {
+.pet-body {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: .25rem;
-    padding: 1.25rem 1.5rem 1.5rem;
+    justify-content: center;
+    gap: .15rem;
+    padding: 1rem 1.5rem;
 }
 
-.found-body h3 {
-    margin: .3em 0 0;
+.pet-body h3 {
+    margin: .2em 0 0;
+    font-size: 1.25rem;
 }
 
-.found-meta {
-    margin: 0 0 1rem;
+.pet-meta {
+    margin: 0;
     color: var(--muted);
     font-size: .95rem;
 }
 
-.found-body .btn {
-    margin-top: auto;
+.pet-story {
+    margin: .25rem 0 0;
+    font-size: .95rem;
+}
+
+.pet-card .btn {
+    align-self: center;
+    flex-shrink: 0;
+    margin-right: 1.5rem;
+}
+
+/* Rounded panel (used by How it works). It extends outward by its own
+   padding so the heading and cards line up with the other sections. */
+.panel {
+    position: relative;
+    --panel-pad: clamp(.75rem, 3vw, 6rem);
+    background: var(--forest);
+    color: var(--white);
+    border-radius: var(--radius);
+    padding: var(--panel-pad);
+    margin-inline: calc(var(--panel-pad) * -1);
+    box-shadow: var(--shadow);
+}
+
+/* Cards inside the green panel are white so none of them vanish into it */
+.panel .card {
+    background: var(--white);
+    color: var(--ink);
+}
+
+.panel .card h3 {
+    color: var(--forest);
+}
+
+/* Vertical grid variant (Lost pets): short rectangle cards, 3 per row */
+.pet-list--grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+.pet-list--grid .pet-card {
+    flex-direction: column;
+    border: 1px solid var(--mint);
+}
+
+.pet-list--grid .pet-thumb {
+    width: 100%;
+    height: 160px;
+    min-height: 0;
+}
+
+.pet-list--grid .pet-body {
+    flex: 1;
+    justify-content: flex-start;
+    padding: 1rem 1.25rem .5rem;
+}
+
+.pet-list--grid .pet-card .btn {
+    flex: none;
+    align-self: flex-start;
+    margin: .25rem 1.25rem 1.25rem;
+}
+
+/* ---------- Divider between Lost and Recovered ---------- */
+#pets {
+    padding-bottom: 6rem;
+}
+
+#recovered {
+    padding-top: 5rem;
+    padding-bottom: 12rem;   /* room for the footer trees */
+}
+
+.divider {
+    background: var(--mint);
+}
+
+.divider-line {
+    display: block;
+    height: 4px;
+    border-radius: var(--radius-sm);
+    background: var(--forest);
 }
 
 .badge {
@@ -606,6 +688,15 @@ p {
     font-size: .8rem;
     padding: .2em .9em;
     border-radius: var(--radius-sm);
+}
+
+.badge--lost {
+    background: var(--forest-dark);
+}
+
+.badge--home {
+    background: var(--lime);
+    color: var(--forest-dark);
 }
 
 /* ---------- Messages (used by the auth dialog) ---------- */
@@ -698,6 +789,20 @@ p {
     font-size: .95rem;
 }
 
+/* Trees in the footer color, rising out of the footer's wave */
+.footer-scenery {
+    position: absolute;
+    top: 50px;                      /* base sits inside the dark footer area */
+    transform: translateY(-100%);   /* ...and the trees grow upward from it */
+    width: clamp(260px, 30vw, 400px);   /* on phones the two groups overlap into one forest */
+    height: auto;
+    fill: var(--forest-dark);
+    pointer-events: none;
+}
+
+.footer-scenery-left { left: 0; }
+.footer-scenery-right { right: 0; }
+
 .footer p {
     margin-inline: auto;
 }
@@ -724,10 +829,12 @@ p {
 
     .hero-inner,
     .two-col,
-    .cards,
-    .gallery,
-    .found-grid {
+    .cards {
         grid-template-columns: 1fr;
+    }
+
+    .pet-list--grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .nav-toggle {
@@ -763,6 +870,31 @@ p {
 
     .auth {
         padding: 1rem 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .pet-list--grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pet-card {
+        flex-wrap: wrap;
+    }
+
+    .pet-thumb {
+        width: 120px;
+        min-height: 120px;
+    }
+
+    .pet-body {
+        padding: .9rem 1rem;
+    }
+
+    .pet-card .btn {
+        flex: 1 1 calc(100% - 2rem);
+        margin: 0 1rem 1rem;
+        text-align: center;
     }
 }
 

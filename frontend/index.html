@@ -9,10 +9,30 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="img/tunton-paw.png">
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+
+  <!-- Decorative SVG shapes (trees, grass, paw) reused across the page -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="tree-round" viewBox="0 0 120 150">
+        <rect x="54" y="80" width="12" height="70" rx="4"/>
+        <circle cx="60" cy="52" r="40"/>
+        <circle cx="30" cy="84" r="28"/>
+        <circle cx="90" cy="84" r="28"/>
+      </symbol>
+      <symbol id="tree-pine" viewBox="0 0 120 170">
+        <rect x="54" y="130" width="12" height="40" rx="3"/>
+        <polygon points="60,0 96,56 24,56"/>
+        <polygon points="60,32 108,98 12,98"/>
+        <polygon points="60,70 116,138 4,138"/>
+      </symbol>
+    </defs>
+  </svg>
+
 
   <header class="header" id="header">
     <div class="container nav">
@@ -27,7 +47,7 @@
         <a href="#about">About</a>
         <a href="#how">How it works</a>
         <a href="#pets">Lost pets</a>
-        <a href="#reports">Found pets</a>
+        <a href="#recovered">Recovered</a>
         <div class="auth" id="auth">
           <!-- Logged out -->
           <div class="auth-out">
@@ -49,12 +69,12 @@
     <section class="hero" id="home">
       <div class="container hero-inner">
         <div class="hero-text">
-            <img src="img/tunton-white.png" alt="TunTon" class="hero-logo">
-            <p class="lead">A Lost Pet Recovery System with Attribute Matching and Geofencing for Dagupan City</p>
-            <div class="actions">
-                <button type="button" class="btn btn-sun" data-requires-auth data-target="#pets">Report a lost pet</button>
-                <a href="#how" class="btn btn-ghost">How it works</a>
-            </div>
+          <img src="img/tunton-white.png" alt="TunTon" class="hero-logo">
+          <p class="lead">A Lost Pet Recovery System with Attribute Matching and Geofencing for Dagupan City</p>
+          <div class="actions">
+            <button type="button" class="btn btn-sun" data-requires-auth data-target="#pets">Report a lost pet</button>
+            <a href="#how" class="btn btn-ghost">How it works</a>
+          </div>
         </div>
         <div class="hero-card" role="img" aria-label="Featured lost and found pets">
           <figure class="stack-card" data-pos="0"><img src="img/Pet1.jpg" alt=""></figure>
@@ -84,6 +104,7 @@
 
     <section class="section section-mint" id="how">
       <div class="container">
+        <div class="panel">
         <h2 class="center">How it works</h2>
         <div class="cards">
           <article class="card card-sun">
@@ -99,78 +120,116 @@
             <p>Get notified the moment a possible match is posted.</p>
           </article>
         </div>
+        </div>
       </div>
     </section>
 
-    <section class="section section-forest" id="pets">
+    <section class="section section-mint" id="pets">
       <div class="container">
         <div class="section-head">
           <h2>Lost pets</h2>
-          <a href="#" class="link-light">Browse all</a>
-        </div>
-        <div class="gallery">
-          <figure class="shot shot-1">
-            <img src="img/Pet1.jpg" alt="Lost white and brown dog near Pantal">
-            <figcaption>Lost: white and brown dog, near Pantal</figcaption>
-          </figure>
-          <figure class="shot shot-2">
-            <img src="img/Pet3.jpg" alt="Lost tilapia cat in Lucao">
-            <figcaption>Lost: tilapia cat, Lucao</figcaption>
-          </figure>
-          <figure class="shot shot-3">
-            <img src="img/Pet4.jpg" alt="Lost pet">
-            <figcaption>Lost: edit this caption, location</figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-mint" id="reports">
-      <div class="container">
-        <div class="section-head">
-          <h2>Found pets</h2>
           <a href="#" class="link-dark">Browse all</a>
         </div>
-        <p class="lead">Recognize one of these? Contact the finder to claim your pet.</p>
+        <p class="lead">Have you seen one of these pets? Help them find their way home.</p>
 
-        <div class="found-grid">
-          <article class="found-card">
-            <div class="found-thumb"><img src="img/Pet2.jpg" alt="Found black dog in Bonuan"></div>
-            <div class="found-body">
-              <span class="badge">Found</span>
-              <h3>Black dog</h3>
-              <p class="found-meta">Bonuan &middot; <time datetime="2026-10-06">Oct 6, 2026</time></p>
-              <a href="#" class="btn btn-small">View details</a>
+        <div class="pet-list pet-list--grid">
+          <article class="pet-card">
+            <div class="pet-thumb"><img src="img/Pet1.jpg" alt="Lost white and brown dog"></div>
+            <div class="pet-body">
+              <span class="badge badge--lost">Lost</span>
+              <h3>White and brown dog</h3>
+              <p class="pet-meta">Last seen near Pantal &middot; <time datetime="2026-10-06">Oct 6, 2026</time></p>
             </div>
+            <a href="#" class="btn btn-small">View details</a>
           </article>
 
-          <article class="found-card">
-            <div class="found-thumb found-thumb--empty" aria-hidden="true">🐾</div>
-            <div class="found-body">
-              <span class="badge">Found</span>
-              <h3>Black cat with white paws</h3>
-              <p class="found-meta">Tapuac &middot; <time datetime="2026-10-04">Oct 4, 2026</time></p>
-              <a href="#" class="btn btn-small">View details</a>
+          <article class="pet-card">
+            <div class="pet-thumb"><img src="img/Pet3.jpg" alt="Lost tilapia cat"></div>
+            <div class="pet-body">
+              <span class="badge badge--lost">Lost</span>
+              <h3>Tilapia cat</h3>
+              <p class="pet-meta">Last seen in Lucao &middot; <time datetime="2026-10-05">Oct 5, 2026</time></p>
             </div>
+            <a href="#" class="btn btn-small">View details</a>
           </article>
 
-          <article class="found-card">
-            <div class="found-thumb found-thumb--empty" aria-hidden="true">🐾</div>
-            <div class="found-body">
-              <span class="badge">Found</span>
-              <h3>Brown puppy with collar</h3>
-              <p class="found-meta">Mayombo &middot; <time datetime="2026-10-01">Oct 1, 2026</time></p>
-              <a href="#" class="btn btn-small">View details</a>
+          <article class="pet-card">
+            <div class="pet-thumb"><img src="img/Pet4.jpg" alt="Lost cat"></div>
+            <div class="pet-body">
+              <span class="badge badge--lost">Lost</span>
+              <h3>Tabby cat</h3>
+              <p class="pet-meta">Last seen in Tapuac &middot; <time datetime="2026-10-03">Oct 3, 2026</time></p>
             </div>
+            <a href="#" class="btn btn-small">View details</a>
           </article>
         </div>
       </div>
     </section>
 
+    <div class="divider" aria-hidden="true">
+      <div class="container"><span class="divider-line"></span></div>
+    </div>
+
+    <section class="section section-mint" id="recovered">
+      <div class="container">
+        <div class="section-head">
+          <h2>Recovered pets</h2>
+          <a href="#" class="link-dark">Browse all</a>
+        </div>
+        <p class="lead">Happy endings, thanks to our community.</p>
+
+        <div class="pet-list">
+          <article class="pet-card">
+            <div class="pet-thumb"><img src="img/Pet2.jpg" alt="Mocha the beagle, reunited"></div>
+            <div class="pet-body">
+              <span class="badge badge--home">&#10003; Reunited</span>
+              <h3>Mocha the beagle</h3>
+              <p class="pet-meta">Bonuan &middot; <time datetime="2026-10-06">Oct 6, 2026</time></p>
+              <p class="pet-story">Found by a neighbor and back home within a day.</p>
+            </div>
+            <a href="#" class="btn btn-small">Read story</a>
+          </article>
+
+          <article class="pet-card">
+            <div class="pet-thumb"><img src="img/Pet4.jpg" alt="Black cat with white paws, reunited"></div>
+            <div class="pet-body">
+              <span class="badge badge--home">&#10003; Reunited</span>
+              <h3>Black cat with white paws</h3>
+              <p class="pet-meta">Tapuac &middot; <time datetime="2026-10-04">Oct 4, 2026</time></p>
+              <p class="pet-story">Matched by color and markings, claimed the same day.</p>
+            </div>
+            <a href="#" class="btn btn-small">Read story</a>
+          </article>
+
+          <article class="pet-card">
+            <div class="pet-thumb"><img src="img/Pet1.jpg" alt="Brown dog with collar, reunited"></div>
+            <div class="pet-body">
+              <span class="badge badge--home">&#10003; Reunited</span>
+              <h3>Brown dog with collar</h3>
+              <p class="pet-meta">Mayombo &middot; <time datetime="2026-10-01">Oct 1, 2026</time></p>
+              <p class="pet-story">Its collar tag helped the finder reach the owner.</p>
+            </div>
+            <a href="#" class="btn btn-small">Read story</a>
+          </article>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer has-wave">
     <svg class="wave-top wave-top--flip" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0,64 C240,120 480,0 720,48 C960,96 1200,110 1440,40 L1440,120 L0,120 Z"/></svg>
+    <svg class="footer-scenery footer-scenery-left" viewBox="0 0 380 190" aria-hidden="true">
+      <use href="#tree-pine" x="12" y="34" width="110" height="156"/>
+      <use href="#tree-round" x="105" y="28" width="130" height="162"/>
+      <use href="#tree-round" x="225" y="102" width="70" height="88"/>
+      <use href="#tree-pine" x="290" y="105" width="60" height="85"/>
+    </svg>
+    <svg class="footer-scenery footer-scenery-right" viewBox="0 0 380 190" aria-hidden="true">
+      <use href="#tree-pine" x="40" y="105" width="60" height="85"/>
+      <use href="#tree-round" x="95" y="40" width="120" height="150"/>
+      <use href="#tree-pine" x="215" y="34" width="110" height="156"/>
+      <use href="#tree-round" x="312" y="115" width="60" height="75"/>
+    </svg>
     <div class="container">
       <nav class="footer-links">
         <a href="#">Privacy policy</a>
