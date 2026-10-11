@@ -3,6 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Logged-in users never see this page: send them to the dashboard before anything is drawn.
+       location.replace() keeps the landing page out of the Back button history. -->
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('tunton_session'));
+        var exp = JSON.parse(atob(s.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp;
+        if (exp * 1000 > Date.now()) location.replace('pages/user/user.html');
+      } catch (e) { /* not logged in: show the landing page */ }
+    })();
+    /* Back/forward cache: re-check when the page is restored from it. */
+    window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
+  </script>
   <title>TunTon | Lost Pet Recovery for Dagupan City</title>
   <meta name="description" content="TunTon helps Dagupan City pet owners find lost pets using attribute matching and geofencing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,6 +69,7 @@
           </div>
           <!-- Logged in -->
           <div class="auth-in" hidden>
+            <a href="pages/user/user.html" class="btn btn-small">Dashboard</a>
             <img id="user-avatar" class="avatar" alt="" referrerpolicy="no-referrer">
             <span id="user-name" class="user-name"></span>
             <button type="button" class="btn btn-small btn-plain" id="logout-btn">Log out</button>
@@ -264,17 +278,16 @@
     </div>
     <div class="tab-panel" data-panel="login">
       <p>Log in with your Google account to manage your reports.</p>
-      <button type="button" class="btn btn-small" onclick="window.location.href='./pages/user/user.html'">Logged in</button>
       <div id="google-login" class="google-slot"></div>
     </div>
     <div class="tab-panel" data-panel="signup" hidden>
       <p>Create your TunTon account in one click with Google.</p>
-      <button type="button" class="btn btn-small" onclick="window.location.href='./pages/user/user.html'">Signed in</button>
       <div id="google-signup" class="google-slot"></div>
     </div>
     <p class="form-note" id="auth-message" role="status" aria-live="polite"></p>
   </dialog>
 
+  <script src="js/config.js"></script>
   <script src="js/index.js"></script>
 </body>
 </html>

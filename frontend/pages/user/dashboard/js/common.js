@@ -3,8 +3,8 @@
    Each page loads this file first, then its own script.
    ========================================================= */
 
-/* Set to true to send logged-out visitors back to the home page. */
-const REQUIRE_LOGIN = false;
+/* Logged-out visitors (or expired sessions) are sent back to the home page. */
+const REQUIRE_LOGIN = true;
 
 /* Paths are relative to this dashboard folder.
    Change them if your project is laid out differently. */
@@ -37,8 +37,29 @@ const pinIcon = k => L.divIcon({ className: '', html: `<div class="pin pin--${k}
 const tiles = m => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(m);
 
 /* ---------- Session / profile ---------- */
-const sess = read(SESSION_KEY, null);
-if (REQUIRE_LOGIN && !sess) location.replace(HOME);
+const logout = () => { localStorage.removeItem(SESSION_KEY); location.replace(HOME); };
+const readSession = () => {
+  const s = read(SESSION_KEY, null);
+  if (!s?.token) return null;
+  try {
+    const { exp } = JSON.parse(atob(s.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return exp * 1000 > Date.now() ? s : null;
+  } catch { return null; }
+};
+const sess = readSession();
+if (REQUIRE_LOGIN && !sess) logout();
+
+/* fetch() that attaches the JWT and logs out on 401 (token expired, revoked or account suspended). */
+const API_BASE = window.TUNTON?.API_BASE ?? '/api';
+const authFetch = async (path, opts = {}) => {
+  const res = await fetch(API_BASE + path, { ...opts, headers: { ...opts.headers, Authorization: 'Bearer ' + sess?.token } });
+  if (res.status === 401) logout();
+  return res;
+};
+
+/* Confirm the session with the server (a suspended or deleted account is signed out).
+   If the server can't be reached the page keeps working with the stored session. */
+if (sess) authFetch('/auth/me').catch(() => {});
 const prof = () => read(PROFILE_KEY, {});
 const myId = sess?.sub || 'guest';
 const shownName = () => prof().dname || sess?.given_name || sess?.name || 'Guest';
@@ -56,7 +77,7 @@ const applyIdentity = () => {
 
   applyIdentity();
   if (sess?.picture) { const a = $('#user-avatar'); a.src = sess.picture; a.hidden = false; $('#user-initial').hidden = true; }
-  $('#logout').addEventListener('click', () => { localStorage.removeItem(SESSION_KEY); location.href = HOME; });
+  $('#logout').addEventListener('click', logout);
 
   /* ---------- Sidebar (mobile drawer) ---------- */
   const side = $('#sidebar'), scrim = $('#scrim'), tgl = $('#side-toggle');

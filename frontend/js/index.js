@@ -2,11 +2,10 @@
    TunTon: UI + Google Sign-In (Google Identity Services)
    ========================================================= */
 
-// 1) Paste your OAuth Web Client ID here (Google Cloud Console > APIs & Services > Credentials)
-const GOOGLE_CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
-
+// The Google client ID lives in the server's .env (GOOGLE_CLIENT_ID) and is fetched from /api/auth/config.
+const API = window.TUNTON?.API_BASE ?? '/api';
 const SESSION_KEY = 'tunton_session';
-const USERS_KEY = 'tunton_users';
+const DASHBOARD = './pages/user/user.html';
 
 /* ---------- Mobile menu ---------- */
 const toggle = document.querySelector('.nav-toggle');
@@ -53,7 +52,9 @@ if (stackCards.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').mat
 }
 
 /* =========================================================
-   Authentication
+   Authentication (Google Identity Services + TunTon API)
+   Flow: Google button -> ID token -> POST /api/auth/google
+         -> server verifies it and returns TunTon's own JWT.
    ========================================================= */
 const dialog = document.getElementById('auth-dialog');
 const authMsg = document.getElementById('auth-message');
@@ -64,17 +65,24 @@ const authIn = document.querySelector('.auth-in');
 
 let activeTab = 'login';
 let pendingTarget = null; // where to scroll after login
+let googleReady = false;
 
 const read = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 };
-const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
-/* Decode the Google ID token (JWT) payload */
-function decodeJwt(token) {
-  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-  const json = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-  return JSON.parse(json);
+/* The stored session is only trusted until the JWT's own expiry. */
+function getSession() {
+  const s = read(SESSION_KEY, null);
+  if (!s?.token) return null;
+  try {
+    const { exp } = JSON.parse(atob(s.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (exp * 1000 < Date.now()) throw new Error('expired');
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+    return null;
+  }
+  return s;
 }
 
 function showMessage(text, isError = false) {
@@ -91,16 +99,16 @@ function setTab(name) {
 
 function openAuth(tab = 'login') {
   setTab(tab);
-  if (GOOGLE_CLIENT_ID.startsWith('YOUR_CLIENT_ID')) showMessage('Sir hindi pa po namin naiimplement hehehehe. Stay tuned for more updates!', true);
   closeMenu();
   if (!dialog.open) dialog.showModal();
+  if (!googleReady) showMessage('Sign-in is not available right now. Please try again later.', true);
 }
 
 function closeAuth() { if (dialog.open) dialog.close(); }
 
 /* Update the navigation for the current session */
 function renderSession() {
-  const user = read(SESSION_KEY, null);
+  const user = getSession();
   authOut.hidden = !!user;
   authIn.hidden = !user;
   if (user) {
@@ -112,43 +120,33 @@ function renderSession() {
 }
 
 /* Called by Google after the user picks an account */
-function handleCredential(response) {
-  let profile;
+async function handleCredential(response) {
+  showMessage('Signing you in...');
+  let res, body;
   try {
-    profile = decodeJwt(response.credential);
+    res = await fetch(`${API}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential, mode: activeTab })
+    });
+    body = await res.json();
   } catch {
-    showMessage('Sign-in failed. Please try again.', true);
+    showMessage('Could not reach the TunTon server. Please try again.', true);
     return;
   }
 
-  const users = read(USERS_KEY, {});
-  const known = !!users[profile.sub];
-
-  if (activeTab === 'login' && !known) {
-    setTab('signup');
-    showMessage('No TunTon account found for this Google account. Sign up to continue.', true);
+  if (!res.ok || !body.success) {
+    if (body?.data?.code === 'NO_ACCOUNT') setTab('signup');
+    showMessage(body?.message || 'Sign-in failed. Please try again.', true);
     return;
   }
 
-  if (!known) {
-    users[profile.sub] = { created: Date.now() };
-    write(USERS_KEY, users);
-  }
+  const { token, user } = body.data;
+  /* `sub` is TunTon's own user id (the dashboard uses it to tell whose reports are whose). */
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ token, sub: user.id, ...user }));
 
-  write(SESSION_KEY, {
-    sub: profile.sub,
-    name: profile.name,
-    given_name: profile.given_name,
-    email: profile.email,
-    picture: profile.picture
-  });
-
-  closeAuth();
-  renderSession();
-  if (pendingTarget) {
-    document.querySelector(pendingTarget)?.scrollIntoView({ behavior: 'smooth' });
-    pendingTarget = null;
-  }
+  /* Always go to the dashboard after login or sign up (replace = Back won't return here). */
+  location.replace(DASHBOARD);
 }
 
 function logout() {
@@ -157,17 +155,22 @@ function logout() {
   renderSession();
 }
 
-/* Render the official Google buttons */
-function initGoogle() {
-  if (!window.google?.accounts?.id) return;
-  if (GOOGLE_CLIENT_ID.startsWith('YOUR_CLIENT_ID')) {
-    return;
-  }
-  google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredential });
+/* Render the official Google buttons once we know the client ID */
+async function initGoogle() {
+  let clientId;
+  try {
+    const res = await fetch(`${API}/auth/config`);
+    clientId = (await res.json()).data?.googleClientId;
+  } catch { return; }
+  if (!clientId || clientId.startsWith('YOUR_') || !window.google?.accounts?.id) return;
+
+  google.accounts.id.initialize({ client_id: clientId, callback: handleCredential });
   google.accounts.id.renderButton(document.getElementById('google-login'),
     { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
   google.accounts.id.renderButton(document.getElementById('google-signup'),
     { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signup_with', width: 280 });
+  googleReady = true;
+  if (dialog.open && authMsg.classList.contains('error')) showMessage('');
 }
 
 /* ---------- Events ---------- */
@@ -183,14 +186,15 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 document.querySelectorAll('[data-requires-auth]').forEach(btn =>
   btn.addEventListener('click', () => {
     const target = btn.dataset.target;
-    if (read(SESSION_KEY, null)) {
+    if (getSession()) {
       document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
     } else {
       pendingTarget = target;
       openAuth('login');
-      showMessage('Please log in or sign up to file a report.');
+      if (googleReady) showMessage('Please log in or sign up to file a report.');
     }
   }));
 
 renderSession();
+/* The Google script is async: wait for it, then set up the buttons. */
 window.addEventListener('load', initGoogle);

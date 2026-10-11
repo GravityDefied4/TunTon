@@ -14,7 +14,7 @@
    ========================================================= */
 
 const USE_API = false;          // false = show the local placeholder data
-const API_BASE = '/api';        // where Express will be mounted
+/* API_BASE and authFetch() (which attaches the login token) come from common.js */
 
 /* One report row as MySQL would return it (snake_case column names).
    Not used while USE_API is false. */
@@ -78,14 +78,14 @@ const ReportsAPI = {
     if (filters.kind && filters.kind !== 'all') qs.set('type', filters.kind);
     if (filters.species) qs.set('species', filters.species);
     if (filters.q) qs.set('q', filters.q);
-    const res = await fetch(`${API_BASE}/reports?${qs}`);
+    const res = await authFetch(`/reports?${qs}`);
     if (!res.ok) throw new Error('Could not load reports');
     return (await res.json()).map(toReport);
   },
 
   async get(id) {
     if (!USE_API) return allReports().find(r => r.id === id) || null;
-    const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(id)}`);
+    const res = await authFetch(`/reports/${encodeURIComponent(id)}`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('Could not load the report');
     return toReport(await res.json());

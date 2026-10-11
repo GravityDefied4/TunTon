@@ -1,0 +1,9 @@
+node_modules/
+.env
+db/data/
+uploads/*
+!uploads/reports/
+!uploads/proofs/
+uploads/reports/*
+uploads/proofs/*
+!.gitkeep
