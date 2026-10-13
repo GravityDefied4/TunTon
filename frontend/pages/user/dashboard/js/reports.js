@@ -17,12 +17,12 @@ const filters = () => ({
 const message = text => { grid.innerHTML = `<p class="rempty">${esc(text)}</p>`; };
 
 function card(r) {
-  const lost = r.kind === 'lost', st = reportState(r), isFound = st === 'found', verb = lost ? 'Last seen' : 'Found', title = titleOf(r);
+  const lost = r.kind === 'lost', st = reportState(r), isFound = lost && st === 'found', labelFound = !lost || isFound, verb = lost ? 'Last seen' : 'Found', title = titleOf(r);
   return `
   <article class="pet-card">
     <div class="pet-thumb">
-      <img src="${esc(r.photo)}" alt="${isFound ? 'Found' : 'Missing'} ${esc(title)}" loading="lazy">
-      <span class="tag-missing${isFound ? ' tag-found' : ''}"><span class="tag-dot" aria-hidden="true"></span>${isFound ? 'Found' : 'Missing'}</span>
+      <img src="${esc(r.photo)}" alt="${labelFound ? 'Found' : 'Missing'} ${esc(title)}" loading="lazy">
+      <span class="tag-missing${labelFound ? ' tag-found' : ''}"><span class="tag-dot" aria-hidden="true"></span>${labelFound ? 'Found' : 'Missing'}</span>
     </div>
     <div class="pet-body">
       <h3>${esc(title)}</h3>

@@ -653,6 +653,7 @@ p {
     margin-right: 1.5rem;
 }
 
+
 /* Rounded panel (used by How it works). It extends outward by its own
    padding so the heading and cards line up with the other sections. */
 .panel {
@@ -712,7 +713,7 @@ p {
     position: relative;
     width: 100%;
     min-height: 0;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
 }
 
