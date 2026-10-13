@@ -1,9 +1,9 @@
 node_modules/
 .env
-db/data/
-uploads/*
-!uploads/reports/
-!uploads/proofs/
-uploads/reports/*
-uploads/proofs/*
+backend/db/data/
+backend/uploads/*
+!backend/uploads/reports/
+!backend/uploads/proofs/
+backend/uploads/reports/*
+backend/uploads/proofs/*
 !.gitkeep

@@ -9,7 +9,7 @@ const publicUser = u => ({ id: u.user_id, name: u.full_name, given_name: u.given
   picture: u.picture, role: u.role });
 
 const signToken = u => jwt.sign({ role: u.role }, process.env.JWT_SECRET,
-  { subject: u.user_id, expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+  { subject: String(u.user_id), expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
 /* Public config the browser needs (client IDs are not secrets). */
 exports.config = (req, res) => res.ok({ googleClientId: process.env.GOOGLE_CLIENT_ID });

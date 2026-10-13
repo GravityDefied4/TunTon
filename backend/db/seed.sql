@@ -36,6 +36,6 @@ INSERT INTO matches (match_id, lost_report_id, found_report_id, score, status) V
 (1, 1, 2, 88.50, 'suggested');
 
 -- 8. Set up App User (Least Privilege Principle - FDS Security Concept)
-CREATE USER IF NOT EXISTS 'tunton_app'@'localhost' IDENTIFIED BY 'SecurePass123!';
+CREATE USER IF NOT EXISTS 'tunton_app'@'localhost' IDENTIFIED BY 'tuntonsahere1!';
 GRANT SELECT, INSERT, UPDATE, DELETE ON tunton.* TO 'tunton_app'@'localhost';
 FLUSH PRIVILEGES;

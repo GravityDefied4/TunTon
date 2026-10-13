@@ -16,7 +16,7 @@ cp .env.example .env     # fill GOOGLE_CLIENT_ID, JWT_SECRET, ADMIN_EMAILS
 npm install
 npm start                # http://localhost:3000 serves the site AND the API
 ```
-Open http://localhost:3000 (not the file, not Live Server, unless you set API_BASE in `public/js/config.js`).
+Open http://localhost:3000 (not the file, not Live Server, unless you set API_BASE in `frontend/js/config.js`).
 
 ## 3. How it works
 Browser: Google button -> Google returns an ID token -> `POST /api/auth/google`.
@@ -37,14 +37,14 @@ The frontend never trusts the decoded Google token by itself; only the server's 
 
 Protecting future routes:
 ```js
-const { requireAuth, requireRole } = require('./middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 router.get('/reports/mine', requireAuth, ctrl.mine);                 // req.user is set
 router.use('/admin', requireAuth, requireRole('admin'));             // admin only
 ```
 Admins: put their Google emails in `ADMIN_EMAILS`.
 
-## 5. For the database team
-`db/userStore.js` is a temporary JSON file. Replace its 4 functions with mysql2 queries; nothing else changes. The plan's `users` table needs these changes for Google login (no passwords):
+## 5. For the database team (DONE: userStore.js now uses MySQL and the schema.sql `users` table; user ids are integers)
+_Historical note: `backend/db/userStore.js` used to be a temporary JSON file._ Replace its 4 functions with mysql2 queries; nothing else changes. The plan's `users` table needs these changes for Google login (no passwords):
 ```sql
 CREATE TABLE users (
   user_id       CHAR(36) PRIMARY KEY,            -- UUID (or INT AUTO_INCREMENT, then update the JWT subject)

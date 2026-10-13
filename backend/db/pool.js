@@ -9,5 +9,7 @@ module.exports = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'tunton',
   waitForConnections: true,
-  connectionLimit: 10
+  connectionLimit: 10,
+  decimalNumbers: true,        // DECIMAL columns (lat, lng, score) come back as numbers, not strings
+  dateStrings: ['DATE']        // event_date stays 'YYYY-MM-DD' (no timezone shifting)
 });

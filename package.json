@@ -2,11 +2,12 @@
   "name": "tunton",
   "version": "0.1.0",
   "private": true,
-  "description": "TunTon: Lost Pet Recovery System (auth slice)",
-  "main": "server.js",
+  "description": "TunTon: Lost Pet Recovery System (backend API)",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js",
+    "test": "node --test \"backend/tests/*.test.js\""
   },
   "engines": {
     "node": ">=18"

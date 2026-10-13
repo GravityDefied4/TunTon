@@ -1,5 +1,5 @@
-require('dotenv').config();
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });  // .env lives in the project root
 const express = require('express');
 const cors = require('cors');
 const { responseHelpers, notFound, errorHandler } = require('./middleware/errorHandler');
@@ -30,10 +30,15 @@ app.use('/api/claims', require('./routes/claims'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api', notFound);
 
-/* ---- Frontend ----
-   Uploaded photos are NOT served as a public folder: pet photos and proof documents
-   will be delivered through controllers that check permissions (proofs are private). */
-app.use(express.static(path.join(__dirname, 'frontend')));
+/* ---- Uploads ----
+   Pet photos are shown on public report cards, so they are served read-only from /uploads/reports
+   (random file names, no directory listing). Proof documents are NOT served here: they are private and
+   only delivered by GET /api/claims/:id/proofs/:proofId/file after a permission check. */
+app.use('/uploads/reports', express.static(path.join(__dirname, 'uploads', 'reports'),
+  { index: false, dotfiles: 'deny', maxAge: '1d', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
+
+/* ---- Frontend ---- */
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 app.use(errorHandler);
 

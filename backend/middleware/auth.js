@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const users = require('../db/userStore');
+const { requireRole } = require('./role');
 
 /* Requires "Authorization: Bearer <jwt>". Sets req.user from the database,
    so suspended users are cut off even if their token is still valid. */
@@ -19,4 +20,4 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+module.exports = { requireAuth, requireRole };   // requireRole re-exported: docs/AUTH.md imports both from here
