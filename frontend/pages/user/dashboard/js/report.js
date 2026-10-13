@@ -6,7 +6,7 @@
    ========================================================= */
 
 const host = $('#view-detail');
-const titleOf = r => r.name || [r.color, r.species].filter(Boolean).join(' ') || 'Pet';
+const titleOf = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
 const zoneText = m => m >= 1000 ? (m / 1000) + ' km' : m + ' m';
 
 /* A contact that looks like an email or phone number becomes a link. */
@@ -57,7 +57,7 @@ function show(r) {
   const desc = lost ? (r.description || r.markings || '') : (r.howFound || r.markings || '');
   const markingsUsed = !(lost ? r.description : r.howFound);
   const facts = [
-    ['Species', r.species], ['Breed', r.breed || 'Not specified'], ['Color', r.color],
+    ['Species', speciesOf(r)], ['Breed', r.breed || 'Not specified'], ['Color', r.color],
     ['Size', r.size || 'Not specified'],
     markingsUsed ? null : ['Markings', r.markings]
   ].filter(x => x && x[1]);
@@ -84,7 +84,7 @@ function show(r) {
     <aside class="box d-summary">
       <span class="badge ${home || isFound ? 'badge--home' : lost ? 'badge--lost' : ''}">${home ? '&#10003; Reunited' : isFound ? 'Pet found' : lost ? 'Lost pet' : 'Found pet'}</span>
       <h1>${esc(title)}</h1>
-      <p class="d-sub">${esc([r.species, r.breed, r.color].filter(Boolean).join(' · '))}</p>
+      <p class="d-sub">${esc([speciesOf(r), r.breed, r.color].filter(Boolean).join(' · '))}</p>
       <ul class="pet-info">
         <li><span aria-hidden="true">📍</span> ${verb} in ${esc(r.brgy)}</li>
         <li><span aria-hidden="true">🗓️</span> ${verb} ${esc(niceDate(r.date))} &middot; ${esc(ago(r.date))}</li>

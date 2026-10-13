@@ -9,12 +9,14 @@ const ctx = initReportForm('found');
 function applyMatch({ form, host, map }, r) {
   const pick = (name, v) => { const i = form.querySelector(`input[name="${name}"][value="${v}"]`); if (i) i.checked = true; };
   pick('species', r.species); pick('size', r.size);
+  if (r.species === 'Other' && form.elements.otherSpecies) form.elements.otherSpecies.value = r.otherSpecies || '';
+  form.syncSpecies();
   ['color', 'breed'].forEach(n => { if (r[n]) form.querySelector(`.pills[data-pills="${n}"]`)?.pills.set(r[n]); });
   form.elements.brgy.value = r.brgy;
   form.dataset.matchFor = r.id;
   host.querySelector('.match-banner')?.remove();
   host.querySelector('.box').insertAdjacentHTML('afterbegin',
-    `<p class="match-banner">You found &ldquo;${esc(r.name || [r.color, r.species].filter(Boolean).join(' '))}&rdquo; (lost in ${esc(r.brgy)})? Your details are added to that lost report for its owner to confirm. It does not create a new found report.</p>`);
+    `<p class="match-banner">You found &ldquo;${esc(r.name || [r.color, speciesOf(r)].filter(Boolean).join(' '))}&rdquo; (lost in ${esc(r.brgy)})? Your details are added to that lost report for its owner to confirm. It does not create a new found report.</p>`);
   map.setView([r.lat, r.lng], 16);
 }
 

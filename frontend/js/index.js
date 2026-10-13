@@ -222,7 +222,8 @@ let petFilter = 'all';
 
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const niceDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const petTitle = r => r.name || [r.color, r.species].filter(Boolean).join(' ') || 'Pet';
+const speciesOf = r => (r.species === 'Other' && r.otherSpecies) ? r.otherSpecies : (r.species || '');
+const petTitle = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
 const byNewest = (a, b) => new Date(b.date) - new Date(a.date) || (b.created || 0) - (a.created || 0);
 const loadReports = () => { const saved = read(REPORTS_KEY, []), ids = new Set(saved.map(r => r.id)); return SAMPLES.filter(s => !ids.has(s.id)).concat(saved); };
 /* A lost report that someone has found shows as "found" (same report, not a new one), but only after its owner confirms a find. */
@@ -239,7 +240,7 @@ function petCard(r) {
     <div class="pet-body">
       <h3>${esc(title)}</h3>
       <ul class="pet-info">
-        ${[r.species, r.color].filter(Boolean).length ? `<li><span aria-hidden="true">🐾</span> ${esc([r.species, r.breed, r.color].filter(Boolean).join(' · '))}</li>` : ''}
+        ${[r.species, r.color].filter(Boolean).length ? `<li><span aria-hidden="true">🐾</span> ${esc([speciesOf(r), r.breed, r.color].filter(Boolean).join(' · '))}</li>` : ''}
         <li><span aria-hidden="true">📍</span> ${verb} in ${esc(r.brgy)}</li>
         <li><span aria-hidden="true">🗓️</span> <time datetime="${esc(r.date)}">${esc(niceDate(r.date))}</time></li>
       </ul>

@@ -47,6 +47,7 @@ const toReport = row => ({
   kind: row.type,
   name: row.pet_name || '',
   species: row.species,
+  otherSpecies: row.other_species || '',
   breed: row.breed || '',
   color: row.color || '',
   size: row.size || '',
@@ -72,7 +73,7 @@ const filterLocal = (list, { kind, species, q }) => {
   return list
     .filter(r => !kind || kind === 'all' || r.kind === kind)
     .filter(r => !species || r.species === species)
-    .filter(r => !needle || [r.name, r.species, r.breed, r.color, r.markings, r.description, r.howFound, r.brgy].join(' ').toLowerCase().includes(needle))
+    .filter(r => !needle || [r.name, r.species, r.otherSpecies, r.breed, r.color, r.markings, r.description, r.howFound, r.brgy].join(' ').toLowerCase().includes(needle))
     .sort((a, b) => new Date(b.date) - new Date(a.date) || (b.created || 0) - (a.created || 0));
 };
 

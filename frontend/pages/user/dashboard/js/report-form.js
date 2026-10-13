@@ -3,46 +3,15 @@
    Each page calls initReportForm('lost') or initReportForm('found').
    ========================================================= */
 
-const chips = (name, opts) => `<div class="chips">${opts.map(o => `<label><input type="radio" name="${name}" value="${o}" required><span>${o}</span></label>`).join('')}</div>`;
-
-/* Text field whose words turn into pills when you press the space bar (found form). */
-const pillField = (k, name, label, placeholder, req) => `<div><label for="${k}-${name}">${label}</label>
-      <div class="pills" data-pills="${name}"><input type="text" class="pills-input" id="${k}-${name}" autocomplete="off" maxlength="24" placeholder="${placeholder}"${req ? ' aria-required="true"' : ''}></div>
-      <input type="hidden" name="${name}">
-      <p class="hint">Press the space bar after each word to turn it into a tag.</p></div>`;
-
-function formHTML(k) {
-  const L_ = k === 'lost';
-  return `
-  <div class="view-head"><h1>${L_ ? 'File a lost pet report' : 'File a found pet report'}</h1>
-    <p>${L_ ? 'Tell us about your pet and where it was last seen. We will compare it with found reports nearby.' : 'Found a pet that might belong to someone? Describe it and drop a pin where you found it.'}</p></div>
-  <div class="box"><form class="form" novalidate>
-    <label class="drop full"><b>Add clear photos of the pet</b><span class="hint">Tap to upload (JPG or PNG). You can add up to 5 photos; the first is the main photo.</span>
-      <input type="file" name="photo" accept="image/*" multiple></label>
-    <ul class="files full" aria-label="Uploaded photos"></ul>
-    <fieldset class="full"><legend>Species</legend>${chips('species', ['Dog', 'Cat', 'Other'])}</fieldset>
-    ${L_ ? '<div><label for="' + k + '-name">Pet\'s name</label><input type="text" id="' + k + '-name" name="name" maxlength="40"></div>' : ''}
-    ${L_ ? `<div><label for="${k}-breed">Breed</label><input type="text" id="${k}-breed" name="breed" maxlength="40" placeholder="Unknown or mixed is fine"></div>
-    <div><label for="${k}-color">Main color</label><input type="text" id="${k}-color" name="color" maxlength="40" required></div>`
-         : pillField(k, 'breed', 'Breed', 'e.g. shih tzu, then space', false) + pillField(k, 'color', 'Main color', 'e.g. brown, then space', true)}
-    <fieldset><legend>Size</legend>${chips('size', ['Small', 'Medium', 'Large'])}</fieldset>
-    <div class="full"><label for="${k}-marks">Markings and other details</label><textarea id="${k}-marks" name="markings" rows="3" maxlength="300" placeholder="Collar, scars, spots&hellip;"></textarea></div>
-    ${L_ ? `<div class="full"><label for="lost-desc">Description</label><textarea id="lost-desc" name="description" rows="4" maxlength="500" required placeholder="Tell us more about your pet: how it went missing, its personality, whether it answers to its name, if it is shy or friendly&hellip;"></textarea></div>`
-         : `<div class="full"><label for="found-how">How was the pet found?</label><textarea id="found-how" name="howfound" rows="4" maxlength="500" required placeholder="Describe how you found it: where it was, what it was doing, its condition (hungry, hurt, friendly) and what you did with it&hellip;"></textarea></div>`}
-    <div><label for="${k}-brgy">Barangay</label><select id="${k}-brgy" name="brgy" required><option value="">Select&hellip;</option>${BRGY.map(b => `<option${b === prof().brgy ? ' selected' : ''}>${b}</option>`).join('')}</select></div>
-    <div><label for="${k}-date">${L_ ? 'Date last seen' : 'Date found'}</label><input type="date" id="${k}-date" name="date" value="${today}" max="${today}" required></div>
-    ${L_ ? `<div><label for="lost-zone">Search zone (geofence)</label><select id="lost-zone" name="zone"><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select></div>`
-         : `<div><label for="found-where">Where is the pet now?</label><select id="found-where" name="where"><option>With me</option><option>At a shelter or vet</option><option>Left where I found it</option></select></div>`}
-    <div><label for="${k}-contact">Contact (phone or email)</label><input type="text" id="${k}-contact" name="contact" maxlength="80" required value="${esc(prof().phone || sess?.email || '')}"></div>
-    <div class="full"><label>${L_ ? 'Where was it last seen?' : 'Where did you find it?'}</label>
-      <div class="pick"></div>
-      <p class="hint pick-hint">Tap the map to drop a pin${L_ ? '. The red circle is your search zone' : ''}, or <button type="button" class="btn btn-small locate-pin">use my current location</button></p>
-      <input type="hidden" name="lat"><input type="hidden" name="lng"></div>
-    <p class="form-note error full err" role="alert"></p>
-    <div class="full"><button type="submit" class="btn btn-sun">${L_ ? 'Submit lost report' : 'Submit found report'}</button></div>
-  </form>
-  <div class="done" hidden><h2>Report filed</h2><p style="margin-inline:auto">${L_ ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.'}</p>
-    <div class="actions"><a href="dashboard.html" class="btn btn-sun">View on map</a><button type="button" class="btn btn-small again">File another</button></div></div></div>`;
+/* The form markup lives in lost.html and found.html. This only fills in what depends on the user or the day:
+   barangay list, saved barangay, today's date, contact, and the "other animal" suggestions. */
+function fillForm(k, host) {
+  const form = host.querySelector('form');
+  form.elements.brgy.insertAdjacentHTML('beforeend', BRGY.map(b => `<option${b === prof().brgy ? ' selected' : ''}>${b}</option>`).join(''));
+  /* defaultValue (not .value) so "File another" / form.reset() brings these back */
+  form.elements.date.defaultValue = form.elements.date.value = form.elements.date.max = today;
+  form.elements.contact.defaultValue = form.elements.contact.value = prof().phone || sess?.email || '';
+  form.querySelector('#' + k + '-otherspecies-list').innerHTML = OTHER_ANIMALS.map(a => `<option value="${a}"></option>`).join('');
 }
 
 /* Full-size preview of one uploaded photo (the dialog is created on first use). */
@@ -78,9 +47,13 @@ function setupPills(form) {
       if (t && list.length < MAX && !list.some(x => x.toLowerCase() === t.toLowerCase())) list.push(t);
     };
     const commit = () => { add(input.value); input.value = ''; draw(); };
-    input.addEventListener('input', () => {
-      if (!/[\s,;]/.test(input.value)) return;                 // no space yet: keep typing
-      const parts = input.value.split(/[\s,;]+/), rest = /[\s,;]$/.test(input.value) ? '' : parts.pop();
+    const sep = box.dataset.sep === 'comma' ? /[,;]/ : /[\s,;]/;
+    const sepEnd = new RegExp(sep.source + '$'), sepSplit = new RegExp(sep.source + '+');
+    input.addEventListener('input', e => {
+      /* picked from the suggestion list: make it a pill right away */
+      if (box.dataset.sep === 'comma' && (e.inputType === 'insertReplacementText' || (!e.inputType && input.value))) { commit(); return; }
+      if (!sep.test(input.value)) return;                      // no separator yet: keep typing
+      const parts = input.value.split(sepSplit), rest = sepEnd.test(input.value) ? '' : parts.pop();
       parts.forEach(add); input.value = rest; draw();
     });
     input.addEventListener('keydown', e => {
@@ -96,9 +69,10 @@ function setupPills(form) {
     form.addEventListener('reset', () => setTimeout(() => { list = []; input.value = ''; draw(); }));
     box.pills = {
       commit,
-      set(str) {   // "White and brown" -> white, brown
+      clear() { list = []; input.value = ''; draw(); },
+      set(str) {   // "White and brown" -> white, brown (breed keeps spaces: "Shih Tzu")
         list = []; input.value = '';
-        const parts = /[,;]/.test(str) ? str.split(/[,;]+/) : str.split(/\s+/);
+        const parts = (/[,;]/.test(str) || box.dataset.sep === 'comma') ? str.split(/[,;]+/) : str.split(/\s+/);
         parts.filter(w => !/^(and|&)$/i.test(w.trim())).forEach(add); draw();
       }
     };
@@ -110,6 +84,35 @@ function setupForm(k, host) {
   const m = L.map(host.querySelector('.pick')).setView(DAGUPAN, 15);
   tiles(m);
   setupPills(form);
+
+  /* Species drives the form: "Other" asks for the animal, and the breed box only works once a species is chosen,
+     with suggestions that match that species. */
+  const otherBox = form.querySelector('.other-species'), otherInput = form.elements.otherSpecies;
+  const breedBox = form.querySelector('.pills[data-pills="breed"]'), breedInput = breedBox.querySelector('.pills-input');
+  const breedList = form.querySelector('#' + k + '-breed-list');
+  const species = () => form.querySelector('input[name="species"]:checked')?.value || '';
+  const fillBreeds = () => {
+    const sp = species();
+    const opts = sp === 'Other' ? (OTHER_BREEDS[otherInput.value.trim().toLowerCase()] || []) : (BREEDS[sp] || []);
+    breedList.innerHTML = opts.map(b => `<option value="${esc(b)}"></option>`).join('');
+  };
+  const syncSpecies = () => {
+    const sp = species(), other = sp === 'Other';
+    otherBox.hidden = !other; otherInput.disabled = !other; otherInput.required = other;
+    if (!other) otherInput.value = '';
+    breedInput.disabled = !sp; breedBox.classList.toggle('is-disabled', !sp);
+    breedInput.placeholder = !sp ? 'Choose a species first' : other ? 'Breed or variety, if you know it' : 'e.g. ' + (sp === 'Dog' ? 'Shih Tzu' : 'Persian');
+    fillBreeds();
+  };
+  form.syncSpecies = syncSpecies;
+  form.querySelectorAll('input[name="species"]').forEach(r => r.addEventListener('change', () => {
+    breedBox.pills.clear();                  // a breed from the old species no longer applies
+    syncSpecies();
+    if (species() === 'Other') otherInput.focus();
+  }));
+  otherInput.addEventListener('input', fillBreeds);
+  form.addEventListener('reset', () => setTimeout(syncSpecies));
+  syncSpecies();
   const zone = form.elements.zone;
   let pin = null, circle = null;
   const draw = () => {
@@ -179,7 +182,8 @@ function setupForm(k, host) {
     e.preventDefault(); err.textContent = '';
     form.querySelectorAll('.pills').forEach(b => b.pills.commit());
     if (!form.checkValidity()) { form.reportValidity(); return; }
-    if (k === 'found' && !form.elements.color.value) { err.textContent = 'Please add the main color (type a color and press the space bar).'; form.querySelector('.pills[data-pills="color"] input').focus(); return; }
+    if (species() === 'Other' && !otherInput.value.trim()) { err.textContent = 'Please tell us what kind of animal it is.'; otherInput.focus(); return; }
+    if (!form.elements.color.value) { err.textContent = 'Please add the main color (type a color and press the space bar).'; form.querySelector('.pills[data-pills="color"] input').focus(); return; }
     if (!photos.length) { err.textContent = 'Please add at least one photo of the pet.'; return; }
     if (!pin) { err.textContent = 'Please drop a pin on the map.'; return; }
     const f = new FormData(form);
@@ -209,7 +213,7 @@ function setupForm(k, host) {
     host.querySelector('.done p').textContent = k === 'lost' ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.';
     host.querySelector('.done .actions a').href = 'dashboard.html';
     host.querySelector('.done .actions a').textContent = 'View on map';
-    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, status: 'active', matchFor: form.dataset.matchFor || '' };
+    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, status: 'active', matchFor: form.dataset.matchFor || '' };
     try { localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r))); }
     catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
     form.hidden = true; host.querySelector('.done').hidden = false;
@@ -229,13 +233,13 @@ function setupForm(k, host) {
   return { map: m, form, host };
 }
 
-/* Builds the form inside #view-lost or #view-found and wires it up. */
+/* Fills in and wires up the form that is already on the page (#view-lost or #view-found). */
 function initReportForm(k) {
   const host = $('#view-' + k);
   if (typeof L === 'undefined') {
     host.innerHTML = '<p class="rempty">The map library failed to load. Check your internet connection.</p>';
     return null;
   }
-  host.innerHTML = formHTML(k);
+  fillForm(k, host);
   return setupForm(k, host);
 }

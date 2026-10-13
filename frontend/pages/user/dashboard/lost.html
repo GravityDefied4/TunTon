@@ -19,7 +19,103 @@
 
   <div class="dash-main">
     <main>
-      <section class="view" id="view-lost"></section>
+      <section class="view" id="view-lost">
+      <div class="view-head">
+        <h1>File a lost pet report</h1>
+        <p>Tell us about your pet and where it was last seen. We will compare it with found reports nearby.</p>
+      </div>
+      <div class="box">
+        <form class="form" novalidate>
+          <label class="drop full"><b>Add clear photos of the pet</b><span class="hint">Tap to upload (JPG or PNG). You can add up to 5 photos; the first is the main photo.</span>
+            <input type="file" name="photo" accept="image/*" multiple>
+          </label>
+          <ul class="files full" aria-label="Uploaded photos"></ul>
+
+          <fieldset class="full">
+            <legend>Species</legend>
+            <div class="chips">
+            <label><input type="radio" name="species" value="Dog" required><span><i aria-hidden="true"></i> Dog</span></label>
+            <label><input type="radio" name="species" value="Cat" required><span><i aria-hidden="true"></i> Cat</span></label>
+            <label><input type="radio" name="species" value="Other" required><span><i aria-hidden="true"></i> Other</span></label>
+          </div>
+          </fieldset>
+          <div class="full other-species" hidden>
+            <label for="lost-otherspecies">What kind of animal is it?</label>
+            <input type="text" id="lost-otherspecies" name="otherSpecies" maxlength="30" autocomplete="off" list="lost-otherspecies-list" placeholder="e.g. Rabbit, Parrot, Hamster" aria-required="true" disabled>
+            <datalist id="lost-otherspecies-list"></datalist>
+          </div>
+
+        <div>
+          <label for="lost-name">Pet's name</label>
+          <input type="text" id="lost-name" name="name" maxlength="40">
+        </div>
+        <div>
+          <label for="lost-breed">Breed</label>
+          <div class="pills" data-pills="breed" data-sep="comma"><input type="text" class="pills-input" id="lost-breed" autocomplete="off" maxlength="40" placeholder="e.g. Shih Tzu" list="lost-breed-list"></div>
+          <datalist id="lost-breed-list"></datalist>
+          <input type="hidden" name="breed">
+          <p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
+        </div>
+        <div>
+          <label for="lost-color">Main color</label>
+          <div class="pills" data-pills="color"><input type="text" class="pills-input" id="lost-color" autocomplete="off" maxlength="40" placeholder="e.g. brown, then space" aria-required="true"></div>
+          <input type="hidden" name="color">
+          <p class="hint">Press the space bar after each word to turn it into a tag.</p>
+        </div>
+
+          <fieldset>
+            <legend>Size</legend>
+            <div class="chips">
+            <label><input type="radio" name="size" value="Small" required><span>Small</span></label>
+            <label><input type="radio" name="size" value="Medium" required><span>Medium</span></label>
+            <label><input type="radio" name="size" value="Large" required><span>Large</span></label>
+          </div>
+          </fieldset>
+
+          <div class="full">
+            <label for="lost-marks">Markings and other details</label>
+            <textarea id="lost-marks" name="markings" rows="3" maxlength="300" placeholder="Collar, scars, spots&hellip;"></textarea>
+          </div>
+        <div class="full">
+          <label for="lost-desc">Description</label>
+          <textarea id="lost-desc" name="description" rows="4" maxlength="500" required placeholder="Tell us more about your pet: how it went missing, its personality, whether it answers to its name, if it is shy or friendly&hellip;"></textarea>
+        </div>
+
+          <div>
+            <label for="lost-brgy">Barangay</label>
+            <select id="lost-brgy" name="brgy" required><option value="">Select&hellip;</option></select>
+          </div>
+          <div>
+            <label for="lost-date">Date last seen</label>
+            <input type="date" id="lost-date" name="date" required>
+          </div>
+        <div>
+          <label for="lost-zone">Search zone (geofence)</label>
+          <select id="lost-zone" name="zone"><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select>
+        </div>
+          <div>
+            <label for="lost-contact">Contact (phone or email)</label>
+            <input type="text" id="lost-contact" name="contact" maxlength="80" required>
+          </div>
+
+          <div class="full">
+            <label>Where was it last seen?</label>
+            <div class="pick"></div>
+            <p class="hint pick-hint">Tap the map to drop a pin. The red circle is your search zone, or <button type="button" class="btn btn-small locate-pin">use my current location</button></p>
+            <input type="hidden" name="lat"><input type="hidden" name="lng">
+          </div>
+
+          <p class="form-note error full err" role="alert"></p>
+          <div class="full"><button type="submit" class="btn btn-sun">Submit lost report</button></div>
+        </form>
+
+        <div class="done" hidden>
+          <h2>Report filed</h2>
+          <p style="margin-inline:auto">Your lost pet report is now on the map.</p>
+          <div class="actions"><a href="dashboard.html" class="btn btn-sun">View on map</a><button type="button" class="btn btn-small again">File another</button></div>
+        </div>
+      </div>
+    </section>
     </main>
   </div>
 </div>
@@ -27,6 +123,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/common.js"></script>
+<script src="js/breeds.js"></script>
 <script src="js/report-form.js"></script>
 <script src="js/lost.js"></script>
 </body>

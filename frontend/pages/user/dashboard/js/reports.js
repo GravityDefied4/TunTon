@@ -8,7 +8,7 @@ const grid = $('#all-list');
 const toolbar = document.querySelector('#view-reports .toolbar');
 let reports = [];     // result of the last ReportsAPI.list() call
 
-const titleOf = r => r.name || [r.color, r.species].filter(Boolean).join(' ') || 'Pet';
+const titleOf = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
 const filters = () => ({
   kind: document.querySelector('input[name=rk]:checked').value,
   species: $('#rsp').value,

@@ -67,3 +67,30 @@ main {
   margin: .4rem 0 0;
   max-width: none;
 }
+
+/* Simple themed scrollbar: slim green thumb, no track */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--leaf) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--leaf);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--forest);
+  background-clip: padding-box;
+}

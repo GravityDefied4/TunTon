@@ -45,7 +45,7 @@ fieldset {
   border-color: var(--leaf);
 }
 
-/* Tag input: words typed in the found form become pills (see setupPills in report-form.js) */
+/* Tag input: words typed in the lost and found forms become pills (see setupPills in report-form.js) */
 .pills {
   display: flex;
   flex-wrap: wrap;
@@ -169,4 +169,30 @@ fieldset {
   .form {
     grid-template-columns: 1fr;
   }
+}
+
+/* Selected species / size chip: clearly highlighted, with a check mark */
+.chips input:checked+span {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
+  transform: translateY(-1px);
+}
+
+.chips input:checked+span::after {
+  content: " \2713";
+}
+
+.chips i {
+  font-style: normal;
+}
+
+/* "What kind of animal?" field, only shown for species = Other */
+.other-species[hidden] {
+  display: none;
+}
+
+/* Breed tag box waits until a species is chosen */
+.pills.is-disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  background: #f3f3f3;
 }
