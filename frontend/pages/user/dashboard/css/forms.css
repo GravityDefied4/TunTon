@@ -177,10 +177,6 @@ fieldset {
   transform: translateY(-1px);
 }
 
-.chips input:checked+span::after {
-  content: " \2713";
-}
-
 .chips i {
   font-style: normal;
 }
@@ -195,4 +191,11 @@ fieldset {
   opacity: .55;
   cursor: not-allowed;
   background: #f3f3f3;
+}
+
+.form textarea {
+  resize: none;
+  overflow-y: hidden;
+  box-sizing: border-box;
+  min-height: 3.2em;
 }

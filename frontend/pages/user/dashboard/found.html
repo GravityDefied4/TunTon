@@ -26,10 +26,10 @@
       </div>
       <div class="box">
         <form class="form" novalidate>
-          <label class="drop full"><b>Add clear photos of the pet</b><span class="hint">Tap to upload (JPG or PNG). You can add up to 5 photos; the first is the main photo.</span>
-            <input type="file" name="photo" accept="image/*" multiple>
+          <label class="drop full"><span class="upload-icon" aria-hidden="true">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span class="upload-status" aria-live="polite">No photos selected yet</span>
+            <input type="file" name="photo" accept="image/*" multiple aria-label="Choose pet photos">
           </label>
-          <ul class="files full" aria-label="Uploaded photos"></ul>
+          <ul class="files full" aria-label="Selected pet photos"></ul>
 
           <fieldset class="full">
             <legend>Species</legend>

@@ -137,15 +137,22 @@ function setupForm(k, host) {
   const input = form.elements.photo, fileList = host.querySelector('.files');
   let photos = [];   // [{ name, size, data }]  (data = downscaled JPEG, so it fits in storage)
   const kb = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+  const dropZone = host.querySelector('.drop'), uploadStatus = host.querySelector('.upload-status');
   const drawFiles = () => {
     fileList.innerHTML = photos.map((p, i) => `
       <li class="file">
         <button type="button" class="file-open" data-i="${i}" title="Preview ${esc(p.name)}">
-          <span aria-hidden="true">🖼️</span><span class="file-name">${esc(p.name)}</span><span class="file-size">${kb(p.size)}</span>
+          <img class="file-thumb" src="${p.data}" alt="">
+          <span class="file-name">${esc(p.name)}</span><span class="file-size">${kb(p.size)}</span>
         </button>
         ${i === 0 ? '<span class="file-main">Main photo</span>' : ''}
         <button type="button" class="file-remove" data-i="${i}" aria-label="Remove ${esc(p.name)}">&times;</button>
       </li>`).join('');
+    dropZone.classList.toggle('has-photos', photos.length > 0);
+    uploadStatus.textContent = photos.length
+      ? `${photos.length} of ${MAX_PHOTOS} photo${photos.length === 1 ? '' : 's'} selected${photos.length === 1 ? ' · Add more if helpful' : ''}`
+      : 'No photos selected yet';
+    dropZone.querySelector('.upload-action').textContent = photos.length ? 'Add more photos' : 'Choose photos';
   };
   const shrink = f => new Promise((resolve, reject) => {
     const img = new Image(), url = URL.createObjectURL(f);
@@ -243,3 +250,20 @@ function initReportForm(k) {
   fillForm(k, host);
   return setupForm(k, host);
 }
+
+function setupAutoGrowTextareas(root = document) {
+  root.querySelectorAll('.form textarea').forEach(textarea => {
+    const resizeToContent = () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+
+    textarea.addEventListener('input', resizeToContent);
+
+    // Set the correct height on load,
+    // including any prefilled content.
+    resizeToContent();
+  });
+}
+
+setupAutoGrowTextareas();

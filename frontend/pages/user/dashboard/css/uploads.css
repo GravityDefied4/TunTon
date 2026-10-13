@@ -7,9 +7,9 @@
   display: grid;
   place-items: center;
   align-content: center;
-  gap: .35rem;
-  min-height: 240px;
-  padding: 1.5rem;
+  gap: .45rem;
+  min-height: 190px;
+  padding: 1.35rem 1.5rem;
   margin: 0;
   border: 3px dashed var(--leaf);
   border-radius: var(--radius);
@@ -24,10 +24,56 @@
   background: var(--mint);
 }
 
-.form .drop::before {
-  content: "📷";
-  font-size: 2.4rem;
-  line-height: 1;
+/* Prominent, easy-to-notice photo upload prompt */
+.form .drop .upload-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--forest);
+  font: 700 2rem/1 var(--font-display);
+}
+
+.form .drop .upload-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: .2rem;
+  padding: .55rem 1.2rem;
+  border-radius: 999px;
+  background: var(--grad-mid);
+  color: var(--white);
+  font-weight: 800;
+}
+
+.form .drop .upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .7rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #cfe8b8;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.form .drop.has-photos {
+  border-style: solid;
+  background: #eff9e8;
+}
+
+.form .drop.has-photos .upload-status {
+  background: #e0f4d5;
+  color: var(--forest);
+  border-color: var(--leaf);
+}
+
+.form .drop .upload-hint {
+  max-width: 48rem;
 }
 
 .form .drop b {
@@ -49,7 +95,7 @@
   cursor: pointer;
 }
 
-/* Uploaded photos are listed by file name */
+/* Selected photos use thumbnails so users can immediately see what they added. */
 .files {
   list-style: none;
   margin: 0;
@@ -91,6 +137,24 @@
 
 .file-open:hover {
   background: var(--mint);
+}
+
+.file-thumb {
+  flex: none;
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #f6fcf0;
+  border: 1px solid #cfe8b8;
+}
+
+.file-open .file-name {
+  text-decoration: none;
+}
+
+.files:not(:empty) {
+  margin-top: -.25rem;
 }
 
 .file-name {
