@@ -1063,3 +1063,36 @@ p {
         animation: none;
     }
 }
+
+/* ---------- Lost / found filter + tags (home page) ---------- */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: 1.25rem;
+}
+
+.filter-bar .btn[aria-pressed="true"] {
+    background: var(--grad-mid);
+    color: var(--white);
+    border-color: transparent;
+}
+
+.tag-found {
+    background: var(--leaf);
+}
+
+.pet-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.pet-list > .pet-empty {
+    max-width: none;
+}
+
+.pet-card button.btn {
+    font-family: var(--font-display);
+}

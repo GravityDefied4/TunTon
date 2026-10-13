@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>try{if(localStorage.getItem("tunton_side")==="min")document.documentElement.classList.add("side-min")}catch(e){}</script>
+  <title>Report details | TunTon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="../../../css/style.css">
+  <link rel="icon" type="image/png" href="../../../assets/logo/tunton-paw.png">
+  <link rel="stylesheet" href="user.css">
+</head>
+<body>
+<div class="dash">
+  <div id="app-nav"></div>
+
+  <div class="dash-main">
+    <main>
+      <a href="reports.html" class="back-link">&larr; Back to all reports</a>
+      <section class="view" id="view-detail" aria-live="polite">
+        <p class="rempty">Loading report&hellip;</p>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/common.js"></script>
+<script src="js/api.js"></script>
+<script src="js/report.js"></script>
+</body>
+</html>

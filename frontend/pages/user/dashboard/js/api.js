@@ -34,7 +34,9 @@ const PLACEHOLDER_ROW = {
   photo_urls: ['/uploads/reports/1.jpg', '/uploads/reports/1b.jpg'],  // all photos (first = main)
   date_reported: '2026-10-03',  // last seen / found date
   contact: '',
-  status: 'active',             // 'active' | 'reunited'
+  zone: 1000,                   // lost reports: search radius in metres
+  where_now: '',                // found reports: where the pet is now
+  status: 'active',             // 'active' | 'reunited'  (a lost report shows as found once its owner confirms a find)
   user_id: 1,
   created_at: '2026-10-03T08:00:00Z'
 };
@@ -49,6 +51,8 @@ const toReport = row => ({
   color: row.color || '',
   size: row.size || '',
   markings: row.markings || '',
+  description: row.description || '',
+  howFound: row.how_found || '',
   brgy: row.barangay,
   lat: Number(row.latitude),
   lng: Number(row.longitude),
@@ -56,6 +60,8 @@ const toReport = row => ({
   photos: Array.isArray(row.photo_urls) && row.photo_urls.length ? row.photo_urls : [row.photo_url],
   date: String(row.date_reported).slice(0, 10),
   contact: row.contact || '',
+  zone: Number(row.zone) || 0,
+  where: row.where_now || '',
   status: row.status,
   created: row.created_at ? Date.parse(row.created_at) : 0
 });
@@ -66,7 +72,7 @@ const filterLocal = (list, { kind, species, q }) => {
   return list
     .filter(r => !kind || kind === 'all' || r.kind === kind)
     .filter(r => !species || r.species === species)
-    .filter(r => !needle || [r.name, r.species, r.breed, r.color, r.markings, r.brgy].join(' ').toLowerCase().includes(needle))
+    .filter(r => !needle || [r.name, r.species, r.breed, r.color, r.markings, r.description, r.howFound, r.brgy].join(' ').toLowerCase().includes(needle))
     .sort((a, b) => new Date(b.date) - new Date(a.date) || (b.created || 0) - (a.created || 0));
 };
 
@@ -84,7 +90,7 @@ const ReportsAPI = {
   },
 
   async get(id) {
-    if (!USE_API) return allReports().find(r => r.id === id) || null;
+    if (!USE_API) return mergedReports().find(r => r.id === id) || null;
     const res = await authFetch(`/reports/${encodeURIComponent(id)}`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('Could not load the report');

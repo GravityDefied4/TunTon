@@ -1,0 +1,317 @@
+/* Full report details page (report.html) */
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  color: var(--forest);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.d-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Gallery */
+.d-photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.d-photo-btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.d-photo-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.d-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .92);
+  color: var(--forest-dark);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}
+
+.d-prev { left: .8rem; }
+.d-next { right: .8rem; }
+
+.d-count {
+  position: absolute;
+  right: .8rem;
+  bottom: .8rem;
+  z-index: 2;
+  padding: .2em .8em;
+  border-radius: var(--radius-sm);
+  background: rgba(10, 79, 46, .85);
+  color: var(--white);
+  font-weight: 700;
+  font-size: .9rem;
+}
+
+.d-thumbs {
+  display: flex;
+  gap: .6rem;
+  padding-top: .8rem;
+  overflow-x: auto;
+}
+
+.d-thumbs:empty {
+  display: none;
+}
+
+.d-thumbs button {
+  flex: none;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: none;
+  line-height: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.d-thumbs button.on {
+  border-color: var(--leaf);
+}
+
+.d-thumbs img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+}
+
+/* Summary card next to the gallery */
+.d-summary {
+  display: grid;
+  gap: .7rem;
+  align-content: start;
+}
+
+.d-summary h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  overflow-wrap: anywhere;
+}
+
+.d-summary .badge {
+  justify-self: start;
+}
+
+.d-sub {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.d-actions {
+  display: grid;
+  gap: .6rem;
+  margin-top: .5rem;
+}
+
+.d-actions .btn {
+  text-align: center;
+}
+
+/* Found reports (finds) on a lost report */
+.d-finds {
+  display: grid;
+  gap: 1rem;
+}
+
+.d-find {
+  padding: 1rem 1.25rem;
+  border-radius: 20px;
+  background: var(--mint);
+  border-left: 8px solid var(--logo-lime);
+}
+
+.d-find--confirmed {
+  border-left-color: var(--forest);
+  background: #e6f6d6;
+}
+
+.d-find--rejected {
+  opacity: .65;
+  border-left-color: #b9c9bf;
+}
+
+.d-find header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .7rem;
+}
+
+.d-find h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.d-status {
+  padding: .2em .9em;
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  font-weight: 700;
+  font-size: .85rem;
+}
+
+.d-status--confirmed {
+  background: var(--forest);
+  color: var(--white);
+}
+
+.d-find-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+.d-find-actions .btn {
+  text-align: center;
+}
+
+/* Finder's response on a lost report */
+.d-foundbox {
+  border-left: 8px solid var(--leaf);
+}
+
+.d-found-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+.d-found-photos button {
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.d-found-photos img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+}
+
+.d-card h2 small {
+  font-size: .75em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Detail cards */
+.d-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.d-wide {
+  grid-column: 1 / -1;
+}
+
+.d-card h2 {
+  margin: 0 0 .8rem;
+  font-size: 1.3rem;
+  color: var(--forest);
+}
+
+.d-text {
+  margin: 0;
+  max-width: none;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.d-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .55rem 1.25rem;
+  margin: 0;
+}
+
+.d-list dt {
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.d-list dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.d-map {
+  height: 340px;
+  border-radius: 20px;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.d-contact {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--forest);
+  overflow-wrap: anywhere;
+}
+
+.d-empty {
+  text-align: center;
+}
+
+.d-empty p {
+  margin-inline: auto;
+}
+
+@media (max-width: 800px) {
+  .d-top,
+  .d-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .d-map {
+    height: 260px;
+  }
+}

@@ -26,7 +26,8 @@ window.sidebarReady = (async function () {
     main.prepend(top);
 
     /* highlight the link for the current page */
-    const here = location.pathname.split('/').pop() || 'dashboard.html';
+    let here = location.pathname.split('/').pop() || 'dashboard.html';
+    if (here === 'report.html') here = 'reports.html';   /* details page belongs under All reports */
     document.querySelectorAll('.side-nav a').forEach(a => {
       if (a.getAttribute('href') === here) a.setAttribute('aria-current', 'page');
     });

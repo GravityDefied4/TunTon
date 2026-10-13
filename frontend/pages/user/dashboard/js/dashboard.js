@@ -26,10 +26,11 @@ function render(fit) {
     if (km(origin, [r.lat, r.lng]) > lim) return;
     pts.push([r.lat, r.lng]);
     const meta = [r.species, r.breed, r.color].filter(Boolean).join(' · ');
-    markers[r.id] = L.marker([r.lat, r.lng], { icon: pinIcon(r.kind) }).addTo(group).bindPopup(
+    markers[r.id] = L.marker([r.lat, r.lng], { icon: pinIcon(reportState(r)) }).addTo(group).bindPopup(
       `<div class="pop"><img src="${esc(r.photo)}" alt=""><h3>${esc(r.name || (r.kind === 'lost' ? 'Missing pet' : 'Pet found'))}</h3>` +
-      `<p><b>${r.kind === 'lost' ? 'Missing' : 'Potentially found'}</b> · ${esc(ago(r.date))}</p><p>${esc(meta)}</p><p>${esc(r.brgy)}</p>` +
-      (r.contact ? `<p>Contact: ${esc(r.contact)}</p>` : '') + '</div>');
+      `<p><b>${reportState(r) === 'lost' ? 'Missing' : 'Potentially found'}</b> · ${esc(ago(r.date))}</p><p>${esc(meta)}</p><p>${esc(r.brgy)}</p>` +
+      (reportState(r) === 'found' ? `<p>Found in ${esc(confirmedFind(r).brgy)} · ${esc(niceDate(confirmedFind(r).date))}</p>` : '') +
+      (r.contact ? `<p>Contact: ${esc(r.contact)}</p>` : '') + `<p><a href="report.html?id=${encodeURIComponent(r.id)}">View full details</a></p></div>`);
   });
   $('#count').textContent = pts.length + (pts.length === 1 ? ' report' : ' reports');
   if (fit) {

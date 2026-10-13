@@ -45,6 +45,67 @@ fieldset {
   border-color: var(--leaf);
 }
 
+/* Tag input: words typed in the found form become pills (see setupPills in report-form.js) */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  padding: .4em .6em;
+  border: 2px solid #cfe8b8;
+  border-radius: 16px;
+  background: var(--white);
+  cursor: text;
+}
+
+.pills:focus-within {
+  outline: 3px solid var(--leaf);
+  outline-offset: 1px;
+  border-color: var(--leaf);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+  padding: .15em .4em .15em .9em;
+  border-radius: var(--radius-sm);
+  background: var(--grad-mid);
+  color: var(--white);
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.pill button {
+  display: grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .25);
+  color: var(--white);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pill button:hover {
+  background: rgba(255, 255, 255, .45);
+}
+
+.form .pills input.pills-input {
+  flex: 1 1 8ch;
+  width: auto;
+  min-width: 8ch;
+  padding: .35em .3em;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+}
+
 /* Pill-style radio / checkbox choices */
 .chips {
   display: flex;

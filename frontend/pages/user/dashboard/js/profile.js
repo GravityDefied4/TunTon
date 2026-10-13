@@ -25,12 +25,13 @@ function renderProfile() {
   $('#rep-list').innerHTML = mine.length ? mine.map(r => `
     <li class="rep"><img src="${esc(r.photo)}" alt="">
       <div class="rep-body">
-        <span class="badge ${r.status === 'reunited' ? 'badge--home' : r.kind === 'lost' ? 'badge--lost' : ''}">${r.status === 'reunited' ? '&#10003; Reunited' : r.kind === 'lost' ? 'Lost' : 'Found'}</span>
+        <span class="badge ${r.status === 'reunited' || reportState(r) === 'found' ? 'badge--home' : r.kind === 'lost' ? 'badge--lost' : ''}">${r.status === 'reunited' ? '&#10003; Reunited' : reportState(r) === 'found' ? 'Pet found' : r.kind === 'lost' ? 'Lost' : 'Found'}</span>
         <h3>${esc(r.name || [r.species, r.color].filter(Boolean).join(' · '))}</h3>
         <p>${esc(r.brgy)} &middot; ${esc(ago(r.date))}</p>
+        ${r.kind === 'lost' && r.status !== 'reunited' && findsOf(r).some(f => f.status === 'pending') && reportState(r) !== 'found' ? `<p class="rep-alert">🔔 ${findsOf(r).filter(f => f.status === 'pending').length} found report(s) to review</p>` : ''}
       </div>
       <div class="rep-actions" data-id="${esc(r.id)}">
-        ${r.status === 'reunited' ? '' : '<button type="button" class="btn btn-small" data-act="map">View on map</button><button type="button" class="btn btn-small btn-plain" data-act="home">Mark reunited</button>'}
+        ${r.status === 'reunited' ? '' : `<a class="btn btn-small btn-sun" href="report.html?id=${encodeURIComponent(r.id)}">${r.kind === 'lost' ? 'Review &amp; details' : 'Details'}</a>` + '<button type="button" class="btn btn-small" data-act="map">View on map</button><button type="button" class="btn btn-small btn-plain" data-act="home">Mark reunited</button>'}
         <button type="button" class="btn btn-small btn-plain danger" data-act="del">Delete</button>
       </div></li>`).join('') : '<li class="empty">You have not filed any reports yet.</li>';
 }

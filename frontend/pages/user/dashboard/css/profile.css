@@ -109,6 +109,11 @@
   max-width: none;
 }
 
+.rep-alert {
+  font-weight: 700;
+  color: var(--forest);
+}
+
 .rep-actions {
   display: flex;
   flex-wrap: wrap;

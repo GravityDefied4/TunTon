@@ -141,57 +141,18 @@
     <section class="section section-mint" id="pets">
       <div class="container">
         <div class="section-head">
-          <h2>Lost pets</h2>
-          <a href="#" class="link-dark">Browse all</a>
+          <h2>Lost &amp; found pets</h2>
+          <a href="#" class="link-dark" data-browse-all>Browse all</a>
         </div>
         <p class="lead">Have you seen one of these pets? Help them find their way home.</p>
 
-        <div class="pet-list pet-list--grid">
-          <article class="pet-card">
-            <div class="pet-thumb">
-              <img src="assets/img/Pet1.jpg" alt="Missing white and brown dog">
-              <span class="tag-missing"><span class="tag-dot" aria-hidden="true"></span>Missing</span>
-            </div>
-            <div class="pet-body">
-              <h3>White and brown dog</h3>
-              <ul class="pet-info">
-                <li><span aria-hidden="true">📍</span> Last seen near Pantal</li>
-                <li><span aria-hidden="true">🗓️</span> <time datetime="2026-10-06">Oct 6, 2026</time></li>
-              </ul>
-            </div>
-            <a href="#" class="btn btn-small">View details</a>
-          </article>
-
-          <article class="pet-card">
-            <div class="pet-thumb">
-              <img src="assets/img/Pet2.jpg" alt="Missing tilapia cat">
-              <span class="tag-missing"><span class="tag-dot" aria-hidden="true"></span>Missing</span>
-            </div>
-            <div class="pet-body">
-              <h3>Tilapia cat</h3>
-              <ul class="pet-info">
-                <li><span aria-hidden="true">📍</span> Last seen in Lucao</li>
-                <li><span aria-hidden="true">🗓️</span> <time datetime="2026-10-05">Oct 5, 2026</time></li>
-              </ul>
-            </div>
-            <a href="#" class="btn btn-small">View details</a>
-          </article>
-
-          <article class="pet-card">
-            <div class="pet-thumb">
-              <img src="assets/img/Pet4.jpg" alt="Missing tabby cat">
-              <span class="tag-missing"><span class="tag-dot" aria-hidden="true"></span>Missing</span>
-            </div>
-            <div class="pet-body">
-              <h3>Tabby cat</h3>
-              <ul class="pet-info">
-                <li><span aria-hidden="true">📍</span> Last seen in Tapuac</li>
-                <li><span aria-hidden="true">🗓️</span> <time datetime="2026-10-03">Oct 3, 2026</time></li>
-              </ul>
-            </div>
-            <a href="#" class="btn btn-small">View details</a>
-          </article>
+        <div class="filter-bar" role="group" aria-label="Filter reports">
+          <button type="button" class="btn btn-small btn-plain" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="btn btn-small btn-plain" data-filter="lost" aria-pressed="false">Lost</button>
+          <button type="button" class="btn btn-small btn-plain" data-filter="found" aria-pressed="false">Found</button>
         </div>
+
+        <div class="pet-list pet-list--grid" id="pets-list" aria-live="polite"></div>
       </div>
     </section>
 
@@ -203,44 +164,11 @@
       <div class="container">
         <div class="section-head">
           <h2>Recovered pets</h2>
-          <a href="#" class="link-dark">Browse all</a>
+          <a href="#" class="link-dark" data-browse-all>Browse all</a>
         </div>
         <p class="lead">Happy endings, thanks to our community.</p>
 
-        <div class="pet-list">
-          <article class="pet-card">
-            <div class="pet-thumb"><img src="assets/img/Pet2.jpg" alt="Mocha the beagle, reunited"></div>
-            <div class="pet-body">
-              <span class="badge badge--home">&#10003; Reunited</span>
-              <h3>Mocha the beagle</h3>
-              <p class="pet-meta">Bonuan &middot; <time datetime="2026-10-06">Oct 6, 2026</time></p>
-              <p class="pet-story">Found by a neighbor and back home within a day.</p>
-            </div>
-            <a href="#" class="btn btn-small">Read story</a>
-          </article>
-
-          <article class="pet-card">
-            <div class="pet-thumb"><img src="assets/img/Pet4.jpg" alt="Black cat with white paws, reunited"></div>
-            <div class="pet-body">
-              <span class="badge badge--home">&#10003; Reunited</span>
-              <h3>Black cat with white paws</h3>
-              <p class="pet-meta">Tapuac &middot; <time datetime="2026-10-04">Oct 4, 2026</time></p>
-              <p class="pet-story">Matched by color and markings, claimed the same day.</p>
-            </div>
-            <a href="#" class="btn btn-small">Read story</a>
-          </article>
-
-          <article class="pet-card">
-            <div class="pet-thumb"><img src="assets/img/Pet1.jpg" alt="Brown dog with collar, reunited"></div>
-            <div class="pet-body">
-              <span class="badge badge--home">&#10003; Reunited</span>
-              <h3>Brown dog with collar</h3>
-              <p class="pet-meta">Mayombo &middot; <time datetime="2026-10-01">Oct 1, 2026</time></p>
-              <p class="pet-story">Its collar tag helped the finder reach the owner.</p>
-            </div>
-            <a href="#" class="btn btn-small">Read story</a>
-          </article>
-        </div>
+        <div class="pet-list" id="recovered-list"></div>
       </div>
     </section>
   </main>

@@ -5,6 +5,12 @@
 
 const chips = (name, opts) => `<div class="chips">${opts.map(o => `<label><input type="radio" name="${name}" value="${o}" required><span>${o}</span></label>`).join('')}</div>`;
 
+/* Text field whose words turn into pills when you press the space bar (found form). */
+const pillField = (k, name, label, placeholder, req) => `<div><label for="${k}-${name}">${label}</label>
+      <div class="pills" data-pills="${name}"><input type="text" class="pills-input" id="${k}-${name}" autocomplete="off" maxlength="24" placeholder="${placeholder}"${req ? ' aria-required="true"' : ''}></div>
+      <input type="hidden" name="${name}">
+      <p class="hint">Press the space bar after each word to turn it into a tag.</p></div>`;
+
 function formHTML(k) {
   const L_ = k === 'lost';
   return `
@@ -16,10 +22,13 @@ function formHTML(k) {
     <ul class="files full" aria-label="Uploaded photos"></ul>
     <fieldset class="full"><legend>Species</legend>${chips('species', ['Dog', 'Cat', 'Other'])}</fieldset>
     ${L_ ? '<div><label for="' + k + '-name">Pet\'s name</label><input type="text" id="' + k + '-name" name="name" maxlength="40"></div>' : ''}
-    <div><label for="${k}-breed">Breed</label><input type="text" id="${k}-breed" name="breed" maxlength="40" placeholder="Unknown or mixed is fine"></div>
-    <div><label for="${k}-color">Main color</label><input type="text" id="${k}-color" name="color" maxlength="40" required></div>
+    ${L_ ? `<div><label for="${k}-breed">Breed</label><input type="text" id="${k}-breed" name="breed" maxlength="40" placeholder="Unknown or mixed is fine"></div>
+    <div><label for="${k}-color">Main color</label><input type="text" id="${k}-color" name="color" maxlength="40" required></div>`
+         : pillField(k, 'breed', 'Breed', 'e.g. shih tzu, then space', false) + pillField(k, 'color', 'Main color', 'e.g. brown, then space', true)}
     <fieldset><legend>Size</legend>${chips('size', ['Small', 'Medium', 'Large'])}</fieldset>
-    <div class="full"><label for="${k}-marks">Markings and other details</label><textarea id="${k}-marks" name="markings" rows="3" maxlength="300" placeholder="Collar, scars, spots, behavior&hellip;"></textarea></div>
+    <div class="full"><label for="${k}-marks">Markings and other details</label><textarea id="${k}-marks" name="markings" rows="3" maxlength="300" placeholder="Collar, scars, spots&hellip;"></textarea></div>
+    ${L_ ? `<div class="full"><label for="lost-desc">Description</label><textarea id="lost-desc" name="description" rows="4" maxlength="500" required placeholder="Tell us more about your pet: how it went missing, its personality, whether it answers to its name, if it is shy or friendly&hellip;"></textarea></div>`
+         : `<div class="full"><label for="found-how">How was the pet found?</label><textarea id="found-how" name="howfound" rows="4" maxlength="500" required placeholder="Describe how you found it: where it was, what it was doing, its condition (hungry, hurt, friendly) and what you did with it&hellip;"></textarea></div>`}
     <div><label for="${k}-brgy">Barangay</label><select id="${k}-brgy" name="brgy" required><option value="">Select&hellip;</option>${BRGY.map(b => `<option${b === prof().brgy ? ' selected' : ''}>${b}</option>`).join('')}</select></div>
     <div><label for="${k}-date">${L_ ? 'Date last seen' : 'Date found'}</label><input type="date" id="${k}-date" name="date" value="${today}" max="${today}" required></div>
     ${L_ ? `<div><label for="lost-zone">Search zone (geofence)</label><select id="lost-zone" name="zone"><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select></div>`
@@ -53,10 +62,54 @@ function previewPhoto(name, src) {
   d.showModal();
 }
 
+/* Turns each .pills box into a tag input: type a word, press space (or Enter / comma) and it becomes a pill. */
+function setupPills(form) {
+  const MAX = 8;
+  form.querySelectorAll('.pills').forEach(box => {
+    const input = box.querySelector('.pills-input'), hidden = form.elements[box.dataset.pills];
+    let list = [];
+    const draw = () => {
+      box.querySelectorAll('.pill').forEach(p => p.remove());
+      list.forEach((t, i) => input.insertAdjacentHTML('beforebegin', `<span class="pill">${esc(t)}<button type="button" data-i="${i}" aria-label="Remove ${esc(t)}">&times;</button></span>`));
+      hidden.value = list.join(', ');
+    };
+    const add = raw => {
+      const t = raw.trim().replace(/^[,;]+|[,;]+$/g, '');
+      if (t && list.length < MAX && !list.some(x => x.toLowerCase() === t.toLowerCase())) list.push(t);
+    };
+    const commit = () => { add(input.value); input.value = ''; draw(); };
+    input.addEventListener('input', () => {
+      if (!/[\s,;]/.test(input.value)) return;                 // no space yet: keep typing
+      const parts = input.value.split(/[\s,;]+/), rest = /[\s,;]$/.test(input.value) ? '' : parts.pop();
+      parts.forEach(add); input.value = rest; draw();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      else if (e.key === 'Backspace' && !input.value && list.length) { list.pop(); draw(); }
+    });
+    input.addEventListener('blur', commit);
+    box.addEventListener('click', e => {
+      const x = e.target.closest('button[data-i]');
+      if (x) { list.splice(+x.dataset.i, 1); draw(); }
+      input.focus();
+    });
+    form.addEventListener('reset', () => setTimeout(() => { list = []; input.value = ''; draw(); }));
+    box.pills = {
+      commit,
+      set(str) {   // "White and brown" -> white, brown
+        list = []; input.value = '';
+        const parts = /[,;]/.test(str) ? str.split(/[,;]+/) : str.split(/\s+/);
+        parts.filter(w => !/^(and|&)$/i.test(w.trim())).forEach(add); draw();
+      }
+    };
+  });
+}
+
 function setupForm(k, host) {
   const form = host.querySelector('form'), err = host.querySelector('.err');
   const m = L.map(host.querySelector('.pick')).setView(DAGUPAN, 15);
   tiles(m);
+  setupPills(form);
   const zone = form.elements.zone;
   let pin = null, circle = null;
   const draw = () => {
@@ -124,11 +177,39 @@ function setupForm(k, host) {
 
   form.addEventListener('submit', e => {
     e.preventDefault(); err.textContent = '';
+    form.querySelectorAll('.pills').forEach(b => b.pills.commit());
     if (!form.checkValidity()) { form.reportValidity(); return; }
+    if (k === 'found' && !form.elements.color.value) { err.textContent = 'Please add the main color (type a color and press the space bar).'; form.querySelector('.pills[data-pills="color"] input').focus(); return; }
     if (!photos.length) { err.textContent = 'Please add at least one photo of the pet.'; return; }
     if (!pin) { err.textContent = 'Please drop a pin on the map.'; return; }
     const f = new FormData(form);
-    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, status: 'active', matchFor: form.dataset.matchFor || '' };
+    const matchId = form.dataset.matchFor || '';
+    if (matchId) {
+      /* "I found this pet" on a lost report: add a find to THAT report. No new found report is created.
+         The report only shows as found once its owner confirms a find. */
+      const base = mergedReports().find(x => x.id === matchId);
+      if (!base) { err.textContent = 'That lost report is no longer available.'; return; }
+      if (isOwner(base)) { err.textContent = 'This is your own lost report.'; return; }
+      const find = { id: 'f' + Date.now(), by: myId, status: 'pending', contact: f.get('contact'), where: f.get('where') || '', brgy: f.get('brgy'), date: f.get('date'), lat: +f.get('lat'), lng: +f.get('lng'), markings: f.get('markings'), howFound: f.get('howfound') || '', photos: photos.map(p => p.data), at: Date.now() };
+      const { found: _old, ...rest } = base;
+      /* one open find per person: sending again replaces your earlier one that is still waiting */
+      const finds = findsOf(base).filter(x => !(x.by === myId && x.status === 'pending')).concat(find);
+      try { saveReport({ ...rest, owner: base.owner || (SAMPLES.some(s => s.id === matchId) ? 'sample' : base.owner), finds }); }
+      catch { err.textContent = 'Could not save this (browser storage is full).'; return; }
+      host.querySelector('.done h2').textContent = 'Found report sent';
+      host.querySelector('.done p').textContent = 'Thank you! The owner of the lost report can now see your details and will confirm if this is their pet.';
+      host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(matchId);
+      host.querySelector('.done .actions a').textContent = 'View the report';
+      form.hidden = true; host.querySelector('.done').hidden = false;
+      host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor;
+      window.scrollTo(0, 0);
+      return;
+    }
+    host.querySelector('.done h2').textContent = 'Report filed';
+    host.querySelector('.done p').textContent = k === 'lost' ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.';
+    host.querySelector('.done .actions a').href = 'dashboard.html';
+    host.querySelector('.done .actions a').textContent = 'View on map';
+    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, status: 'active', matchFor: form.dataset.matchFor || '' };
     try { localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r))); }
     catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
     form.hidden = true; host.querySelector('.done').hidden = false;

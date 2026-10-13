@@ -17,9 +17,9 @@ const BRGY = ['Bacayao Norte','Bacayao Sur','Barangay I (T. Bugallon)','Barangay
 
 /* Sample reports (coordinates are approximate placeholders) */
 const SAMPLES = [
-  { id: 's1', kind: 'lost', name: 'White and brown dog', species: 'Dog', color: 'White and brown', brgy: 'Pantal', date: '2026-10-06', lat: 16.0465, lng: 120.3375, photo: IMG + 'Pet1.jpg' },
-  { id: 's2', kind: 'lost', name: 'Tilapia cat', species: 'Cat', color: 'Grey', brgy: 'Lucao', date: '2026-10-05', lat: 16.0285, lng: 120.3465, photo: IMG + 'Pet3.jpg' },
-  { id: 's3', kind: 'lost', name: 'Tabby cat', species: 'Cat', color: 'Tabby', brgy: 'Tapuac', date: '2026-10-03', lat: 16.0525, lng: 120.3305, photo: IMG + 'Pet4.jpg' }
+  { id: 's1', kind: 'lost', name: 'White and brown dog', species: 'Dog', breed: 'Mixed breed', color: 'White and brown', size: 'Medium', markings: 'Brown patches on the back and ears, red collar', description: 'Slipped out of the gate on the evening of Oct 6 when the delivery rider left it open. Very friendly with people, but may hide under parked vehicles if scared. Answers to "Browny".', brgy: 'Pantal', date: '2026-10-06', lat: 16.0465, lng: 120.3375, zone: 1000, contact: '0917 123 4567', photo: IMG + 'Pet1.jpg', created: Date.parse('2026-10-06T08:00:00') },
+  { id: 's2', kind: 'lost', name: 'Tilapia cat', species: 'Cat', breed: 'Domestic shorthair', color: 'Grey', size: 'Small', markings: 'Grey coat, lighter belly, no collar', description: 'Went out through a window left open in the afternoon. Very vocal and usually comes when called by name. Indoor cat, so it may be frightened and hiding nearby.', brgy: 'Lucao', date: '2026-10-05', lat: 16.0285, lng: 120.3465, zone: 1000, contact: 'owner.lucao@example.com', photo: IMG + 'Pet3.jpg', created: Date.parse('2026-10-05T08:00:00') },
+  { id: 's3', kind: 'lost', name: 'Tabby cat', species: 'Cat', breed: '', color: 'Tabby', size: 'Small', markings: 'Orange-brown stripes, white paws, notch on left ear', description: 'Last seen leaving the yard at dusk. Shy with strangers, but will eat if food is left out quietly. Please do not chase it; call the owner instead.', brgy: 'Tapuac', date: '2026-10-03', lat: 16.0525, lng: 120.3305, zone: 500, contact: '0928 555 0199', photo: IMG + 'Pet4.jpg', created: Date.parse('2026-10-03T08:00:00') }
 ];
 
 /* ---------- Helpers ---------- */
@@ -30,7 +30,22 @@ const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOS
 const ago = d => { const n = Math.round((new Date(today) - new Date(d)) / 864e5); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n + ' days ago'; };
 const niceDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const km = (a, b) => { const r = x => x * Math.PI / 180, dLa = r(b[0] - a[0]), dLo = r(b[1] - a[1]); const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLo / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
-const allReports = () => SAMPLES.concat(read(REPORTS_KEY, [])).filter(r => r.status !== 'reunited');
+/* Saved reports win over a sample with the same id (this is how a sample lost report gets updated). */
+const mergedReports = () => { const saved = read(REPORTS_KEY, []), ids = new Set(saved.map(r => r.id)); return SAMPLES.filter(s => !ids.has(s.id)).concat(saved); };
+const allReports = () => mergedReports().filter(r => r.status !== 'reunited');
+/* A lost report can collect several "found" reports (finds). Each find is
+   { id, by, contact, where, brgy, date, lat, lng, markings, photos, at, status }
+   where status is 'pending' | 'confirmed' | 'rejected'. Only the owner of the lost report
+   can confirm one. The report shows as "found" once a find is confirmed. */
+const findsOf = r => Array.isArray(r.finds) ? r.finds : (r.found ? [{ ...r.found, id: 'legacy', status: 'pending' }] : []);
+const confirmedFind = r => findsOf(r).find(f => f.status === 'confirmed') || null;
+const reportState = r => r.kind === 'lost' && confirmedFind(r) ? 'found' : r.kind;
+const isOwner = r => !!r.owner && r.owner === myId;
+/* Save one report (a sample is copied into storage the first time it changes). Throws if storage is full. */
+const saveReport = u => {
+  const saved = read(REPORTS_KEY, []), has = saved.some(x => x.id === u.id);
+  localStorage.setItem(REPORTS_KEY, JSON.stringify(has ? saved.map(x => x.id === u.id ? u : x) : saved.concat(u)));
+};
 
 /* Map helpers (only used on pages that load Leaflet) */
 const pinIcon = k => L.divIcon({ className: '', html: `<div class="pin pin--${k}"><span>${k === 'lost' ? '🐾' : '🔍'}</span></div>`, iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -34] });
