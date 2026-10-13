@@ -20,25 +20,48 @@
     <main>
       <section class="view" id="view-profile">
         <div class="view-head"><h1>My profile</h1><p>Your details and the reports you have filed.</p></div>
-        <div class="box pf-head">
-          <div class="pf-avatar" id="pf-avatar"></div>
-          <div><h2 id="pf-name-big"></h2><p id="pf-email"></p><p class="hint" id="pf-since"></p></div>
-        </div>
-        <div class="pf-stats">
-          <div class="box"><b id="st-lost">0</b><span>Lost reports</span></div>
-          <div class="box"><b id="st-found">0</b><span>Found reports</span></div>
-          <div class="box"><b id="st-home">0</b><span>Reunited</span></div>
-        </div>
-        <div class="box">
-          <h2>My details</h2>
-          <form class="form" id="profile-form" novalidate>
-            <div><label for="pf-dname">Display name</label><input type="text" id="pf-dname" name="dname" maxlength="40"></div>
-            <div><label for="pf-phone">Phone number</label><input type="text" id="pf-phone" name="phone" inputmode="tel" maxlength="20" placeholder="09XX XXX XXXX"></div>
-            <div><label for="pf-brgy">Home barangay</label><select id="pf-brgy" name="brgy"><option value="">Select&hellip;</option></select></div>
-            <p class="hint full">Your phone number and barangay are used to pre-fill your reports. Your email comes from your Google account.</p>
-            <p class="form-note full" id="pf-note" role="status"></p>
-            <div class="full"><button type="submit" class="btn btn-sun">Save changes</button></div>
-          </form>
+        <div class="box pf-profile-card" id="pf-profile-card">
+          <div class="pf-head">
+            <div class="pf-avatar-wrap">
+              <div class="pf-avatar-frame">
+                <div class="pf-avatar" id="pf-avatar"></div>
+                <label class="pf-camera-overlay" id="pf-camera-button" for="pf-picture-input" aria-label="Change profile picture" title="Change profile picture" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h3l1.5-2h7l1.5 2h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                </label>
+                <input type="file" id="pf-picture-input" accept="image/png,image/jpeg,image/webp" hidden>
+              </div>
+              <div class="pf-avatar-actions">
+                <label class="pf-picture-note pf-picture-note-label" id="pf-picture-note-label" for="pf-picture-input" hidden>Change Picture</label>
+                <p class="hint pf-picture-note" id="pf-picture-note" hidden>JPG or PNG · up to 2 MB</p>
+                
+              </div>
+            </div>
+            <div class="pf-identity"><h2 id="pf-name-big"></h2><p id="pf-email"></p><p class="hint" id="pf-since"></p></div>
+            <div class="pf-stats" aria-label="Your report statistics">
+              <div class="pf-stat"><b id="st-found">0</b><span>Pet found</span></div>
+              <div class="pf-stat"><b id="st-lost">0</b><span>Lost reports</span></div>
+              <div class="pf-stat"><b id="st-home">0</b><span>Reunited</span></div>
+            </div>
+          </div>
+          <div class="pf-details-section">
+            <div class="pf-details-heading">
+              <h2>My details</h2>
+              <button type="button" class="btn btn-sun pf-edit-icon-button" id="pf-edit-button" aria-label="Edit profile" title="Edit profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg><span>Edit profile</span></button>
+            </div>
+            <form class="form" id="profile-form" novalidate>
+              <div class="full pf-display-name-field" id="pf-display-name-field" hidden><label for="pf-display-name">Display name</label><input type="text" id="pf-display-name" name="dname" maxlength="60" placeholder="Enter your display name" disabled><p class="field-error" id="pf-error-dname" role="alert" hidden></p></div>
+              <div><label for="pf-phone">Phone number</label><input type="text" id="pf-phone" name="phone" inputmode="tel" maxlength="20" placeholder="09XX XXX XXXX" disabled><p class="field-error" id="pf-error-phone" role="alert" hidden></p></div>
+              <div><label for="pf-brgy">Home barangay</label><select id="pf-brgy" name="brgy" disabled><option value="">Select&hellip;</option></select></div>
+              <div><label for="pf-facebook">Facebook profile link</label><input type="url" id="pf-facebook" name="facebook" placeholder="https://facebook.com/your.profile" disabled><p class="field-error" id="pf-error-facebook" role="alert" hidden></p></div>
+              <div><label for="pf-messenger">Messenger link</label><input type="url" id="pf-messenger" name="messenger" placeholder="https://m.me/your.username" disabled><p class="field-error" id="pf-error-messenger" role="alert" hidden></p></div>
+              <p class="hint full">Your phone number and barangay help pre-fill reports. Facebook and Messenger links make it easier for others to contact you. Your email comes from your Google account.</p>
+              <p class="form-note full" id="pf-note" role="status"></p>
+              <div class="full pf-edit-actions" id="pf-edit-actions" hidden>
+                <button type="submit" class="btn btn-sun">Save changes</button>
+                <button type="button" class="btn btn-plain" id="pf-cancel-button">Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
         <div class="box">
           <h2>My reports</h2>

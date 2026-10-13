@@ -93,7 +93,8 @@ const applyIdentity = () => {
   if (!ok) return;
 
   applyIdentity();
-  if (sess?.picture) { const a = $('#user-avatar'); a.src = sess.picture; a.hidden = false; $('#user-initial').hidden = true; }
+  const customPicture = prof().picture;
+  if (customPicture || sess?.picture) { const a = $('#user-avatar'); a.src = customPicture || sess.picture; a.hidden = false; $('#user-initial').hidden = true; }
   $('#logout').addEventListener('click', logout);
 
   /* ---------- Sidebar (mobile drawer) ---------- */

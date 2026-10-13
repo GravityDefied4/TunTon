@@ -10,3 +10,43 @@
 @import url("css/profile.css");
 @import url("css/reports.css");
 @import url("css/detail.css");
+
+
+/* Clear, highlighted finder identity on found-report cards */
+.d-find header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.d-find-heading { display: grid; gap: .15rem; min-width: 0; }
+.d-find-kicker {
+  color: #24784e;
+  font: 800 .68rem/1.2 'Nunito', sans-serif;
+  letter-spacing: .1em;
+}
+.d-find-heading h3 { margin: 0; color: #123e2d; font-size: 1.05rem; }
+.d-find-number { color: #557466; font-size: .78rem; font-weight: 700; }
+.d-find--pending { border-left: 5px solid #d1d94b; }
+.d-find--confirmed { border-left: 5px solid #26965a; }
+.d-find--rejected { border-left: 5px solid #9aa9a1; }
+
+
+/* Owner controls on the report details page */
+.d-owner-actions { display: inline-flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-left: .25rem; }
+.d-owner-edit { color: #176b45; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.d-owner-delete { display: inline-flex; align-items: center; gap: .45rem; border: 1px solid #d93b35; border-radius: 999px; padding: .65rem .9rem; background: #fff; color: #b72e29; font: 800 .9rem 'Nunito', sans-serif; cursor: pointer; }
+.d-owner-delete:hover { background: #fff1ef; }
+.d-owner-delete svg, .d-delete-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.d-delete-dialog { width: min(92vw, 430px); border: 2px solid #d7edc7; border-radius: 24px; padding: 1.75rem; color: #123e2d; background: #fff; box-shadow: 0 24px 80px #123e2d33; text-align: center; }
+.d-delete-dialog::backdrop { background: rgb(12 43 29 / 48%); backdrop-filter: blur(3px); }
+.d-delete-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto .8rem; border-radius: 50%; color: #b72e29; background: #fff0ed; }
+.d-delete-icon svg { width: 25px; height: 25px; }
+.d-delete-dialog h2 { margin: 0 0 .45rem; font: 700 1.45rem 'Fredoka', sans-serif; }
+.d-delete-dialog p { margin: 0; color: #557466; line-height: 1.55; }
+.d-delete-actions { display: flex; justify-content: center; gap: .75rem; margin-top: 1.35rem; }
+.d-delete-actions button { border-radius: 999px; padding: .7rem 1.1rem; font: 800 .9rem 'Nunito', sans-serif; cursor: pointer; }
+.d-delete-cancel { border: 1px solid #cfe3c3; background: #f5faef; color: #176b45; }
+.d-delete-confirm { border: 1px solid #c8322b; background: #c8322b; color: #fff; }
+@media (max-width: 600px) { .d-owner-actions { width: 100%; margin: .4rem 0 0; } }

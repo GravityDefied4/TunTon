@@ -34,7 +34,7 @@ function card(r) {
     </div>
     <div class="pet-actions">
       <a class="btn btn-small" href="report.html?id=${encodeURIComponent(r.id)}">View details</a>
-      ${lost && !isFound && !isOwner(r) ? `<a class="btn btn-sun" href="found.html?match=${encodeURIComponent(r.id)}">I found this pet</a>` : ''}
+      ${lost && !isFound && !isOwner(r) ? `<a class="btn btn-sun" href="found.html?match=${encodeURIComponent(r.id)}">I found this pet</a>` : !lost ? `<a class="btn btn-sun" href="lost.html?claim=${encodeURIComponent(r.id)}">This is my lost pet</a>` : ''}
     </div>
   </article>`;
 }

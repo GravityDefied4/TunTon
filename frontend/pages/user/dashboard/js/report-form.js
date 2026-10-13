@@ -113,6 +113,32 @@ function setupForm(k, host) {
   otherInput.addEventListener('input', fillBreeds);
   form.addEventListener('reset', () => setTimeout(syncSpecies));
   syncSpecies();
+
+  // A user who recognizes a found-pet report can start a lost report with pet details prefilled.
+  // The user must still confirm the missing date/location and upload a photo before submitting.
+  if (k === 'lost') {
+    const claimId = new URLSearchParams(location.search).get('claim');
+    if (claimId) {
+      const foundReport = mergedReports().find(r => String(r.id) === claimId && r.kind === 'found');
+      if (foundReport) {
+        const speciesRadio = form.querySelector(`input[name="species"][value="${CSS.escape(foundReport.species || '')}"]`);
+        if (speciesRadio) speciesRadio.checked = true;
+        syncSpecies();
+        if (foundReport.species === 'Other') otherInput.value = foundReport.otherSpecies || '';
+        form.elements.name.value = foundReport.name || '';
+        form.elements.size.value = foundReport.size || '';
+        breedBox.pills.set(foundReport.breed || '');
+        form.querySelector('.pills[data-pills="color"]').pills.set(foundReport.color || '');
+        form.elements.markings.value = foundReport.markings || '';
+        form.elements.description.value = foundReport.description || foundReport.howFound || '';
+        const banner = document.createElement('p');
+        banner.className = 'match-banner';
+        banner.textContent = 'You are reporting that this found pet is yours and is missing. Confirm the details, choose when and where your pet was last seen, upload a photo, and drop a pin before submitting.';
+        form.parentElement.insertBefore(banner, form);
+      }
+    }
+  }
+
   const zone = form.elements.zone;
   let pin = null, circle = null;
   const draw = () => {
@@ -201,7 +227,7 @@ function setupForm(k, host) {
       const base = mergedReports().find(x => x.id === matchId);
       if (!base) { err.textContent = 'That lost report is no longer available.'; return; }
       if (isOwner(base)) { err.textContent = 'This is your own lost report.'; return; }
-      const find = { id: 'f' + Date.now(), by: myId, status: 'pending', contact: f.get('contact'), where: f.get('where') || '', brgy: f.get('brgy'), date: f.get('date'), lat: +f.get('lat'), lng: +f.get('lng'), markings: f.get('markings'), howFound: f.get('howfound') || '', photos: photos.map(p => p.data), at: Date.now() };
+      const find = { id: 'f' + Date.now(), by: myId, founderName: shownName(), status: 'pending', contact: f.get('contact'), where: f.get('where') || '', brgy: f.get('brgy'), date: f.get('date'), lat: +f.get('lat'), lng: +f.get('lng'), markings: f.get('markings'), howFound: f.get('howfound') || '', photos: photos.map(p => p.data), at: Date.now() };
       const { found: _old, ...rest } = base;
       /* one open find per person: sending again replaces your earlier one that is still waiting */
       const finds = findsOf(base).filter(x => !(x.by === myId && x.status === 'pending')).concat(find);

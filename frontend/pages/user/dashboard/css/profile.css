@@ -19,6 +19,32 @@
   margin: 0;
 }
 
+.pf-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  flex: none;
+}
+
+.pf-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  max-width: 220px;
+}
+
+#pf-picture-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: .78rem;
+}
+
+#pf-picture-remove:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 .pf-avatar {
   flex: none;
   width: 88px;
@@ -132,6 +158,15 @@
 }
 
 @media (max-width: 640px) {
+  .pf-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .pf-avatar-wrap {
+    flex-wrap: wrap;
+  }
+
   .pf-stats {
     grid-template-columns: 1fr;
   }
@@ -144,4 +179,309 @@
     width: 100%;
     justify-content: flex-start;
   }
+}
+
+
+/* Profile edit/save controls */
+.pf-details-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .5rem;
+}
+.pf-details-heading h2 { margin: 0 !important; }
+.pf-edit-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+#profile-form input:disabled,
+#profile-form select:disabled {
+  opacity: .82;
+  cursor: default;
+  background: #f5f8f1;
+}
+#pf-picture-controls[hidden], #pf-edit-actions[hidden], #pf-edit-button[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .pf-details-heading { align-items: flex-start; flex-direction: column; }
+}
+
+
+/* Clear editing state and subtle camera overlay for profile photo */
+.pf-avatar-frame { position: relative; width: 88px; height: 88px; flex: none; }
+.pf-avatar-frame .pf-avatar { width: 100%; height: 100%; }
+.pf-camera-button { position: absolute; right: -2px; bottom: -2px; z-index: 2; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; background: #e3e7e5; color: #34453d; box-shadow: 0 2px 7px #123e2d2b; cursor: pointer; transition: background .15s ease, transform .15s ease; }
+.pf-camera-button:hover { background: #cbd3cf; transform: translateY(-1px); }
+.pf-camera-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pf-camera-button[hidden] { display: none !important; }
+#profile-form.is-editing { padding: .75rem; border: 1px solid #2b9b62; border-radius: 14px; background: #f4faef; }
+#profile-form.is-editing input:not(:disabled), #profile-form.is-editing select:not(:disabled) { border-color: #2b9b62; background: #fff; box-shadow: 0 0 0 2px #dcefd5; }
+#pf-picture-controls[hidden] { display: none !important; }
+
+
+/* Unified profile card and stronger edit-state container */
+.pf-profile-card {
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  border: 3px solid transparent;
+  transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+.pf-profile-card .pf-head {
+  padding-bottom: 1.35rem;
+  border-bottom: 2px solid #e3f3d3;
+}
+.pf-identity { min-width: 0; }
+.pf-details-section { padding-top: 1.25rem; }
+.pf-details-heading { margin-bottom: .85rem; }
+#pf-profile-card.is-editing {
+  border: 3px solid var(--forest);
+  background: #f7fbf3;
+  box-shadow: 0 4px 0 rgba(18, 62, 45, .08);
+}
+#pf-profile-card.is-editing .pf-head {
+  border-bottom-color: #cfe5bf;
+}
+#profile-form.is-editing {
+  padding: 1rem;
+  border: 0;
+  border-radius: 12px;
+  background: #edf6e6;
+}
+@media (max-width: 640px) {
+  .pf-profile-card .pf-head { padding-bottom: 1rem; }
+  .pf-details-section { padding-top: 1rem; }
+}
+
+
+/* Profile identity, report counts, and contact links */
+.pf-head {
+  width: 100%;
+  align-items: center;
+}
+.pf-identity {
+  flex: 1 1 220px;
+}
+#pf-name-big {
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+  line-height: 1.1;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  margin-bottom: .3rem;
+}
+.pf-stats {
+  flex: 0 1 390px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
+  margin-left: auto;
+}
+.pf-stat {
+  min-width: 0;
+  text-align: center;
+  padding: .7rem .45rem;
+  border: 2px solid #e3f3d3;
+  border-radius: 14px;
+  background: #fbfdf8;
+}
+.pf-stats .pf-stat b {
+  display: block;
+  font: 700 clamp(1.35rem, 2.2vw, 1.9rem)/1.1 var(--font-display);
+  color: var(--forest);
+}
+.pf-stats .pf-stat span {
+  display: block;
+  margin-top: .25rem;
+  font-size: .78rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+#profile-form input[type="url"]:disabled {
+  opacity: .82;
+  cursor: default;
+  background: #f5f8f1;
+}
+@media (max-width: 760px) {
+  .pf-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .pf-identity {
+    flex: 1 1 180px;
+  }
+  .pf-stats {
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+/* More prominent, on-brand report statistics */
+.pf-stats { gap: .7rem; }
+.pf-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 96px;
+  padding: .85rem .55rem;
+  border: 2px solid #d9edc7;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fbfef7 0%, #f0f8e8 100%);
+  box-shadow: 0 3px 0 rgba(24, 91, 57, .06);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.pf-stat:hover {
+  transform: translateY(-2px);
+  border-color: var(--lime);
+  box-shadow: 0 5px 12px rgba(24, 91, 57, .1);
+}
+.pf-stats .pf-stat b { font-size: clamp(1.65rem, 2.5vw, 2.15rem); }
+.pf-stats .pf-stat span { color: var(--forest); font-weight: 800; font-size: .82rem; }
+.pf-edit-icon-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; }
+.pf-edit-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.rep-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: .4rem !important;
+  border-radius: 12px;
+}
+.rep-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.rep-icon-button.danger:hover { background: #fff0ed; }
+#pf-display-name-field[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .pf-stat { transition: none; }
+  .pf-stat:hover { transform: none; }
+}
+
+/* TunTon-themed delete confirmation */
+.pf-delete-dialog {
+  width: min(92vw, 440px);
+  padding: 2rem;
+  border: 2px solid #d9edc7;
+  border-radius: 24px;
+  color: var(--ink, #153c2e);
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(13, 62, 42, .25);
+  text-align: center;
+}
+.pf-delete-dialog::backdrop { background: rgba(11, 48, 33, .58); backdrop-filter: blur(3px); }
+.pf-delete-icon {
+  width: 58px; height: 58px; margin: 0 auto .9rem;
+  display: grid; place-items: center; border-radius: 18px;
+  color: #b9322a; background: #fff0ed; border: 1px solid #ffd2cb;
+}
+.pf-delete-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pf-delete-dialog h2 { margin: 0 0 .5rem; font: 700 1.55rem/1.2 var(--font-display); color: var(--forest, #0d5838); }
+.pf-delete-dialog p { margin: 0; color: var(--muted, #587166); line-height: 1.55; }
+.pf-delete-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .65rem; margin-top: 1.5rem; }
+.pf-delete-confirm { color: #fff; background: #c63830; border: 2px solid #c63830; }
+.pf-delete-confirm:hover { background: #a92c26; border-color: #a92c26; }
+@media (max-width: 640px) { .pf-delete-dialog { padding: 1.4rem; } }
+
+/* Keep photo instructions and the change action outside the avatar to avoid clutter. */
+.pf-avatar-frame { position: relative; width: 104px; height: 104px; flex: none; }
+.pf-avatar-frame .pf-avatar { width: 100%; height: 100%; border-width: 4px; }
+.pf-avatar-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; max-width: 190px; }
+.pf-picture-note { max-width: 190px; margin: 0; font-size: .78rem; line-height: 1.45; }
+.pf-camera-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .42rem .72rem; border: 1px solid #cbd4ce; border-radius: 9px;
+  background: #e9eeeb; color: #34453d; cursor: pointer;
+  font: 700 .82rem/1.2 var(--font-body); text-align: left;
+  transition: background .18s ease, border-color .18s ease;
+}
+.pf-camera-button:hover, .pf-camera-button:focus-visible { background: #dce5df; border-color: #aabbb0; outline: 2px solid #cfe5bf; outline-offset: 2px; }
+.pf-camera-button svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pf-camera-button[hidden], #pf-picture-note[hidden] { display: none !important; }
+
+/* Prominent name without decorative gradients or underline. */
+#pf-name-big {
+  display: block; max-width: 100%; margin: 0 0 .6rem; padding: 0;
+  color: #0d5838 !important; font-family: 'Fredoka', sans-serif !important;
+  font-size: clamp(2.8rem, 4.4vw, 3.6rem) !important;
+  line-height: 1.08 !important; font-weight: 700 !important; letter-spacing: -.02em;
+  text-shadow: none !important; background: none !important;
+  -webkit-text-fill-color: #0d5838 !important;
+}
+#pf-name-big::before, #pf-name-big::after { content: none !important; display: none !important; }
+@media (max-width: 640px) {
+  .pf-avatar-frame { width: 96px; height: 96px; }
+  #pf-name-big { font-size: clamp(2.5rem, 8vw, 3rem) !important; }
+}
+
+
+/* Editing-only camera overlay; the separate text action sits below the file guidance. */
+.pf-avatar-frame { position: relative; width: 104px; height: 104px; flex: none; }
+.pf-avatar-frame .pf-avatar { width: 100%; height: 100%; border-width: 4px; }
+.pf-camera-overlay { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; border-radius: 50%; background: rgba(67, 76, 71, .58); color: #fff; cursor: pointer; }
+.pf-camera-overlay svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pf-camera-overlay[hidden], .pf-change-photo-link[hidden] { display: none !important; }
+.pf-avatar-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; max-width: 190px; }
+.pf-picture-note { max-width: 190px; margin: 0; font-size: .78rem; line-height: 1.45; }
+#pf-picture-note-label { font-size: 1rem; font-weight: 800; color: #174d35; }
+.pf-change-photo-link { color: #176b45; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: .88rem; }
+.pf-change-photo-link:hover { color: #0d5838; }
+#pf-name-big { font-size: clamp(2.35rem, 3.5vw, 2.9rem) !important; line-height: 1.08 !important; }
+@media (max-width: 640px) { .pf-avatar-frame { width: 96px; height: 96px; } #pf-name-big { font-size: clamp(2.15rem, 7vw, 2.55rem) !important; } }
+
+/* Report navigation is a simple text link; Delete remains the only button. */
+.rep-view-link { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .25rem; color: #176b45; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.rep-view-label { text-decoration: none; text-underline-offset: 3px; }
+.rep-view-arrow { display: inline-block; font-size: 1.45em; line-height: .8; text-decoration: none; transition: transform .15s ease; }
+.rep-view-link:hover { color: #0d5838; text-decoration: none; }
+.rep-view-link:hover .rep-view-label { text-decoration: underline; }
+.rep-view-link:hover .rep-view-arrow { transform: translateX(3px); text-decoration: none; }
+.rep-actions { align-items: center; gap: .85rem; }
+
+/* Keep the profile header focused on photo and report counts while editing details. */
+#pf-profile-card.is-editing .pf-identity {
+  display: none !important;
+}
+
+
+/* Inline profile validation: a rejected field turns fully red (it replaces the green focus and edit
+   borders instead of sitting on top of them) and the reason is shown under it. */
+#profile-form input[aria-invalid="true"],
+#profile-form select[aria-invalid="true"],
+#profile-form.is-editing input[aria-invalid="true"]:not(:disabled),
+#profile-form.is-editing select[aria-invalid="true"]:not(:disabled) {
+  border-color: #c8322b !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px #ffe0dc !important;
+  background: #fffafa !important;
+}
+#profile-form input[aria-invalid="true"]:focus,
+#profile-form select[aria-invalid="true"]:focus,
+#profile-form.is-editing input[aria-invalid="true"]:not(:disabled):focus,
+#profile-form.is-editing select[aria-invalid="true"]:not(:disabled):focus {
+  outline: 3px solid #c8322b !important;
+  outline-offset: 1px;
+  box-shadow: none !important;
+}
+#profile-form input[aria-invalid="false"],
+#profile-form select[aria-invalid="false"] {
+  border-color: #2b9b62;
+}
+.field-error {
+  margin: .4rem 0 0;
+  color: #b72e29;
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.4;
+  max-width: none;
+}
+.field-error::before { content: "\26A0\FE0E"; margin-right: .4em; }
+.field-error[hidden] { display: none; }
+
+/* Cancel: thick red outline, transparent fill. The 3rd pixel is an inset ring so the button keeps the same size as Save. */
+#pf-cancel-button {
+  color: #b72e29;
+  border: 2px solid #c8322b;
+  box-shadow: inset 0 0 0 1px #c8322b;
+  background: transparent;
+}
+#pf-cancel-button:hover {
+  color: #fff;
+  border-color: #a92c26;
+  box-shadow: inset 0 0 0 1px #a92c26;
+  background: #a92c26;
 }

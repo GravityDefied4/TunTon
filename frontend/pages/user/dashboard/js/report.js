@@ -26,8 +26,9 @@ function notFound() {
 /* One found report on a lost report. */
 const FIND_LABEL = { pending: 'Waiting for the owner', confirmed: '✓ Confirmed', rejected: 'Not a match' };
 function findCard(f, n, list) {
+  const finderName = f.founderName || f.reporterName || (f.by === myId ? shownName() : 'Community member');
   return `<article class="d-find d-find--${esc(f.status)}" data-fid="${esc(f.id)}">
-    <header><h3>Found report ${list.length - n}${f.by === myId ? ' (yours)' : ''}</h3><span class="d-status d-status--${esc(f.status)}">${esc(FIND_LABEL[f.status] || f.status)}</span></header>
+    <header><div class="d-find-heading"><span class="d-find-kicker">PET SIGHTING</span><h3>Found by ${esc(finderName)}</h3><span class="d-find-number">Report ${list.length - n}${f.by === myId ? ' · Yours' : ''}</span></div><span class="d-status d-status--${esc(f.status)}">${esc(FIND_LABEL[f.status] || f.status)}</span></header>
     <dl class="d-list">
       <dt>Found in</dt><dd>Barangay ${esc(f.brgy)}, Dagupan City</dd>
       <dt>Found on</dt><dd>${esc(niceDate(f.date))} (${esc(ago(f.date).toLowerCase())})</dd>
@@ -93,6 +94,7 @@ function show(r) {
       <div class="d-actions">
         ${lost && !home && !isFound && !owner ? '<a class="btn btn-sun" id="d-found" href="found.html?match=' + encodeURIComponent(r.id) + '">' + (mine ? 'Update my found report' : 'I found this pet') + '</a>' : ''}
         <a class="btn btn-small" href="dashboard.html?focus=${encodeURIComponent(r.id)}">View on map</a>
+        ${owner ? '<div class="d-owner-actions"><button type="button" class="d-owner-delete" id="d-delete-report"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 10v6M14 10v6"/></svg>Remove report</button></div>' : ''}
       </div>
     </aside>
   </div>
@@ -131,6 +133,29 @@ function show(r) {
       ${contactHTML(r.contact)}
     </section>
   </div>`;
+
+  /* Owner-only report removal, with a themed confirmation dialog. */
+  if (owner) {
+    host.querySelector('#d-delete-report')?.addEventListener('click', () => {
+      let dialog = document.getElementById('d-delete-dialog');
+      if (!dialog) {
+        dialog = document.createElement('dialog');
+        dialog.id = 'd-delete-dialog';
+        dialog.className = 'd-delete-dialog';
+        dialog.innerHTML = `<div class="d-delete-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 10v6M14 10v6"/></svg></div><h2>Remove this report?</h2><p>This report will be permanently removed. This action cannot be undone.</p><div class="d-delete-actions"><button type="button" class="d-delete-cancel">Cancel</button><button type="button" class="d-delete-confirm">Remove report</button></div>`;
+        document.body.appendChild(dialog);
+        dialog.addEventListener('click', ev => {
+          if (ev.target === dialog || ev.target.closest('.d-delete-cancel')) { dialog.close(); return; }
+          if (!ev.target.closest('.d-delete-confirm')) return;
+          const all = read(REPORTS_KEY, []);
+          localStorage.setItem(REPORTS_KEY, JSON.stringify(all.filter(x => !(x.id === current?.id && x.owner === myId))));
+          dialog.close();
+          location.href = 'profile.html';
+        });
+      }
+      dialog.showModal();
+    });
+  }
 
   /* ----- photo gallery ----- */
   let i = 0;
