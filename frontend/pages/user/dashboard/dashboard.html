@@ -20,26 +20,45 @@
   <div class="dash-main">
     <main>
       <section class="view" id="view-map">
-        <div class="view-head"><h1>Map</h1><p>Lost pet reports near your current location.</p></div>
-        <div class="toolbar">
-          <span class="chip" id="status">Finding your location&hellip;</span>
-          <label>Show within
-            <select id="radius" class="btn btn-small btn-plain" style="padding:.4em .8em">
-              <option value="0.5">500 m</option><option value="1">1 km</option><option value="2">2 km</option><option value="3" selected>3 km</option><option value="5">5 km</option><option value="all">All of Dagupan</option>
-            </select>
+        <div class="view-head"><h1>Map</h1><p>Browse lost and found pet reports. You can explore anywhere, but reports can only be filed inside Dagupan City.</p></div>
+
+        <!-- Top bar: search + filter chips (YouTube chip row, Google Maps search pill) -->
+        <div class="map-bar">
+          <label class="map-search">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="q" placeholder="Search name, breed, color or barangay" autocomplete="off" aria-label="Search reports">
           </label>
-          <button type="button" class="btn btn-small" id="locate">My location</button>
-          <span class="chip" id="count"></span>
+          <div class="chip-row" role="group" aria-label="Filter reports">
+            <button type="button" class="fchip is-on" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="fchip" data-filter="lost" aria-pressed="false">Missing</button>
+            <button type="button" class="fchip" data-filter="found" aria-pressed="false">Potentially found</button>
+          </div>
+          <div class="map-actions">
+            <label class="radius-pick">Within
+              <select id="radius" aria-label="Show reports within">
+                <option value="0.25">250 m</option><option value="0.5">500 m</option><option value="1">1 km</option><option value="2" selected>2 km</option><option value="3">3 km</option><option value="all">All of Dagupan</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-small" id="locate">My location</button>
+          </div>
         </div>
-        <div class="map-layout">
-          <div id="map" role="application" aria-label="Map of lost pet reports"></div>
-          <button type="button" class="side-toggle" id="side-toggle" aria-controls="side">Reports nearby <b id="side-n"></b></button>
-          <aside class="map-side" id="side" aria-label="Report details">
-            <button type="button" class="side-close" id="side-close" aria-label="Close panel">&times;</button>
+        <p class="map-status"><span id="status">Finding your location&hellip;</span> <span class="dot-sep" aria-hidden="true">&bull;</span> <b id="count"></b></p>
+
+        <!-- Two-column grid: results panel (left) + map (right) -->
+        <div class="map-grid">
+          <aside class="map-side" id="side" aria-label="Reports">
             <div class="side-body" id="side-body" aria-live="polite"></div>
           </aside>
+          <div class="map-wrap">
+            <div id="map" role="application" aria-label="Map of lost pet reports"></div>
+            <div class="legend" aria-label="Map legend">
+              <span><i style="background:var(--alert)"></i>Lost</span>
+              <span><i style="background:var(--leaf)"></i>Potentially found</span>
+              <span><i style="background:#2f7bf0"></i>You</span>
+              <span><i class="legend-city"></i>Dagupan City</span>
+            </div>
+          </div>
         </div>
-        <div class="legend"><span><i style="background:var(--alert)"></i>Lost</span><span><i style="background:var(--leaf)"></i>Potentially found</span><span><i style="background:#2f7bf0"></i>You</span><span><i class="legend-city"></i>Dagupan City (dimmed area is outside)</span></div>
       </section>
     </main>
   </div>

@@ -53,9 +53,11 @@ if (stackCards.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').mat
 }
 
 /* =========================================================
-   Authentication (Google Identity Services + TunTon API)
-   Flow: Google button -> ID token -> POST /api/auth/google
-         -> server verifies it and returns TunTon's own JWT.
+   Authentication (TunTon API)
+   Email + password:  POST /api/auth/login     { email, password }
+                      POST /api/auth/register  { name, email, password }
+   Google (optional): Google button -> ID token -> POST /api/auth/google
+   Every endpoint answers { success, message, data: { token, user } } and the server returns TunTon's own JWT.
    ========================================================= */
 const dialog = document.getElementById('auth-dialog');
 const authMsg = document.getElementById('auth-message');
@@ -103,7 +105,7 @@ function openAuth(tab = 'login') {
   setTab(tab);
   closeMenu();
   if (!dialog.open) dialog.showModal();
-  if (!googleReady) showMessage('Sign-in is not available right now. Please try again later.', true);
+  setTimeout(() => dialog.querySelector(`[data-panel="${tab}"] input`)?.focus(), 0);
 }
 
 function closeAuth() { if (dialog.open) dialog.close(); }
@@ -114,43 +116,99 @@ function renderSession() {
   authOut.hidden = !!user;
   authIn.hidden = !user;
   if (user) {
-    document.getElementById('user-name').textContent = user.given_name || user.name;
+    document.getElementById('user-name').textContent = user.given_name || user.name || user.email;
     const avatar = document.getElementById('user-avatar');
+    avatar.hidden = !user.picture;   // accounts made with an email have no picture
     avatar.src = user.picture || '';
-    avatar.alt = user.name;
+    avatar.alt = user.name || '';
   }
+}
+
+/* Save the session and open the dashboard (or the report they clicked). `replace` = Back won't return here. */
+function finishLogin(body) {
+  const { token, user } = body.data;
+  /* `sub` is TunTon's own user id (the dashboard uses it to tell whose reports are whose). */
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ token, sub: user.id, ...user }));
+  location.replace(pendingReport ? REPORT_PAGE + encodeURIComponent(pendingReport) : DASHBOARD);
+}
+
+/* POST to an auth endpoint. Returns the response body when it worked, otherwise shows the error and returns null. */
+async function postAuth(path, payload) {
+  let res, body;
+  try {
+    res = await fetch(`${API}/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    body = await res.json();
+  } catch {
+    showMessage('Could not reach the TunTon server. Please try again.', true);
+    return null;
+  }
+  if (!res.ok || !body.success) {
+    if (body?.data?.code === 'NO_ACCOUNT') setTab('signup');
+    showMessage(body?.message || 'Something went wrong. Please try again.', true);
+    return null;
+  }
+  return body;
 }
 
 /* Called by Google after the user picks an account */
 async function handleCredential(response) {
   showMessage('Signing you in...');
-  let res, body;
-  try {
-    res = await fetch(`${API}/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential, mode: activeTab })
-    });
-    body = await res.json();
-  } catch {
-    showMessage('Could not reach the TunTon server. Please try again.', true);
-    return;
-  }
-
-  if (!res.ok || !body.success) {
-    if (body?.data?.code === 'NO_ACCOUNT') setTab('signup');
-    showMessage(body?.message || 'Sign-in failed. Please try again.', true);
-    return;
-  }
-
-  const { token, user } = body.data;
-  /* `sub` is TunTon's own user id (the dashboard uses it to tell whose reports are whose). */
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ token, sub: user.id, ...user }));
-
-  /* Go to the dashboard after login or sign up, or straight to the report they clicked
-     (replace = Back won't return here). */
-  location.replace(pendingReport ? REPORT_PAGE + encodeURIComponent(pendingReport) : DASHBOARD);
+  const body = await postAuth('google', { credential: response.credential, mode: activeTab });
+  if (body) finishLogin(body);
 }
+
+/* ---------- Email + password forms ---------- */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+
+/* Returns the first problem found (and marks that field), or '' when the form is fine. */
+function validate(form, rules) {
+  form.querySelectorAll('input').forEach(i => i.removeAttribute('aria-invalid'));
+  for (const [name, bad] of rules) {
+    const input = form.elements[name], msg = bad(input.value.trim(), input.value);
+    if (msg) { input.setAttribute('aria-invalid', 'true'); input.focus(); return msg; }
+  }
+  return '';
+}
+
+async function submitForm(form, path, rules, payload, busy) {
+  const problem = validate(form, rules);
+  if (problem) return showMessage(problem, true);
+  const btn = form.querySelector('.auth-submit'), label = btn.textContent;
+  btn.disabled = true; btn.textContent = busy; showMessage('');
+  const body = await postAuth(path, payload());
+  btn.disabled = false; btn.textContent = label;
+  if (body) { showMessage(''); finishLogin(body); }
+}
+
+loginForm.addEventListener('submit', e => {
+  e.preventDefault();
+  submitForm(loginForm, 'login', [
+    ['email', v => !v ? 'Please enter your email address.' : !EMAIL_RE.test(v) ? 'That email address does not look right.' : ''],
+    ['password', (v, raw) => !raw ? 'Please enter your password.' : '']
+  ], () => ({ email: loginForm.elements.email.value.trim().toLowerCase(), password: loginForm.elements.password.value }), 'Logging in...');
+});
+
+signupForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const f = signupForm.elements;
+  submitForm(signupForm, 'register', [
+    ['name', v => v.length < 2 ? 'Please enter your full name.' : ''],
+    ['email', v => !v ? 'Please enter your email address.' : !EMAIL_RE.test(v) ? 'That email address does not look right.' : ''],
+    ['password', (v, raw) => raw.length < 8 ? 'Your password needs at least 8 characters.' : ''],
+    ['confirm', (v, raw) => raw !== f.password.value ? 'The two passwords do not match.' : '']
+  ], () => ({ name: f.name.value.trim(), email: f.email.value.trim().toLowerCase(), password: f.password.value }), 'Creating account...');
+});
+
+/* Show / hide password */
+dialog.addEventListener('click', e => {
+  const t = e.target.closest('[data-toggle-pw]'); if (!t) return;
+  const input = document.getElementById(t.dataset.togglePw), show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  t.setAttribute('aria-pressed', show);
+  t.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+});
 
 function logout() {
   localStorage.removeItem(SESSION_KEY);
@@ -173,7 +231,7 @@ async function initGoogle() {
   google.accounts.id.renderButton(document.getElementById('google-signup'),
     { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signup_with', width: 280 });
   googleReady = true;
-  if (dialog.open && authMsg.classList.contains('error')) showMessage('');
+  dialog.querySelectorAll('.auth-alt').forEach(el => (el.hidden = false));   // Google is an extra option
 }
 
 /* ---------- Events ---------- */
@@ -194,7 +252,7 @@ document.querySelectorAll('[data-requires-auth]').forEach(btn =>
     } else {
       pendingTarget = target;
       openAuth('login');
-      if (googleReady) showMessage('Please log in or sign up to file a report.');
+      showMessage('Please log in or sign up to file a report.');
     }
   }));
 
@@ -284,7 +342,7 @@ function renderReports() {
 function requireLoginFor(id) {
   pendingReport = id || null;
   openAuth('login');
-  if (googleReady) showMessage(id ? 'Please log in or sign up to see the full details of this report.' : 'Please log in or sign up to browse all reports.');
+  showMessage(id ? 'Please log in or sign up to see the full details of this report.' : 'Please log in or sign up to browse all reports.');
 }
 
 document.querySelector('.pet-list#pets-list').closest('section').addEventListener('click', e => {

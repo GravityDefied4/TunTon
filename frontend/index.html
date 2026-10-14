@@ -199,20 +199,72 @@
   <!-- Login / Sign up dialog -->
   <dialog id="auth-dialog" class="dialog" aria-labelledby="auth-title">
     <button type="button" class="dialog-close" id="auth-close" aria-label="Close">&times;</button>
-    <h2 id="auth-title">Welcome to TunTon</h2>
-    <div class="tabs" role="tablist">
-      <button type="button" role="tab" class="tab" data-tab="login" aria-selected="true">Log in</button>
-      <button type="button" role="tab" class="tab" data-tab="signup" aria-selected="false">Sign up</button>
+    <div class="auth-split">
+      <aside class="auth-brand">
+        <img src="assets/logo/tunton-white.png" alt="" class="auth-brand-logo">
+        <h2 id="auth-title">Welcome to TunTon</h2>
+        <p>Help lost pets in Dagupan City find their way home.</p>
+      </aside>
+      <div class="auth-main">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" class="tab" data-tab="login" aria-selected="true">Log in</button>
+          <button type="button" role="tab" class="tab" data-tab="signup" aria-selected="false">Sign up</button>
+        </div>
+        <div class="auth-panels">
+        <div class="tab-panel" data-panel="login">
+          <p class="auth-lead">Log in with your email address and password to manage your reports.</p>
+          <form class="auth-form" id="login-form" novalidate>
+            <div class="field">
+              <label for="login-email">Email address</label>
+              <input type="email" id="login-email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required>
+            </div>
+            <div class="field">
+              <label for="login-password">Password</label>
+              <div class="pw-wrap">
+                <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Your password" required>
+                <button type="button" class="pw-toggle" data-toggle-pw="login-password" aria-label="Show password" aria-pressed="false"><svg class="eye eye-show" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye eye-hide" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/></svg></button>
+              </div>
+            </div>
+            <button type="submit" class="btn auth-submit">Log in</button>
+          </form>
+          <div class="auth-alt" hidden>
+            <div class="auth-or"><span>or</span></div>
+            <div id="google-login" class="google-slot"></div>
+          </div>
+        </div>
+        <div class="tab-panel" data-panel="signup" hidden>
+          <p class="auth-lead">Create your TunTon account with any email address.</p>
+          <form class="auth-form auth-form--2col" id="signup-form" novalidate>
+            <div class="field">
+              <label for="signup-name">Full name</label>
+              <input type="text" id="signup-name" name="name" autocomplete="name" placeholder="Juan Dela Cruz" required>
+            </div>
+            <div class="field">
+              <label for="signup-email">Email address</label>
+              <input type="email" id="signup-email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required>
+            </div>
+            <div class="field">
+              <label for="signup-password">Password</label>
+              <div class="pw-wrap">
+                <input type="password" id="signup-password" name="password" autocomplete="new-password" placeholder="8+ characters" minlength="8" required>
+                <button type="button" class="pw-toggle" data-toggle-pw="signup-password" aria-label="Show password" aria-pressed="false"><svg class="eye eye-show" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye eye-hide" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/></svg></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="signup-confirm">Confirm password</label>
+              <input type="password" id="signup-confirm" name="confirm" autocomplete="new-password" placeholder="Type it again" required>
+            </div>
+            <button type="submit" class="btn auth-submit">Create account</button>
+          </form>
+          <div class="auth-alt" hidden>
+            <div class="auth-or"><span>or</span></div>
+            <div id="google-signup" class="google-slot"></div>
+          </div>
+        </div>
+        </div>
+        <p class="form-note" id="auth-message" role="status" aria-live="polite"></p>
+      </div>
     </div>
-    <div class="tab-panel" data-panel="login">
-      <p>Log in with your Google account to manage your reports.</p>
-      <div id="google-login" class="google-slot"></div>
-    </div>
-    <div class="tab-panel" data-panel="signup" hidden>
-      <p>Create your TunTon account in one click with Google.</p>
-      <div id="google-signup" class="google-slot"></div>
-    </div>
-    <p class="form-note" id="auth-message" role="status" aria-live="polite"></p>
   </dialog>
 
   <script src="js/config.js"></script>

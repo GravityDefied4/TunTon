@@ -151,7 +151,7 @@ function setupForm(k, host) {
     form.elements.lat.value = ll.lat; form.elements.lng.value = ll.lng;
     if (zone) { if (circle) circle.setLatLng(ll).setRadius(+zone.value); else circle = L.circle(ll, { radius: +zone.value, color: '#d93636', weight: 2, fillOpacity: .1, interactive: false }).addTo(m); }
   };
-  const OUTSIDE = 'TunTon only covers Dagupan City. Please choose a spot inside the city.';
+  const OUTSIDE = 'TunTon only covers Dagupan City. Please choose a spot on land inside the city.';
   const put = (ll, pan) => {
     if (!inDagupan(ll.lat, ll.lng)) { err.textContent = OUTSIDE; return; }
     if (err.textContent === OUTSIDE) err.textContent = '';

@@ -16,11 +16,18 @@ const DAGUPAN = [16.0433, 120.3339];
 /* TunTon only covers Dagupan City. The city profile puts it at 16°01'–16°07' N, 120°18'–120°23' E;
    a small margin is added so the coast and the edge barangays are never clipped. [[south, west], [north, east]] */
 const DAGUPAN_BOUNDS = [[16.005, 120.290], [16.125, 120.395]];
-const inDagupan = (lat, lng) => lat >= DAGUPAN_BOUNDS[0][0] && lat <= DAGUPAN_BOUNDS[1][0] && lng >= DAGUPAN_BOUNDS[0][1] && lng <= DAGUPAN_BOUNDS[1][1];
-/* Approximate outline of Dagupan City [lat, lng], clockwise from the north-west coast.
-   It is hand-drawn from the city's published extent, NOT surveyed data. To make it exact, replace these points
-   with the city boundary from an official/OpenStreetMap GeoJSON (swap each [lng, lat] pair to [lat, lng]). */
-const DAGUPAN_OUTLINE = [[16.0950,120.3180],[16.1000,120.3330],[16.0990,120.3480],[16.0900,120.3600],[16.0780,120.3760],[16.0620,120.3830],[16.0450,120.3780],[16.0300,120.3700],[16.0200,120.3600],[16.0170,120.3450],[16.0200,120.3300],[16.0180,120.3150],[16.0300,120.3050],[16.0450,120.3000],[16.0600,120.3050],[16.0750,120.3100]];
+/* Outline of Dagupan City [lat, lng]: LAND ONLY (it follows the coast, not the Lingayen Gulf).
+   Source: OpenStreetMap city boundary (relation 13001749), simplified to 74 points. Data (c) OpenStreetMap contributors, ODbL. */
+const DAGUPAN_OUTLINE = [[16.108713,120.373904],[16.098833,120.375877],[16.090192,120.371005],[16.089918,120.369268],[16.086719,120.364111],[16.080542,120.362541],[16.071495,120.367873],[16.067055,120.357617],[16.063304,120.355135],[16.058774,120.35533],[16.051914,120.360844],[16.050346,120.366864],[16.04972,120.367463],[16.047185,120.370305],[16.046678,120.371358],[16.041286,120.377326],[16.041266,120.37737],[16.041116,120.377536],[16.023202,120.377899],[16.022426,120.377139],[16.019752,120.370356],[16.019731,120.369971],[16.02002,120.367089],[16.022002,120.361194],[16.021314,120.35864],[16.020994,120.356296],[16.020995,120.356086],[16.021247,120.354533],[16.018139,120.346593],[16.014487,120.343284],[16.014363,120.340826],[16.017043,120.331529],[16.016955,120.329396],[16.009353,120.322529],[16.008933,120.319265],[16.016487,120.314592],[16.022726,120.313578],[16.026501,120.314928],[16.029096,120.311144],[16.03445,120.308035],[16.037113,120.307596],[16.042249,120.304292],[16.042356,120.304265],[16.046226,120.301464],[16.046665,120.301454],[16.050121,120.299982],[16.051681,120.299605],[16.059238,120.29875],[16.059555,120.300026],[16.061251,120.301666],[16.061195,120.303337],[16.062889,120.305862],[16.063749,120.309998],[16.06539,120.312469],[16.06625,120.316666],[16.069555,120.323303],[16.06875,120.328308],[16.070833,120.33036],[16.0725,120.329559],[16.076666,120.329582],[16.078306,120.330391],[16.080389,120.332497],[16.082111,120.336609],[16.089556,120.349976],[16.089556,120.350807],[16.091249,120.352531],[16.091249,120.354111],[16.097918,120.362503],[16.097918,120.363281],[16.108305,120.373779]];
+/* Is this point on Dagupan's land? (point-in-polygon test; the sea is NOT inside, so reports cannot be filed on water.) */
+const inDagupan = (lat, lng) => {
+  let inside = false;
+  for (let i = 0, j = DAGUPAN_OUTLINE.length - 1; i < DAGUPAN_OUTLINE.length; j = i++) {
+    const [yi, xi] = DAGUPAN_OUTLINE[i], [yj, xj] = DAGUPAN_OUTLINE[j];
+    if ((yi > lat) !== (yj > lat) && lng < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
 const BRGY = ['Bacayao Norte','Bacayao Sur','Barangay I (T. Bugallon)','Barangay II (Nueva)','Barangay IV (Zamora)','Bolosan','Bonuan Binloc','Bonuan Boquig','Bonuan Gueset','Calmay','Carael','Caranglaan','Herrero-Perez','Lasip Chico','Lasip Grande','Lomboy','Lucao','Malued','Mamalingling','Mangin','Mayombo','Pantal','Poblacion Oeste','Pogo Chico','Pogo Grande','Pugaro Suit','Salapingao','Salisay','Tambac','Tapuac','Tebeng'];
 
 /* Sample reports (coordinates are approximate placeholders) */
@@ -102,13 +109,13 @@ const lockToDagupan = map => {
   const fit = () => { const sz = map.getSize(); if (sz.x && sz.y) map.setMinZoom(map.getBoundsZoom(DAGUPAN_BOUNDS)); };
   fit(); map.on('resize', fit);
 };
-/* Highlights Dagupan City: everything outside the outline is dimmed, and the city itself gets a green outline + light tint. */
+/* Draws the Dagupan City land boundary on a map (it does NOT restrict the map: people can look anywhere).
+   Returns { fit() } which zooms the map to the whole city. */
+const CITY_STYLE = { color: '#0f6b3f', weight: 3, opacity: .95, lineJoin: 'round', fillColor: '#2fa05a', fillOpacity: .1, interactive: false };
 const highlightDagupan = map => {
-  const world = [[-90, -180], [-90, 180], [90, 180], [90, -180]];
-  L.polygon([world, DAGUPAN_OUTLINE], { stroke: false, fillColor: '#1d2b24', fillOpacity: .45, interactive: false }).addTo(map);
-  const city = L.polygon(DAGUPAN_OUTLINE, { color: '#0f6b3f', weight: 3, dashArray: '8 6', fillColor: '#0f6b3f', fillOpacity: .07, interactive: false }).addTo(map);
-  city.bindTooltip('Dagupan City', { permanent: true, direction: 'center', className: 'city-label' });
-  return city;
+  const layer = L.polygon(DAGUPAN_OUTLINE, CITY_STYLE).addTo(map);
+  layer.bindTooltip('Dagupan City', { permanent: true, direction: 'center', className: 'city-label' });
+  return { fit: () => map.fitBounds(layer.getBounds(), { padding: [24, 24] }) };
 };
 /* Small line icons used instead of emoji (decorative, so hidden from screen readers). */
 const ico = d => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;

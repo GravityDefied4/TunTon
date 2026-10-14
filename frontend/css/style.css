@@ -941,6 +941,146 @@ p {
     margin-bottom: .5rem;
 }
 
+/* ---------- Email / password forms inside the auth dialog ---------- */
+.auth-lead { margin: 0 auto 1rem; color: var(--muted); font-weight: 600; }
+
+.auth-form { display: grid; gap: .35rem; text-align: left; }
+
+.auth-form label { font-weight: 700; font-size: .92rem; margin-top: .55rem; }
+
+.auth-form input {
+    width: 100%;
+    padding: .72em 1em;
+    border: 2px solid #cfe8b8;
+    border-radius: 16px;
+    font: inherit;
+    background: var(--white);
+    color: var(--ink);
+}
+
+.auth-form input:focus { outline: 3px solid var(--leaf); outline-offset: 1px; border-color: var(--leaf); }
+.auth-form input[aria-invalid="true"] { border-color: #c0392b; }
+
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 3.2rem; }
+
+.pw-toggle {
+    position: absolute;
+    top: 50%;
+    right: .45rem;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--forest);
+    cursor: pointer;
+}
+
+.pw-toggle .eye { width: 1.25rem; height: 1.25rem; }
+.pw-toggle .eye-hide { display: none; }
+.pw-toggle[aria-pressed="true"] .eye-show { display: none; }
+.pw-toggle[aria-pressed="true"] .eye-hide { display: block; }
+
+.pw-toggle:hover { background: var(--mint); }
+.pw-toggle:focus-visible { outline: 3px solid var(--leaf); outline-offset: 1px; }
+
+.auth-submit { width: 100%; margin-top: 1rem; background: var(--grad-mid); color: var(--white); }
+.auth-submit[disabled] { opacity: .65; cursor: progress; transform: none; }
+
+.auth-or { display: flex; align-items: center; gap: .8rem; margin: 1.1rem 0 .9rem; color: var(--muted); font-weight: 700; font-size: .85rem; }
+.auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: #cfe8b8; }
+
+.dialog .form-note { margin-top: .8rem; }
+
+/* ---------- Auth dialog: horizontal layout (brand panel + form) ----------
+   Two side-by-side panels, so the whole dialog is short enough to show without scrolling.
+   The sign-up fields sit in two columns for the same reason. */
+#auth-dialog {
+    width: min(1060px, 94vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+}
+
+.auth-split {
+    display: grid;
+    grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr);
+    min-height: 500px;
+    max-height: calc(100vh - 1.5rem);
+    max-height: calc(100dvh - 1.5rem);
+}
+
+.auth-brand {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2.5rem 2.25rem;
+    color: var(--white);
+    background: linear-gradient(135deg, var(--leaf) 0%, var(--logo-green) 55%, var(--logo-lime) 100%);   /* same as .hero */
+}
+
+
+.auth-brand-logo { width: 170px; height: auto; display: block; filter: drop-shadow(0 2px 6px rgba(10, 79, 46, .3)); }
+
+#auth-dialog .auth-brand h2 { margin: 0; font-size: 2rem; line-height: 1.15; color: var(--white); text-shadow: 0 1px 3px rgba(10, 79, 46, .4); }
+#auth-dialog .auth-brand p { margin: 0; font-weight: 600; font-size: 1.1rem; color: var(--white); text-shadow: 0 1px 3px rgba(10, 79, 46, .4); }
+
+.auth-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 2.75rem 1.5rem;
+    overflow-y: auto;       /* only if the screen is shorter than the dialog */
+}
+
+/* Log in and Sign up sit in the same grid cell: the dialog is always as tall as the
+   taller one, and switching tabs never changes its size (the other panel is just invisible). */
+.auth-panels { display: grid; }
+.auth-panels > .tab-panel { grid-area: 1 / 1; min-width: 0; display: flex; flex-direction: column; }
+/* !important only because the site has a global [hidden] { display: none !important } */
+.auth-panels > .tab-panel[hidden] { display: flex !important; visibility: hidden; pointer-events: none; }
+.auth-panels .auth-alt { margin-top: auto; }   /* the Google row lines up on both tabs */
+
+#auth-dialog .tabs { margin-bottom: 1rem; }
+#auth-dialog .auth-lead { margin: 0 0 .9rem; line-height: 1.6; }
+
+#auth-dialog .auth-form { gap: 1.05rem; }
+#auth-dialog .auth-form .field { display: grid; gap: .3rem; min-width: 0; }
+#auth-dialog .auth-form label { margin-top: 0; }
+
+.auth-form--2col { grid-template-columns: 1fr 1fr; column-gap: 1.25rem; }
+.auth-form--2col .auth-submit { grid-column: 1 / -1; }
+
+#auth-dialog .auth-submit { margin-top: .65rem; padding-block: .9rem; }
+#auth-dialog .auth-or { margin: .8rem 0 .6rem; }
+#auth-dialog .form-note { margin-top: .5rem; min-height: 1.3em; text-align: center; }
+
+@media (max-width: 720px) {
+    /* Phones: the brand panel becomes a slim banner above the form */
+    #auth-dialog { width: min(440px, 94vw); }
+    .auth-split { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+    .auth-brand { padding: 1rem 3rem 1.6rem 1.25rem; gap: .2rem; }
+    .auth-brand-logo, #auth-dialog .auth-brand p { display: none; }
+    #auth-dialog .auth-brand h2 { font-size: 1.35rem; }
+    .auth-main { padding: 1.1rem 1.25rem 1rem; }
+    .auth-form--2col { grid-template-columns: 1fr; }
+    #auth-dialog .dialog-close { color: var(--white); }
+    #auth-dialog .tabs { margin-bottom: .7rem; }
+    #auth-dialog .auth-lead { margin-bottom: .3rem; }
+    #auth-dialog .auth-form { gap: .8rem; }
+    #auth-dialog .auth-or { margin: .6rem 0 .4rem; }
+    #auth-dialog .form-note { margin-top: .3rem; min-height: 1.1em; }
+}
+
+
 /* ---------- Footer ---------- */
 .footer {
     background: linear-gradient(to bottom, var(--forest-dark) 0%, var(--forest-dark) 40%, var(--forest) 100%);
