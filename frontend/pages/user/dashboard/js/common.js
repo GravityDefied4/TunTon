@@ -17,9 +17,9 @@ const BRGY = ['Bacayao Norte','Bacayao Sur','Barangay I (T. Bugallon)','Barangay
 
 /* Sample reports (coordinates are approximate placeholders) */
 const SAMPLES = [
-  { id: 's1', kind: 'lost', name: 'White and brown dog', species: 'Dog', breed: 'Mixed breed', color: 'White and brown', size: 'Medium', markings: 'Brown patches on the back and ears, red collar', description: 'Slipped out of the gate on the evening of Oct 6 when the delivery rider left it open. Very friendly with people, but may hide under parked vehicles if scared. Answers to "Browny".', brgy: 'Pantal', date: '2026-10-06', lat: 16.0465, lng: 120.3375, zone: 1000, contact: '0917 123 4567', photo: IMG + 'Pet1.jpg', created: Date.parse('2026-10-06T08:00:00') },
-  { id: 's2', kind: 'lost', name: 'Tilapia cat', species: 'Cat', breed: 'Domestic shorthair', color: 'Grey', size: 'Small', markings: 'Grey coat, lighter belly, no collar', description: 'Went out through a window left open in the afternoon. Very vocal and usually comes when called by name. Indoor cat, so it may be frightened and hiding nearby.', brgy: 'Lucao', date: '2026-10-05', lat: 16.0285, lng: 120.3465, zone: 1000, contact: 'owner.lucao@example.com', photo: IMG + 'Pet3.jpg', created: Date.parse('2026-10-05T08:00:00') },
-  { id: 's3', kind: 'lost', name: 'Tabby cat', species: 'Cat', breed: '', color: 'Tabby', size: 'Small', markings: 'Orange-brown stripes, white paws, notch on left ear', description: 'Last seen leaving the yard at dusk. Shy with strangers, but will eat if food is left out quietly. Please do not chase it; call the owner instead.', brgy: 'Tapuac', date: '2026-10-03', lat: 16.0525, lng: 120.3305, zone: 500, contact: '0928 555 0199', photo: IMG + 'Pet4.jpg', created: Date.parse('2026-10-03T08:00:00') }
+  { id: 's1', kind: 'lost', ownerName: 'Rosa Villanueva', name: 'White and brown dog', species: 'Dog', breed: 'Mixed breed', color: 'White and brown', size: 'Medium', markings: 'Brown patches on the back and ears, red collar', description: 'Slipped out of the gate on the evening of Oct 6 when the delivery rider left it open. Very friendly with people, but may hide under parked vehicles if scared. Answers to "Browny".', brgy: 'Pantal', date: '2026-10-06', lat: 16.0465, lng: 120.3375, zone: 1000, contact: '0917 123 4567', photo: IMG + 'Pet1.jpg', created: Date.parse('2026-10-06T08:00:00') },
+  { id: 's2', kind: 'lost', ownerName: 'Mark Dizon', name: 'Tilapia cat', species: 'Cat', breed: 'Domestic shorthair', color: 'Grey', size: 'Small', markings: 'Grey coat, lighter belly, no collar', description: 'Went out through a window left open in the afternoon. Very vocal and usually comes when called by name. Indoor cat, so it may be frightened and hiding nearby.', brgy: 'Lucao', date: '2026-10-05', lat: 16.0285, lng: 120.3465, zone: 1000, contact: 'owner.lucao@example.com', photo: IMG + 'Pet3.jpg', created: Date.parse('2026-10-05T08:00:00') },
+  { id: 's3', kind: 'lost', ownerName: 'Liza Fernandez', name: 'Tabby cat', species: 'Cat', breed: '', color: 'Tabby', size: 'Small', markings: 'Orange-brown stripes, white paws, notch on left ear', description: 'Last seen leaving the yard at dusk. Shy with strangers, but will eat if food is left out quietly. Please do not chase it; call the owner instead.', brgy: 'Tapuac', date: '2026-10-03', lat: 16.0525, lng: 120.3305, zone: 500, contact: '0928 555 0199', photo: IMG + 'Pet4.jpg', created: Date.parse('2026-10-03T08:00:00') }
 ];
 
 /* ---------- Helpers ---------- */
@@ -77,10 +77,32 @@ const authFetch = async (path, opts = {}) => {
 /* Confirm the session with the server (a suspended or deleted account is signed out).
    If the server can't be reached the page keeps working with the stored session. */
 if (sess) authFetch('/auth/me').catch(() => {});
-const prof = () => read(PROFILE_KEY, {});
+/* The profile (display name, picture, phone...) belongs to ONE account, so it is stored
+   under that account's id. (The old shared key 'tunton_profile' is no longer read.) */
+const profileKey = id => PROFILE_KEY + ':' + id;
+const prof = () => read(profileKey(myId), {});
 const myId = sess?.sub || 'guest';
 const shownName = () => prof().dname || sess?.given_name || sess?.name || 'Guest';
+/* Local stand-in for the users table: remembers each account's name and Google picture,
+   so a report card can show who filed it. (With the backend, the API sends owner_name and
+   owner_picture and this is no longer needed.) */
+const USERS_KEY = 'tunton_users';
+const readUsers = () => read(USERS_KEY, {});
+const rememberMe = () => {
+  if (!sess) return;
+  const users = readUsers(), entry = { name: shownName(), picture: sess.picture || '' };
+  if (JSON.stringify(users[myId]) === JSON.stringify(entry)) return;
+  try { localStorage.setItem(USERS_KEY, JSON.stringify({ ...users, [myId]: entry })); } catch { /* storage full */ }
+};
+/* Name and picture of any account known on this browser (their own profile wins). */
+const userInfo = id => {
+  const known = (id && readUsers()[id]) || {}, own = id ? read(profileKey(id), {}) : {};
+  return { name: own.dname || known.name || '', picture: own.picture || known.picture || '' };
+};
+rememberMe();
+
 const applyIdentity = () => {
+  rememberMe();
   const name = $('#user-name'), initial = $('#user-initial');
   if (!name || !initial) return; /* sidebar not on the page yet */
   name.textContent = shownName();

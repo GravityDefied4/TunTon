@@ -180,7 +180,7 @@ pfForm.addEventListener('submit', e => {
     else delete next.picture;
   }
   try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+    localStorage.setItem(profileKey(myId), JSON.stringify(next));
   } catch {
     $('#pf-note').textContent = 'Could not save your profile. Try a smaller photo.';
     return;

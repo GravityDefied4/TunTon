@@ -38,6 +38,8 @@ const PLACEHOLDER_ROW = {
   where_now: '',                // found reports: where the pet is now
   status: 'active',             // 'active' | 'reunited'  (a lost report shows as found once its owner confirms a find)
   user_id: 1,
+  owner_name: 'Juan Dela Cruz',  // reporter's display name
+  owner_picture: '/uploads/users/1.jpg',  // reporter's profile picture (optional)
   created_at: '2026-10-03T08:00:00Z'
 };
 
@@ -61,6 +63,8 @@ const toReport = row => ({
   photos: Array.isArray(row.photo_urls) && row.photo_urls.length ? row.photo_urls : [row.photo_url],
   date: String(row.date_reported).slice(0, 10),
   contact: row.contact || '',
+  ownerPicture: row.owner_picture || '',   // reporter's profile picture URL
+  ownerName: row.owner_name || '',   // name of the user who filed the report (join users.name in SQL)
   zone: Number(row.zone) || 0,
   where: row.where_now || '',
   status: row.status,
