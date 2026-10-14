@@ -6,6 +6,7 @@
 
 const grid = $('#all-list');
 const toolbar = document.querySelector('#view-reports .toolbar');
+let here = null;     // [lat, lng] of the person, once known (for "1.2 km away")
 let reports = [];     // result of the last ReportsAPI.list() call
 
 const titleOf = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
@@ -14,14 +15,6 @@ const filters = () => ({
   species: $('#rsp').value,
   q: $('#rq').value.trim()
 });
-/* Small line icons used instead of emoji (decorative, so hidden from screen readers). */
-const ico = d => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-const ICON = {
-  pin: ico('<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
-  calendar: ico('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
-  check: ico('<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>'),
-  bell: ico('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>')
-};
 
 /* Who filed the report. Your own reports say "You"; if the owner can't be found at all the
    card says "Community member". */
@@ -37,9 +30,9 @@ const reporterOf = r => {
    quiet status label, so a card never ends up with a different footer layout. */
 const footerAction = (r, lost, isFound, mine) =>
   isFound ? `<span class="pet-status pet-status--found">${ICON.check}Pet found</span>`
+  : !lost && confirmedClaim(r) ? `<span class="pet-status pet-status--found">${ICON.check}Owner found</span>`
   : mine ? '<span class="pet-status">Your report</span>'
-  : lost ? `<a class="btn btn-sun" href="found.html?match=${encodeURIComponent(r.id)}">I found this pet</a>`
-  : `<a class="btn btn-sun" href="lost.html?claim=${encodeURIComponent(r.id)}">This is my lost pet</a>`;
+  : respondButton(r);
 const message = text => { grid.innerHTML = `<p class="rempty">${esc(text)}</p>`; };
 
 function card(r) {
@@ -53,11 +46,11 @@ function card(r) {
     <div class="pet-body">
       <h3>${esc(title)}</h3>
       <ul class="pet-info">
-        <li>${ICON.pin}<span>${verb} in ${esc(r.brgy)}</span></li>
+        <li>${ICON.pin}<span>${verb} in ${esc(r.brgy)}${here ? ' &middot; ' + esc(awayText(here, r)) : ''}</span></li>
         <li>${ICON.calendar}<span>${verb} <time datetime="${esc(r.date)}">${esc(niceDate(r.date))}</time> &middot; ${esc(ago(r.date))}</span></li>
-        ${isFound ? `<li>${ICON.check}<span>Found in ${esc(confirmedFind(r).brgy)} &middot; ${esc(niceDate(confirmedFind(r).date))}</span></li>` : lost && findsOf(r).length ? `<li>${ICON.bell}<span>${findsOf(r).length} found ${findsOf(r).length === 1 ? 'report' : 'reports'} &middot; waiting for the owner</span></li>` : ''}
+        ${isFound ? `<li>${ICON.check}<span>Found in ${esc(confirmedFind(r).brgy)} &middot; ${esc(niceDate(confirmedFind(r).date))}</span></li>` : lost && findsOf(r).length ? `<li>${ICON.bell}<span>${findsOf(r).length} found ${findsOf(r).length === 1 ? 'report' : 'reports'} &middot; waiting for the owner</span></li>` : !lost && confirmedClaim(r) ? `<li>${ICON.check}<span>Owner confirmed</span></li>` : !lost && claimsOf(r).length ? `<li>${ICON.bell}<span>${claimsOf(r).length} lost ${claimsOf(r).length === 1 ? 'report' : 'reports'} &middot; waiting for the finder</span></li>` : ''}
       </ul>
-      <p class="pet-by"><span class="pet-by-av" aria-hidden="true">${esc(who.initial)}${who.picture ? `<img src="${esc(who.picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><span class="pet-by-text">Reported by <b>${esc(who.name)}</b></span></p>
+      <p class="pet-by"><span class="pet-by-av" aria-hidden="true">${esc(who.initial)}${who.picture ? `<img src="${esc(who.picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><span class="pet-by-text">Posted by <b>${esc(who.name)}</b></span></p>
     </div>
     <div class="pet-actions">
       <a class="btn btn-plain" href="report.html?id=${encodeURIComponent(r.id)}">View details</a>
@@ -98,3 +91,6 @@ toolbar.addEventListener('input', e => {
 });
 
 load();
+
+/* Distance from the person: shown once their location is known (nothing is shown if they block it) */
+whereAmI().then(h => { here = h; if (h && reports.length) draw(); });

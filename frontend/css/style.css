@@ -118,6 +118,10 @@ p {
     font-size: 1rem;
     text-decoration: none;
     border: 2px solid transparent;
+    /* A gradient is positioned from the padding box by default, so it repeats into the transparent border
+       and leaves a dark/light strip on the edges. Start it at the outer edge and never repeat it. */
+    background-origin: border-box;
+    background-repeat: no-repeat;
     cursor: pointer;
     transition: transform .15s ease, background .15s ease;
 }
@@ -162,6 +166,25 @@ p {
     background: transparent;
     color: var(--forest);
     border-color: var(--forest);
+}
+
+/* Edit button: calm mint, for something you already sent (the yellow button is for starting something new) */
+.btn-edit {
+    background: var(--mint);
+    color: var(--forest-dark);
+}
+
+.btn-edit:hover {
+    background: #c8eaac;
+}
+
+/* Must come AFTER the variants above: their `background:` shorthand resets origin/repeat, which is what
+   made gradient buttons show a dark strip on the left, right and bottom edges. */
+.btn,
+.btn:hover,
+.btn:focus-visible {
+    background-origin: border-box;
+    background-repeat: no-repeat;
 }
 
 /* ---------- Header (dark green so the light logo is readable) ---------- */

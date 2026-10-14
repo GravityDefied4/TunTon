@@ -36,9 +36,14 @@
 }
 
 .pin span {
+  display: grid;
   transform: rotate(45deg);
-  font-size: 16px;
-  line-height: 1;
+  color: #fff;
+}
+
+.pin .ico {
+  width: 17px;
+  height: 17px;
 }
 
 .pin--lost {
@@ -255,4 +260,31 @@
 @media (max-width: 1000px) {
   .map-side { margin-top: 1rem; }
   .side-body { overflow: visible; }
+}
+
+/* Dagupan City highlight */
+.legend i.legend-city {
+  border-radius: 3px;
+  background: rgba(15, 107, 63, .15);
+  border: 2px dashed #0f6b3f;
+  width: 16px;
+  height: 12px;
+  box-sizing: border-box;
+}
+
+.leaflet-tooltip.city-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #0f6b3f;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-shadow: 0 0 4px #fff, 0 0 4px #fff, 0 0 4px #fff;
+  pointer-events: none;
+}
+
+.leaflet-tooltip.city-label::before {
+  display: none;
 }

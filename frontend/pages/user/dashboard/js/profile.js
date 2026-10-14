@@ -30,7 +30,8 @@ function renderProfile() {
         <span class="badge ${r.status === 'reunited' || reportState(r) === 'found' ? 'badge--home' : r.kind === 'lost' ? 'badge--lost' : ''}">${r.status === 'reunited' ? '&#10003; Reunited' : reportState(r) === 'found' ? 'Pet found' : r.kind === 'lost' ? 'Lost' : 'Found'}</span>
         <h3>${esc(r.name || [speciesOf(r), r.color].filter(Boolean).join(' · '))}</h3>
         <p>${esc(r.brgy)} &middot; ${esc(ago(r.date))}</p>
-        ${r.kind === 'lost' && r.status !== 'reunited' && findsOf(r).some(f => f.status === 'pending') && reportState(r) !== 'found' ? `<p class="rep-alert">🔔 ${findsOf(r).filter(f => f.status === 'pending').length} found report(s) to review</p>` : ''}
+        ${r.kind === 'lost' && r.status !== 'reunited' && findsOf(r).some(f => f.status === 'pending') && reportState(r) !== 'found' ? `<p class="rep-alert">${ICON.bell} ${findsOf(r).filter(f => f.status === 'pending').length} found report(s) to review</p>` : ''}
+        ${r.kind === 'found' && r.status !== 'reunited' && !confirmedClaim(r) && claimsOf(r).some(c => c.status === 'pending') ? `<p class="rep-alert">${ICON.bell} ${claimsOf(r).filter(c => c.status === 'pending').length} lost report(s) to review</p>` : ''}
       </div>
       <div class="rep-actions" data-id="${esc(r.id)}">
         <a class="rep-view-link" href="report.html?id=${encodeURIComponent(r.id)}"><span class="rep-view-label">View report</span><span class="rep-view-arrow" aria-hidden="true">&rsaquo;</span></a>

@@ -142,72 +142,7 @@
   text-align: center;
 }
 
-/* Found reports (finds) on a lost report */
-.d-finds {
-  display: grid;
-  gap: 1rem;
-}
-
-.d-find {
-  padding: 1rem 1.25rem;
-  border-radius: 20px;
-  background: var(--mint);
-  border-left: 8px solid var(--logo-lime);
-}
-
-.d-find--confirmed {
-  border-left-color: var(--forest);
-  background: #e6f6d6;
-}
-
-.d-find--rejected {
-  opacity: .65;
-  border-left-color: #b9c9bf;
-}
-
-.d-find header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-  margin-bottom: .7rem;
-}
-
-.d-find h3 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.d-status {
-  padding: .2em .9em;
-  border-radius: var(--radius-sm);
-  background: var(--white);
-  font-weight: 700;
-  font-size: .85rem;
-}
-
-.d-status--confirmed {
-  background: var(--forest);
-  color: var(--white);
-}
-
-.d-find-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .6rem;
-  margin-top: 1rem;
-}
-
-.d-find-actions .btn {
-  text-align: center;
-}
-
 /* Finder's response on a lost report */
-.d-foundbox {
-  border-left: 8px solid var(--leaf);
-}
-
 .d-found-photos {
   display: flex;
   flex-wrap: wrap;
@@ -314,4 +249,834 @@
   .d-map {
     height: 260px;
   }
+}
+
+/* Owner / finder contact card (top of every report) */
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .9rem 1rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f2fbe8, var(--mint));
+  border: 2px solid var(--leaf);
+  box-shadow: 0 4px 14px rgba(15, 107, 63, .12);
+}
+
+.contact-card--empty {
+  background: #f6f8f6;
+  border: 2px dashed #c4d4ca;
+  box-shadow: none;
+}
+
+.cc-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--grad-mid);
+  color: #fff;
+}
+
+.cc-icon .ico {
+  width: 22px;
+  height: 22px;
+}
+
+.contact-card--empty .cc-icon {
+  background: #dfe8e2;
+  color: var(--muted);
+}
+
+.cc-body {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.cc-label {
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+
+.cc-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  color: var(--forest-dark);
+  overflow-wrap: anywhere;
+}
+
+a.cc-value:hover {
+  text-decoration: underline;
+}
+
+.cc-note,
+.cc-none {
+  margin: 0;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cc-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5em 1em;
+  border-radius: var(--radius-sm);
+  background: var(--forest);
+  color: #fff;
+  font-weight: 700;
+  font-size: .9rem;
+  text-decoration: none;
+}
+
+.cc-btn:hover {
+  background: var(--forest-dark);
+}
+
+.cc-btn .ico {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 480px) {
+  .contact-card { flex-wrap: wrap; }
+  .cc-btn { width: 100%; justify-content: center; }
+}
+
+/* Icon rows (location, date, ...) in the summary card and map side panel */
+.d-summary .pet-info li,
+.map-side .pet-info li {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.d-summary .pet-info .ico,
+.map-side .pet-info .ico {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: .22em;
+  color: var(--leaf);
+}
+
+.badge .ico,
+.d-status .ico {
+  width: 1em;
+  height: 1em;
+  margin-right: .3em;
+  vertical-align: -.12em;
+}
+
+/* ===== Report details v2: contact card shows details only (no call/email buttons) ===== */
+.contact-card {
+  display: grid;
+  gap: .8rem;
+  padding: 1rem 1.1rem 1.1rem;
+  border-radius: 22px;
+  background: linear-gradient(160deg, #f4fcea, var(--mint));
+  border: 2px solid var(--leaf);
+  box-shadow: 0 4px 14px rgba(15, 107, 63, .12);
+}
+
+.cc-head {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.cc-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--grad-mid);
+  color: #fff;
+}
+
+.cc-badge .ico { width: 21px; height: 21px; }
+
+.cc-title {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: var(--forest-dark);
+}
+
+.cc-note {
+  margin: .1rem 0 0;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cc-list {
+  display: grid;
+  gap: .45rem;
+  margin: 0;
+}
+
+.cc-row {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 38%) 1fr;
+  gap: .6rem;
+  align-items: baseline;
+  padding: .55rem .75rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .75);
+}
+
+.cc-row dt {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+
+.cc-row dt .ico {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--leaf);
+}
+
+.cc-row dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--forest-dark);
+  overflow-wrap: anywhere;
+  user-select: all;   /* one tap/click selects the whole value so it is easy to copy */
+}
+
+.cc-row dd.cc-missing {
+  font-family: inherit;
+  font-size: .95rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--muted);
+  user-select: none;
+}
+
+@media (max-width: 480px) {
+  .cc-row { grid-template-columns: 1fr; gap: .1rem; }
+}
+
+/* Section headings with an icon */
+.d-card h2 {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.d-card h2 > .ico {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  color: var(--leaf);
+}
+
+/* Least important section: quiet styling */
+.d-meta h2 { font-size: 1rem; color: var(--muted); }
+.d-meta .d-list dt, .d-meta .d-list dd { font-size: .92rem; }
+
+.d-contact {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  user-select: all;
+}
+
+.d-contact .ico {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: var(--leaf);
+}
+
+/* ===== v3: cleaner contact card + photo fills the column (no dead space under it) ===== */
+.d-top { align-items: stretch; }
+
+.d-gallery {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.d-photo {
+  flex: 1;
+  aspect-ratio: auto;
+  min-height: 380px;
+}
+
+.d-thumbs { flex: none; }
+
+@media (max-width: 800px) {
+  .d-photo { flex: none; aspect-ratio: 4 / 3; min-height: 0; }
+}
+
+/* Contact card: light, flat, two columns of small labelled fields */
+.contact-card {
+  gap: .9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  background: var(--mint);
+  border: 0;
+  box-shadow: none;
+}
+
+.cc-head { gap: .65rem; }
+
+.cc-badge {
+  width: 36px;
+  height: 36px;
+}
+
+.cc-badge .ico { width: 18px; height: 18px; }
+
+.cc-title { font-size: 1.05rem; }
+.cc-note { font-size: .82rem; }
+
+.cc-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+}
+
+.cc-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .15rem;
+  padding: .6rem .8rem;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.cc-row dt {
+  gap: .35rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.cc-row dt .ico { width: .95rem; height: .95rem; }
+
+.cc-row dd {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.cc-row dd.cc-missing { font-size: .9rem; }
+
+/* Narrow areas (map side panel, small phones): one column */
+.map-side .cc-list { grid-template-columns: 1fr; }
+
+@media (max-width: 480px) {
+  .cc-list { grid-template-columns: 1fr; }
+  .cc-row { grid-template-columns: 1fr; gap: .15rem; }
+}
+
+/* ===== v4: smaller photo + compact summary panel ===== */
+.d-top {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+/* The photo fills whatever height the summary panel needs, but never grows with the picture itself */
+.d-photo {
+  min-height: 380px;
+  max-height: 560px;
+}
+
+.d-photo-btn {
+  position: absolute;
+  inset: 0;
+}
+
+.d-summary {
+  gap: .55rem;
+  padding: 1.25rem 1.4rem;
+}
+
+.d-summary h1 { font-size: clamp(1.5rem, 2.4vw, 1.9rem); }
+
+.d-summary .contact-card { padding: .85rem .9rem; gap: .7rem; }
+.d-summary .cc-row { padding: .5rem .7rem; }
+.d-summary .cc-row dd { font-size: .98rem; }
+
+.d-summary .pet-info { gap: .3rem; }
+
+/* Buttons side by side */
+.d-actions {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: .35rem;
+}
+
+.d-actions .d-owner-actions { grid-column: 1 / -1; }
+
+@media (max-width: 800px) {
+  .d-photo { max-height: none; }
+}
+
+/* ===== v5: owner options menu + balanced thumbnails ===== */
+.d-sumhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.d-options { position: relative; }
+
+.d-options-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 2px solid #cfe8b8;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--forest);
+  cursor: pointer;
+}
+
+.d-options-btn:hover,
+.d-options-btn[aria-expanded="true"] {
+  background: var(--mint);
+  border-color: var(--leaf);
+}
+
+.d-options-btn .ico {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.d-menu {
+  position: absolute;
+  top: calc(100% + .4rem);
+  right: 0;
+  z-index: 20;
+  min-width: 11.5rem;
+  padding: .35rem;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #dbe9d0;
+  box-shadow: 0 10px 28px rgba(15, 60, 35, .18);
+}
+
+.d-menu[hidden] { display: none; }
+
+.d-menu a,
+.d-menu button {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .6rem .8rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--forest-dark);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.d-menu a:hover,
+.d-menu button:hover { background: var(--mint); }
+
+.d-menu .ico {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.d-menu .d-menu-danger { color: #c62828; }
+.d-menu .d-menu-danger:hover { background: #fdeaea; }
+
+/* Thumbnails: an even, centered row that fills the width (no empty space on one side) */
+.d-thumbs {
+  display: flex;
+  justify-content: center;
+  gap: .6rem;
+  overflow: visible;
+}
+
+.d-thumbs button {
+  flex: 1 1 0;
+  min-width: 56px;
+  max-width: 190px;
+  height: 92px;
+}
+
+.d-thumbs img {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== v6: one main button + icon-only "view on map" ===== */
+.d-actions {
+  display: flex;
+  align-items: stretch;
+  gap: .6rem;
+  margin-top: .35rem;
+}
+
+.d-actions .btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 52px;
+  margin: 0;
+}
+
+.d-mapbtn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  min-height: 52px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #fff;
+  text-decoration: none;
+}
+
+.d-mapbtn:hover { background: var(--forest-dark); }
+
+.d-mapbtn .ico {
+  width: 22px;
+  height: 22px;
+}
+
+.d-actions .btn .ico {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* Posted date: small, quiet line at the bottom of the summary panel (replaces the old "Report info" card) */
+.d-posted {
+  margin: .25rem 0 0;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ===== v7: fewer, merged cards ===== */
+.d-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1.5rem 2rem;
+  align-items: start;
+}
+
+.d-split .d-map {
+  height: 100%;
+  min-height: 260px;
+  max-height: 300px;
+}
+
+.d-split-text h2 { margin-top: 0; }
+.d-split-text .hint { margin: .9rem 0 0; }
+
+.d-about-text {
+  padding-left: 2rem;
+  border-left: 2px solid var(--mint);
+}
+
+.d-about-text h3 {
+  margin: 0 0 .5rem;
+  font-size: 1.05rem;
+  color: var(--forest);
+}
+
+.d-about-text .d-text { margin: 0; }
+
+@media (max-width: 800px) {
+  .d-split { grid-template-columns: 1fr; }
+  .d-split .d-map { height: 240px; min-height: 0; }
+  .d-about-text { padding: 1rem 0 0; border-left: 0; border-top: 2px solid var(--mint); }
+}
+
+/* ===== v8: person's name as the card title, Facebook link ===== */
+.cc-title {
+  font-size: 1.3rem;
+  overflow-wrap: anywhere;
+}
+
+.cc-note {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.cc-row dd .cc-link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1a5fd0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  user-select: auto;
+}
+
+.cc-row dd .cc-link:hover { color: #0f45a0; }
+
+/* Owner's TunTon profile picture (falls back to their initial) */
+.cc-avatar {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--grad-mid);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(15, 60, 35, .2);
+}
+
+.cc-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-side .cc-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.2rem;
+}
+
+/* ===== v10: found report card (clean, no side stripe; one consistent field style) ===== */
+.d-finds { display: grid; gap: 1.1rem; }
+
+.d-find {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #dbe9d0;
+  box-shadow: 0 2px 10px rgba(15, 60, 35, .06);
+}
+
+.d-find--confirmed { background: #f6fcef; border-color: #bfe0a3; }
+.d-find--rejected { opacity: .7; }
+
+/* shared small label style (facts, notes, contact) */
+.d-label {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.d-label .ico { width: .95rem; height: .95rem; color: var(--leaf); }
+
+/* header: who + status */
+.d-find-head { display: flex; align-items: center; gap: .85rem; margin: 0; }
+.d-find-avatar { width: 52px; height: 52px; font-size: 1.3rem; }
+.d-find-who { flex: 1; min-width: 0; }
+.d-find-who h3 { margin: 0; font-size: 1.2rem; line-height: 1.2; overflow-wrap: anywhere; }
+.d-find-who p { margin: .15rem 0 0; font-size: .85rem; font-weight: 600; color: var(--muted); }
+.d-find-who b { color: var(--forest); }
+
+.d-status {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: .3em .9em;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: .85rem;
+  background: #fff7d6;
+  border: 1px solid #f0d66a;
+  color: #7a5b00;
+}
+
+.d-status--confirmed { background: var(--forest); border-color: var(--forest); color: #fff; }
+.d-status--rejected { background: #eef2ef; border-color: #d3ddd6; color: var(--muted); }
+
+/* body: photo | details */
+.d-find-body {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.d-find-body--nophoto { grid-template-columns: 1fr; }
+
+.d-find-photos { display: grid; gap: .5rem; }
+
+.d-find-photos button {
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.d-find-main { aspect-ratio: 1; }
+.d-find-photos img { width: 100%; height: 100%; object-fit: cover; }
+.d-find-thumbs { display: flex; gap: .5rem; }
+.d-find-thumbs button { flex: 1 1 0; max-width: 72px; aspect-ratio: 1; border-radius: 12px; }
+
+.d-find-info { display: grid; gap: 1.1rem; min-width: 0; }
+
+/* one panel, equal columns, thin dividers (works for 2 or 3 items) */
+.d-find-facts {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 16px;
+  background: var(--mint);
+  overflow: hidden;
+}
+
+.d-find-facts li {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  padding: .85rem 1rem;
+  min-width: 0;
+}
+
+.d-find-facts li + li { border-left: 1px solid rgba(15, 107, 63, .15); }
+.d-find-facts .ico { flex: none; width: 1.15rem; height: 1.15rem; margin-top: .1rem; color: var(--forest); }
+.d-find-facts div { display: grid; gap: .1rem; min-width: 0; }
+.d-find-facts strong { font-family: var(--font-display); font-size: 1.02rem; font-weight: 600; line-height: 1.25; color: var(--forest-dark); overflow-wrap: anywhere; }
+.d-find-facts small { font-size: .82rem; font-weight: 700; color: var(--forest); }
+
+/* the claimant's pet: small tags (name, species, breed, color, size) */
+.d-find-pet { display: grid; gap: .45rem; }
+.d-find-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+.d-find-tags span {
+  padding: .25rem .75rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #cfe3c0;
+  font-weight: 700;
+  font-size: .9rem;
+  color: var(--forest-dark);
+}
+
+/* notes: side by side, same label style */
+.d-find-notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem 1.5rem;
+}
+
+.d-find-note { display: grid; gap: .3rem; align-content: start; min-width: 0; }
+.d-find-note p { margin: 0; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; white-space: pre-line; }
+
+/* contact strip */
+.d-find-contact {
+  display: grid;
+  gap: .5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #e3eed8;
+}
+
+.d-find-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+.d-find-chips .d-contact {
+  padding: .4rem .85rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #cfe3c0;
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--forest-dark);
+}
+
+.d-find-chips .cc-link { display: inline; }
+
+/* locked state (everyone except the owner and the finder) */
+.d-find-contact--locked {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: .85rem;
+}
+
+.d-find-lock {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #eef2ef;
+  color: var(--muted);
+}
+
+.d-find-lock .ico { width: 19px; height: 19px; }
+.d-find-contact--locked .d-label { font-size: .9rem; color: var(--forest-dark); }
+.d-find-contact--locked p { margin: .15rem 0 .55rem; font-size: .9rem; font-weight: 600; color: var(--muted); }
+
+.d-find-chips .d-contact--locked {
+  background: #f4f7f5;
+  border: 1px dashed #c4d4ca;
+  color: var(--muted);
+  font-size: .85rem;
+  user-select: none;
+}
+
+.d-find-chips .d-contact--locked .ico { color: var(--muted); }
+
+.d-find-actions { display: flex; flex-wrap: wrap; gap: .6rem; padding-top: 1.1rem; border-top: 1px solid #e3eed8; }
+.d-find-actions .btn { text-align: center; }
+
+@media (max-width: 800px) {
+  .d-find { padding: 1.1rem; }
+  .d-find-body { grid-template-columns: 1fr; }
+  .d-find-main { aspect-ratio: 4 / 3; }
+  .d-find-facts { grid-auto-flow: row; }
+  .d-find-facts li + li { border-left: 0; border-top: 1px solid rgba(15, 107, 63, .15); }
+  .d-find-head { flex-wrap: wrap; }
+  .d-find-who { flex-basis: 55%; }
 }

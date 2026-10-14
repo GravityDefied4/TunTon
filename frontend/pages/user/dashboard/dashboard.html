@@ -25,7 +25,7 @@
           <span class="chip" id="status">Finding your location&hellip;</span>
           <label>Show within
             <select id="radius" class="btn btn-small btn-plain" style="padding:.4em .8em">
-              <option value="1">1 km</option><option value="3">3 km</option><option value="5" selected>5 km</option><option value="10">10 km</option><option value="all">All reports</option>
+              <option value="0.5">500 m</option><option value="1">1 km</option><option value="2">2 km</option><option value="3" selected>3 km</option><option value="5">5 km</option><option value="all">All of Dagupan</option>
             </select>
           </label>
           <button type="button" class="btn btn-small" id="locate">My location</button>
@@ -39,7 +39,7 @@
             <div class="side-body" id="side-body" aria-live="polite"></div>
           </aside>
         </div>
-        <div class="legend"><span><i style="background:var(--alert)"></i>Lost</span><span><i style="background:var(--leaf)"></i>Potentially found</span><span><i style="background:#2f7bf0"></i>You</span></div>
+        <div class="legend"><span><i style="background:var(--alert)"></i>Lost</span><span><i style="background:var(--leaf)"></i>Potentially found</span><span><i style="background:#2f7bf0"></i>You</span><span><i class="legend-city"></i>Dagupan City (dimmed area is outside)</span></div>
       </section>
     </main>
   </div>

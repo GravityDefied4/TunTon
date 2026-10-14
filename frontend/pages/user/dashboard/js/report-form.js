@@ -83,6 +83,7 @@ function setupForm(k, host) {
   const form = host.querySelector('form'), err = host.querySelector('.err');
   const m = L.map(host.querySelector('.pick')).setView(DAGUPAN, 15);
   tiles(m);
+  lockToDagupan(m);
   setupPills(form);
 
   /* Species drives the form: "Other" asks for the animal, and the breed box only works once a species is chosen,
@@ -114,13 +115,17 @@ function setupForm(k, host) {
   form.addEventListener('reset', () => setTimeout(syncSpecies));
   syncSpecies();
 
-  // A user who recognizes a found-pet report can start a lost report with pet details prefilled.
+  // A user who recognizes a found-pet report can send their lost-pet details to THAT found report (lost.html?claim=<id>).
+  // This never creates a lost report of its own: the details are added to the found report for its finder to confirm.
   // The user must still confirm the missing date/location and upload a photo before submitting.
+  let claimTarget = null, claimEdit = null;
   if (k === 'lost') {
     const claimId = new URLSearchParams(location.search).get('claim');
     if (claimId) {
-      const foundReport = mergedReports().find(r => String(r.id) === claimId && r.kind === 'found');
+      const foundReport = mergedReports().find(r => String(r.id) === claimId && r.kind === 'found' && !isOwner(r) && !confirmedClaim(r));
       if (foundReport) {
+        claimTarget = foundReport; form.dataset.claimFor = foundReport.id;
+        if (new URLSearchParams(location.search).get('update')) claimEdit = myPendingClaim(foundReport);
         const speciesRadio = form.querySelector(`input[name="species"][value="${CSS.escape(foundReport.species || '')}"]`);
         if (speciesRadio) speciesRadio.checked = true;
         syncSpecies();
@@ -133,24 +138,30 @@ function setupForm(k, host) {
         form.elements.description.value = foundReport.description || foundReport.howFound || '';
         const banner = document.createElement('p');
         banner.className = 'match-banner';
-        banner.textContent = 'You are reporting that this found pet is yours and is missing. Confirm the details, choose when and where your pet was last seen, upload a photo, and drop a pin before submitting.';
+        banner.textContent = claimEdit ? 'You are editing the lost report you sent to this found pet. Change what you need, then save. It does not create a new lost report.' : 'You are saying this found pet is yours. Your lost pet details are added to that found report for its finder to confirm. It does not create a new lost report. Check the details, choose when and where your pet was last seen, add a photo, and drop a pin.';
         form.parentElement.insertBefore(banner, form);
       }
     }
   }
 
   const zone = form.elements.zone;
-  let pin = null, circle = null;
+  let pin = null, circle = null, lastOk = null;
   const draw = () => {
     const ll = pin.getLatLng();
     form.elements.lat.value = ll.lat; form.elements.lng.value = ll.lng;
     if (zone) { if (circle) circle.setLatLng(ll).setRadius(+zone.value); else circle = L.circle(ll, { radius: +zone.value, color: '#d93636', weight: 2, fillOpacity: .1, interactive: false }).addTo(m); }
   };
+  const OUTSIDE = 'TunTon only covers Dagupan City. Please choose a spot inside the city.';
   const put = (ll, pan) => {
-    if (!pin) { pin = L.marker(ll, { draggable: true, icon: pinIcon(k) }).addTo(m); pin.on('drag', draw); }
+    if (!inDagupan(ll.lat, ll.lng)) { err.textContent = OUTSIDE; return; }
+    if (err.textContent === OUTSIDE) err.textContent = '';
+    if (!pin) { pin = L.marker(ll, { draggable: true, icon: pinIcon(k) }).addTo(m); pin.on('drag', draw);
+      /* A pin dragged out of the city snaps back to its last valid spot. */
+      pin.on('dragend', () => { const at = pin.getLatLng(); if (inDagupan(at.lat, at.lng)) lastOk = at; else { pin.setLatLng(lastOk); draw(); err.textContent = OUTSIDE; } }); }
     else pin.setLatLng(ll);
-    draw(); if (pan) m.setView(ll, 16);
+    lastOk = pin.getLatLng(); draw(); if (pan) m.setView(ll, 16);
   };
+  if (claimTarget) m.setView([claimTarget.lat, claimTarget.lng], 16);
   m.on('click', e => put(e.latlng));
   zone?.addEventListener('change', () => pin && draw());
   host.querySelector('.locate-pin').addEventListener('click', () => {
@@ -211,6 +222,56 @@ function setupForm(k, host) {
     else previewPhoto(photos[i].name, photos[i].data);
   });
 
+  /* ---------- Edit mode: lost.html?edit=<id> / found.html?edit=<id> (owner only) ---------- */
+  const editId = new URLSearchParams(location.search).get('edit');
+  const editing = editId ? read(REPORTS_KEY, []).find(x => x.id === editId && x.owner === myId && x.kind === k) : null;
+  if (editId && !editing) {
+    const note = document.createElement('p');
+    note.className = 'match-banner';
+    note.textContent = 'This report could not be found, or it is not yours to edit.';
+    form.parentElement.insertBefore(note, form); form.hidden = true;
+  }
+  /* Fills the whole form from a saved object (a report, or a response such as a find or a claim).
+     Fields the object does not have are left alone, so a prefilled breed/color is not wiped. */
+  const fillFrom = r => {
+    const set = (n, v) => { if (form.elements[n] && v != null) form.elements[n].value = v; };
+    const radio = r.species && form.querySelector(`input[name="species"][value="${CSS.escape(r.species)}"]`);
+    if (radio) radio.checked = true;
+    syncSpecies();
+    if (r.species === 'Other') otherInput.value = r.otherSpecies || '';
+    set('name', r.name); set('size', r.size); set('markings', r.markings);
+    set('description', r.description); set('howfound', r.howFound); set('where', r.where);
+    set('brgy', r.brgy); set('date', r.date); set('zone', r.zone || ''); set('contact', r.contact); set('facebook', r.facebook || '');
+    if ('breed' in r) breedBox.pills.set(r.breed || '');
+    if ('color' in r) form.querySelector('.pills[data-pills="color"]').pills.set(r.color || '');
+    photos = (r.photos && r.photos.length ? r.photos : [r.photo]).filter(Boolean).map((d, i) => ({ name: 'Photo ' + (i + 1), size: Math.round(d.length * .75), data: d }));
+    drawFiles();
+    put(L.latLng(r.lat, r.lng), true);
+    setupAutoGrowTextareas?.(form);
+  };
+  form.fillFrom = fillFrom;
+
+  if (editing) {
+    fillFrom(editing);
+    const banner = document.createElement('p');
+    banner.className = 'match-banner';
+    banner.textContent = 'You are editing your report. Change what you need, then save.';
+    form.parentElement.insertBefore(banner, form);
+    form.querySelector('button[type="submit"]').textContent = 'Save changes';
+    host.querySelector('.again')?.remove();
+    document.title = 'Edit report | TunTon';
+    host.querySelectorAll('h1').forEach(h => { h.textContent = 'Edit your ' + k + ' report'; });
+  }
+
+  if (claimEdit) {
+    fillFrom(claimEdit);
+    form.dataset.updating = '1';
+    form.querySelector('button[type="submit"]').textContent = 'Save changes';
+    host.querySelector('.again')?.remove();
+    document.title = 'Edit lost report | TunTon';
+    host.querySelectorAll('h1').forEach(h => { h.textContent = 'Edit your lost report'; });
+  }
+
   form.addEventListener('submit', e => {
     e.preventDefault(); err.textContent = '';
     form.querySelectorAll('.pills').forEach(b => b.pills.commit());
@@ -227,38 +288,65 @@ function setupForm(k, host) {
       const base = mergedReports().find(x => x.id === matchId);
       if (!base) { err.textContent = 'That lost report is no longer available.'; return; }
       if (isOwner(base)) { err.textContent = 'This is your own lost report.'; return; }
-      const find = { id: 'f' + Date.now(), by: myId, founderName: shownName(), status: 'pending', contact: f.get('contact'), where: f.get('where') || '', brgy: f.get('brgy'), date: f.get('date'), lat: +f.get('lat'), lng: +f.get('lng'), markings: f.get('markings'), howFound: f.get('howfound') || '', photos: photos.map(p => p.data), at: Date.now() };
+      const prev = form.dataset.updating ? myPendingFind(base) : null;
+      const find = { id: prev ? prev.id : 'f' + Date.now(), by: myId, founderName: shownName(), status: 'pending', contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), where: f.get('where') || '', brgy: f.get('brgy'), date: f.get('date'), lat: +f.get('lat'), lng: +f.get('lng'), markings: f.get('markings'), howFound: f.get('howfound') || '', photos: photos.map(p => p.data), at: prev ? prev.at : Date.now(), ...(prev ? { editedAt: Date.now() } : {}) };
       const { found: _old, ...rest } = base;
       /* one open find per person: sending again replaces your earlier one that is still waiting */
       const finds = findsOf(base).filter(x => !(x.by === myId && x.status === 'pending')).concat(find);
       try { saveReport({ ...rest, owner: base.owner || (SAMPLES.some(s => s.id === matchId) ? 'sample' : base.owner), finds }); }
       catch { err.textContent = 'Could not save this (browser storage is full).'; return; }
-      host.querySelector('.done h2').textContent = 'Found report sent';
-      host.querySelector('.done p').textContent = 'Thank you! The owner of the lost report can now see your details and will confirm if this is their pet.';
+      host.querySelector('.done h2').textContent = prev ? 'Found report updated' : 'Found report sent';
+      host.querySelector('.done p').textContent = prev ? 'Your changes have been saved on the lost report.' : 'Thank you! The owner of the lost report can now see your details and will confirm if this is their pet.';
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(matchId);
       host.querySelector('.done .actions a').textContent = 'View the report';
       form.hidden = true; host.querySelector('.done').hidden = false;
-      host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor;
+      host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
       window.scrollTo(0, 0);
       return;
     }
-    host.querySelector('.done h2').textContent = 'Report filed';
-    host.querySelector('.done p').textContent = k === 'lost' ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.';
-    host.querySelector('.done .actions a').href = 'dashboard.html';
-    host.querySelector('.done .actions a').textContent = 'View on map';
-    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, ownerName: shownName(), status: 'active', matchFor: form.dataset.matchFor || '' };
-    try { localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r))); }
+    const claimId = form.dataset.claimFor || '';
+    if (claimId) {
+      /* "This is my lost pet" on a found report: add a claim to THAT report. No new lost report is created.
+         The report only shows as Owner found once its finder confirms a claim. */
+      const base = mergedReports().find(x => x.id === claimId && x.kind === 'found');
+      if (!base) { err.textContent = 'That found report is no longer available.'; return; }
+      if (isOwner(base)) { err.textContent = 'This is your own found report.'; return; }
+      if (confirmedClaim(base)) { err.textContent = 'The finder already confirmed an owner for this pet.'; return; }
+      const prev = form.dataset.updating ? myPendingClaim(base) : null;
+      const claim = { id: prev ? prev.id : 'c' + Date.now(), by: myId, ownerName: shownName(), status: 'pending', species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), size: f.get('size'), markings: f.get('markings'), description: f.get('description') || '', brgy: f.get('brgy'), date: f.get('date'), zone: +f.get('zone') || 0, contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), lat: +f.get('lat'), lng: +f.get('lng'), photos: photos.map(p => p.data), at: prev ? prev.at : Date.now(), ...(prev ? { editedAt: Date.now() } : {}) };
+      /* one open claim per person: sending again replaces your earlier one that is still waiting */
+      const claims = claimsOf(base).filter(x => !(x.by === myId && x.status === 'pending')).concat(claim);
+      try { saveReport({ ...base, owner: base.owner || (SAMPLES.some(s => s.id === claimId) ? 'sample' : base.owner), claims }); }
+      catch { err.textContent = 'Could not save this (browser storage is full).'; return; }
+      host.querySelector('.done h2').textContent = prev ? 'Lost report updated' : 'Lost report sent';
+      host.querySelector('.done p').textContent = prev ? 'Your changes have been saved on the found report.' : "Thank you! The finder can now see your pet's details and will confirm if this is your pet.";
+      host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(claimId);
+      host.querySelector('.done .actions a').textContent = 'View the report';
+      form.hidden = true; host.querySelector('.done').hidden = false;
+      host.querySelector('.match-banner')?.remove(); delete form.dataset.claimFor;
+      window.scrollTo(0, 0);
+      return;
+    }
+    host.querySelector('.done h2').textContent = editing ? 'Report updated' : 'Report filed';
+    host.querySelector('.done p').textContent = editing ? 'Your changes have been saved.' : k === 'lost' ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.';
+    host.querySelector('.done .actions a').href = editing ? 'report.html?id=' + encodeURIComponent(editing.id) : 'dashboard.html';
+    host.querySelector('.done .actions a').textContent = editing ? 'View report' : 'View on map';
+    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, ownerName: shownName(), status: 'active', matchFor: form.dataset.matchFor || '' };
+    try {
+      if (editing) saveReport({ ...editing, ...r, id: editing.id, owner: editing.owner, ownerName: editing.ownerName, created: editing.created, status: editing.status, finds: editing.finds, claims: editing.claims, found: editing.found, matchFor: editing.matchFor });
+      else localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r)));
+    }
     catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
     form.hidden = true; host.querySelector('.done').hidden = false;
-    host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor;
+    host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
     window.scrollTo(0, 0);
   });
 
-  host.querySelector('.again').addEventListener('click', () => {
+  host.querySelector('.again')?.addEventListener('click', () => {
     form.reset(); photos = []; drawFiles(); err.textContent = '';
     if (pin) { m.removeLayer(pin); pin = null; } if (circle) { m.removeLayer(circle); circle = null; }
     form.hidden = false; host.querySelector('.done').hidden = true;
-    host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor;
+    host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
   });
 
   new ResizeObserver(() => m.invalidateSize()).observe(host.querySelector('.pick'));

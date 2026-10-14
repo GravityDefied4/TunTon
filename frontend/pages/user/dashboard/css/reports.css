@@ -183,9 +183,13 @@
   transition: transform .15s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
 }
 
+/* Same hover as before. The gradient is set with longhands (not the `background:` shorthand) so it
+   keeps starting at the outer edge of the border and does not leave a strip on the sides. */
 #all-list .pet-actions > .btn-plain:hover,
 #all-list .pet-actions > .btn-plain:focus-visible {
-  background: var(--grad-mid);
+  background-image: var(--grad-mid);
+  background-origin: border-box;
+  background-repeat: no-repeat;
   border-color: transparent;
   color: var(--white);
 }
@@ -213,10 +217,12 @@
   border-radius: inherit;
 }
 
-#all-list .pet-actions > .btn-sun {
+#all-list .pet-actions > .btn-sun,
+#all-list .pet-actions > .btn-edit {
   position: relative;
   z-index: 2;
 }
+
 
 /* No lift on the link itself (a transform would shrink the clickable layer to the button) */
 #all-list .pet-actions > .btn-plain:hover {

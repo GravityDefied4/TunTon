@@ -11,6 +11,8 @@ if (typeof L === 'undefined') {
 let me = null;
 const map = L.map('map').setView(DAGUPAN, 13);
 tiles(map);
+lockToDagupan(map);
+highlightDagupan(map);
 const group = L.layerGroup().addTo(map);
 const markers = {};
 let meMarker = null, ring = null;
@@ -18,7 +20,6 @@ let visible = [], selectedId = null;   // reports inside the radius, and the one
 const side = $('#side'), sideBody = $('#side-body'), sideToggle = $('#side-toggle');
 const desktop = () => matchMedia('(min-width: 1001px)').matches;   // on desktop the panel floats over the map
 const titleOf = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
-const distText = d => d < 1 ? Math.round(d * 1000) + ' m' : d.toFixed(1) + ' km';
 const stateText = r => reportState(r) === 'lost' ? 'Missing' : 'Potentially found';
 
 function render(fit) {
@@ -42,16 +43,12 @@ function render(fit) {
   $('#count').textContent = pts.length + (pts.length === 1 ? ' report' : ' reports');
   if (fit) {
     if (lim === Infinity && pts.length) map.fitBounds(L.latLngBounds(pts.concat([origin])).pad(.2));
-    else map.setView(origin, lim <= 1 ? 15 : lim <= 3 ? 14 : 13);
+    else if (ring) map.fitBounds(ring.getBounds(), { padding: [20, 20] });   // zoom so the whole circle is on screen
+    else map.setView(origin, 13);
   }
 }
 
 /* ---------- Side panel: list of reports (nothing selected) or details of the selected report ---------- */
-const contactLink = c => {
-  if (!c) return '<p class="hint">The reporter did not leave contact details.</p>';
-  const href = /@/.test(c) ? 'mailto:' + c : /^[+\d][\d\s()-]{6,}$/.test(c) ? 'tel:' + c.replace(/[^\d+]/g, '') : '';
-  return href ? `<a class="side-contact" href="${esc(href)}">${esc(c)}</a>` : `<p class="side-contact">${esc(c)}</p>`;
-};
 
 function listHTML() {
   if (!visible.length) return '<div class="side-empty"><h2>No reports here</h2><p>Try a larger radius or press My location.</p></div>';
@@ -78,16 +75,17 @@ function detailHTML(r) {
     <span class="badge ${lost ? 'badge--lost' : 'badge--home'}">${lost ? 'Lost pet' : r.kind === 'lost' ? 'Pet found' : 'Found pet'}</span>
     <h2 class="side-name">${esc(titleOf(r))}</h2>
     <p class="d-sub">${esc([speciesOf(r), r.breed, r.color].filter(Boolean).join(' · '))}</p>
+    ${contactCardHTML(r, r.kind === 'lost' ? 'Owner' : 'Finder')}
     <ul class="pet-info">
-      <li><span aria-hidden="true">📍</span> ${verb} in ${esc(r.brgy)}</li>
-      <li><span aria-hidden="true">🗓️</span> ${esc(niceDate(r.date))} &middot; ${esc(ago(r.date))}</li>
-      ${cf ? `<li><span aria-hidden="true">✅</span> Found in ${esc(cf.brgy)} &middot; ${esc(niceDate(cf.date))}</li>` : ''}
+      <li>${ICON.pin}<span>${verb} in ${esc(r.brgy)}${me ? ' &middot; ' + esc(awayText(me, r)) : ''}</span></li>
+      <li>${ICON.calendar}<span>${esc(niceDate(r.date))} &middot; ${esc(ago(r.date))}</span></li>
+      ${cf ? `<li>${ICON.check}<span>Found in ${esc(cf.brgy)} &middot; ${esc(niceDate(cf.date))}</span></li>` : ''}
     </ul>
     ${desc ? `<h3>${r.kind === 'lost' ? 'Description' : 'How it was found'}</h3><p class="side-text">${esc(desc)}</p>` : ''}
     <h3>Pet details</h3><dl class="side-dl">${facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-    <h3>${r.kind === 'lost' ? "Owner's contact" : 'Contact'}</h3>${contactLink(r.contact)}
     <div class="side-actions">
-      ${lost && !owner ? `<a class="btn btn-sun" href="found.html?match=${encodeURIComponent(r.id)}">I found this pet</a>` : ''}
+      ${lost && !owner ? respondButton(r) : ''}
+      ${r.kind === 'found' && !owner && !confirmedClaim(r) ? respondButton(r) : ''}
       <a class="btn btn-small" href="report.html?id=${encodeURIComponent(r.id)}">View full details</a>
     </div>`;
 }
@@ -144,10 +142,14 @@ function locate() {
   if (!navigator.geolocation) return fallback('Location not supported. Showing Dagupan City.');
   navigator.geolocation.getCurrentPosition(p => {
     me = [p.coords.latitude, p.coords.longitude];
-    if (meMarker) meMarker.setLatLng(me);
-    else meMarker = L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18] }), interactive: false, zIndexOffset: 1000 }).addTo(map);
-    if (km(me, DAGUPAN) > 15) { $('#radius').value = 'all'; $('#status').textContent = 'You are outside Dagupan City. Showing all reports.'; }
-    else $('#status').textContent = 'Using your current location';
+    if (!inDagupan(...me)) {   // the map is locked to Dagupan City, so a spot outside it cannot be shown
+      me = null; if (meMarker) { map.removeLayer(meMarker); meMarker = null; }
+      $('#radius').value = 'all'; $('#status').textContent = 'You are outside Dagupan City. Showing all reports in Dagupan.';
+    } else {
+      if (meMarker) meMarker.setLatLng(me);
+      else meMarker = L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18] }), interactive: false, zIndexOffset: 1000 }).addTo(map);
+      $('#status').textContent = 'Using your current location';
+    }
     render(true);
   }, () => fallback('Location unavailable. Showing Dagupan City.'), { enableHighAccuracy: true, timeout: 10000 });
 }
