@@ -81,22 +81,6 @@
 
   <main>
     <section class="hero" id="home">
-      <svg class="hero-paws" aria-hidden="true" focusable="false">
-        <defs>
-          <g id="hero-paw" fill="#fff">
-            <path d="M32 30c-8 0-16 8-16 15 0 6 5 9 10 9 2 0 4-1 6-1s4 1 6 1c5 0 10-3 10-9 0-7-8-15-16-15z"/>
-            <ellipse cx="14" cy="26" rx="5" ry="7" transform="rotate(-22 14 26)"/>
-            <ellipse cx="25" cy="14" rx="5.5" ry="8"/>
-            <ellipse cx="39" cy="14" rx="5.5" ry="8"/>
-            <ellipse cx="50" cy="26" rx="5" ry="7" transform="rotate(22 50 26)"/>
-          </g>
-          <pattern id="hero-paws-pattern" width="150" height="150" patternUnits="userSpaceOnUse" patternTransform="rotate(-18)">
-            <use href="#hero-paw" transform="translate(14 16) scale(.6)"/>
-            <use href="#hero-paw" transform="translate(89 91) scale(.6)"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#hero-paws-pattern)"/>
-      </svg>
       <div class="container hero-inner">
         <div class="hero-text">
           <h1>Lost your pet? <span class="hero-accent">Let&rsquo;s bring them home.</span></h1>
@@ -104,7 +88,6 @@
           <div class="actions">
             <button type="button" class="btn btn-sun btn-lg" data-requires-auth data-target="#pets" data-href="./pages/user/dashboard/lost.html">Report a lost pet</button>
             <button type="button" class="btn btn-ghost btn-lg" data-requires-auth data-target="#pets" data-href="./pages/user/dashboard/found.html">I found a pet</button>
-            <a href="#how" class="hero-link">How it works <span aria-hidden="true">&darr;</span></a>
           </div>
         </div>
         <div class="hero-visual" data-state="lost">
@@ -234,29 +217,21 @@
     <button type="button" class="dialog-close" id="auth-close" aria-label="Close">&times;</button>
     <div class="auth-split">
       <aside class="auth-brand">
-        <svg class="auth-paws" viewBox="0 0 300 280" aria-hidden="true" focusable="false">
-          <defs>
-            <g id="auth-paw">
-              <path d="M32 30c-8 0-16 8-16 15 0 6 5 9 10 9 2 0 4-1 6-1s4 1 6 1c5 0 10-3 10-9 0-7-8-15-16-15z"/>
-              <ellipse cx="14" cy="26" rx="5" ry="7" transform="rotate(-22 14 26)"/>
-              <ellipse cx="25" cy="14" rx="5.5" ry="8"/>
-              <ellipse cx="39" cy="14" rx="5.5" ry="8"/>
-              <ellipse cx="50" cy="26" rx="5" ry="7" transform="rotate(22 50 26)"/>
-            </g>
-          </defs>
-          <use href="#auth-paw" transform="translate(18 214) rotate(38 32 32)"/>
-          <use href="#auth-paw" transform="translate(88 196) rotate(30 32 32)"/>
-          <use href="#auth-paw" transform="translate(110 130) rotate(38 32 32)"/>
-          <use href="#auth-paw" transform="translate(182 116) rotate(30 32 32)"/>
-          <use href="#auth-paw" transform="translate(204 50) rotate(38 32 32)"/>
-        </svg>
         <h2 id="auth-title"><span data-copy="kicker">Welcome back to</span> <img src="assets/logo/tunton-white.png" alt="TunTon" class="auth-brand-logo"></h2>
         <p class="auth-brand-tag" data-copy="tag">Check on your reports and see new matches.</p>
         <ul class="auth-perks">
-          <li><span class="auth-perk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Report a lost or found pet in minutes</span></li>
-          <li><span class="auth-perk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span>Get alerted when a likely match appears</span></li>
-          <li><span class="auth-perk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>Help pets get back to their families</span></li>
+          <li><span class="auth-perk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Report a pet in minutes</span></li>
+          <li><span class="auth-perk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span>Get alerts for likely matches</span></li>
+          <li><span class="auth-perk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>Help pets get back home</span></li>
         </ul>
+        <div class="auth-showcase" aria-hidden="true">
+          <figure class="auth-photo auth-photo--back"><img src="assets/img/Pet4.jpg" alt=""></figure>
+          <figure class="auth-photo auth-photo--front"><img src="assets/img/Pet2.jpg" alt=""></figure>
+          <div class="auth-match">
+            <span class="auth-match-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+            <span class="auth-match-text"><strong>Likely match nearby</strong><small>We&rsquo;ll alert you</small></span>
+          </div>
+        </div>
       </aside>
       <div class="auth-main">
         <div class="auth-head">

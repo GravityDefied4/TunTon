@@ -24,6 +24,7 @@
     --grad-bright: linear-gradient(90deg, var(--leaf), var(--logo-green), var(--logo-lime));
     --grad-mid: linear-gradient(135deg, var(--forest), var(--leaf));
     --grad-dark: linear-gradient(135deg, var(--forest-dark), var(--forest));
+    --grad-brand: linear-gradient(125deg, var(--forest-dark) 0%, var(--forest) 40%, var(--leaf) 62%, var(--logo-green) 80%, var(--lime) 96%);  /* hero + login panel */
 }
 
 /* ---------- Base ---------- */
@@ -343,7 +344,7 @@ p {
 /* ---------- Hero ---------- */
 .hero {
     position: relative;
-    background: linear-gradient(135deg, var(--leaf) 0%, var(--logo-green) 55%, var(--logo-lime) 100%);
+    background: var(--grad-brand);
     color: var(--white);
     /* hero slides up behind the transparent header (header is 72px tall) */
     margin-top: -72px;
@@ -355,7 +356,7 @@ p {
     position: relative;
     z-index: 2;
     display: grid;
-    grid-template-columns: 1.1fr 1fr;
+    grid-template-columns: 1.25fr 1fr;
     gap: 3rem;
     align-items: center;
     padding-bottom: 1.5rem;
@@ -374,7 +375,7 @@ p {
 .hero .lead {
     color: var(--white);
     text-shadow: 0 1px 3px rgba(10, 79, 46, .4);
-    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    font-size: clamp(1.5rem, 3.5vw, 2.5rem);
     margin-bottom: 1.6rem;
 }
 
@@ -1048,24 +1049,22 @@ p {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 2.5rem 2.25rem;
+    justify-content: flex-start;
+    padding: 2.75rem 2.25rem 0;
     color: var(--white);
     /* Deep greens only: white text on the bright lime of the hero gradient failed contrast. */
-    background: linear-gradient(160deg, var(--forest-dark) 0%, var(--forest) 60%, #14804a 100%);
+    /* same colors as the hero, but the bright end is kept to the bottom corner so small white text stays readable */
+    background: linear-gradient(160deg, var(--forest-dark) 0%, var(--forest) 66%, var(--leaf) 88%, var(--logo-lime) 104%);
 }
-/* soft glow + ring so the panel isn't flat */
-.auth-brand::before,
-.auth-brand::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+/* soft light behind the photos, like the hero */
 .auth-brand::before {
-    width: 320px; height: 320px;
-    right: -140px; bottom: -140px;
-    background: radial-gradient(circle, rgba(143, 207, 90, .35), transparent 70%);
-}
-.auth-brand::after {
-    width: 220px; height: 220px;
-    left: -90px; top: -90px;
-    border: 28px solid rgba(255, 255, 255, .06);
+    content: "";
+    position: absolute;
+    width: 460px; height: 460px;
+    right: -170px; bottom: -190px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, .24), transparent 68%);
+    pointer-events: none;
 }
 .auth-brand > * { position: relative; z-index: 1; }
 
@@ -1169,7 +1168,7 @@ p {
     #auth-dialog { width: min(440px, 94vw); }
     .auth-split { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
     .auth-brand { padding: 1rem 3.5rem 1rem 1.25rem; }
-    .auth-brand::before, .auth-brand::after { display: none; }
+    .auth-brand::before { display: none; }
     #auth-dialog .auth-brand h2 { flex-direction: row; align-items: center; gap: .5rem; font-size: 1.15rem; }
     .auth-brand-logo { width: 100px; }
     .auth-main { padding: 1.1rem 1.25rem 1.1rem; justify-content: flex-start; }
@@ -1201,31 +1200,57 @@ p {
     line-height: 1.45;
     color: rgba(255, 255, 255, .88);
 }
-.auth-perks { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; gap: 1rem; }
-.auth-perks li { display: flex; align-items: center; gap: .85rem; font-weight: 700; font-size: .95rem; line-height: 1.35; }
+.auth-perks { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: .7rem; }
+.auth-perks li { display: flex; align-items: center; gap: .75rem; font-weight: 700; font-size: .92rem; line-height: 1.3; }
 .auth-perk-icon {
     flex: none;
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2rem;
+    height: 2rem;
     border-radius: 50%;
     background: rgba(255, 255, 255, .14);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
     color: var(--mint);
 }
-.auth-perk-icon svg { width: 1.2rem; height: 1.2rem; }
-.auth-paws {
+.auth-perk-icon svg { width: 1rem; height: 1rem; }
+
+/* photo stack, anchored to the bottom edge of the panel */
+.auth-showcase { position: relative; flex: 1 1 0; min-height: 9rem; margin-top: 1.6rem; }
+.auth-photo {
     position: absolute;
-    right: -24px;
-    bottom: -8px;
-    width: 230px;
-    height: auto;
-    fill: #fff;
-    opacity: .09;
-    pointer-events: none;
-    z-index: 0;
+    margin: 0;
+    width: 11.5rem;
+    height: 15rem;
+    padding: .5rem;
+    background: var(--white);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(4, 36, 20, .4);
 }
+.auth-photo img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.auth-photo--front { left: 1.5rem; bottom: -.9rem; height: min(15rem, calc(100% + .9rem)); transform: rotate(-4deg); z-index: 2; }
+.auth-photo--front img { object-position: 50% 22%; }
+.auth-photo--back { left: 8.1rem; bottom: -2.4rem; height: min(15rem, calc(100% + 1.4rem)); transform: rotate(7deg); z-index: 1; }
+.auth-photo--back img { object-position: 50% 20%; }
+.auth-match {
+    position: absolute;
+    z-index: 3;
+    right: .1rem;
+    bottom: 1.7rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .45rem 1rem .45rem .45rem;
+    background: var(--white);
+    color: var(--ink);
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(4, 36, 20, .35);
+}
+.auth-match-icon { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--mint); color: var(--forest); }
+.auth-match-icon svg { width: 1.1rem; height: 1.1rem; }
+.auth-match-text { display: grid; line-height: 1.2; }
+.auth-match-text strong { font-size: .85rem; }
+.auth-match-text small { font-size: .72rem; font-weight: 700; color: var(--muted); }
 
 /* --- right column: heading, roomier padding --- */
 .auth-main { padding: 2.25rem 2.5rem 1.4rem; }
@@ -1314,7 +1339,7 @@ p {
 
 /* --- phones: brand panel stays a slim banner --- */
 @media (max-width: 720px) {
-    .auth-brand-tag, .auth-perks, .auth-paws { display: none; }
+    .auth-brand-tag, .auth-perks, .auth-showcase { display: none; }
     #auth-dialog .auth-brand h2 > span { font-size: 1.15rem; }
     .auth-main { padding: 1.1rem 1.25rem 1.1rem; }
     #auth-dialog .auth-head { padding-right: 0; margin-bottom: .7rem; }
@@ -1339,62 +1364,39 @@ p {
         radial-gradient(circle at 8% 100%, rgba(10, 79, 46, .22), transparent 45%);
     pointer-events: none;
 }
-.hero-paws {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: .09;
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent 92%);
-    mask-image: linear-gradient(to bottom, #000 35%, transparent 92%);
-}
 @media (min-width: 1001px) {
     .hero { display: flex; align-items: center; min-height: clamp(620px, 92vh, 860px); }
-    .hero-inner { width: min(1120px, 92%); }
+    .hero-inner { width: min(1120px, 92%); grid-template-columns: 1.55fr 1fr; gap: 2rem; }
 }
 
 /* --- text side --- */
-.hero-text { max-width: 680px; }
+.hero-text { max-width: 720px; }
 .hero h1 {
-    margin: 0 0 1.1rem;
-    font-size: clamp(2.3rem, 4.4vw, 3.5rem);
+    margin: 0 0 1.4rem;
+    font-size: clamp(3rem, 6.2vw, 5rem);
     font-weight: 700;
-    line-height: 1.06;
+    line-height: 1.04;
+    letter-spacing: -.01em;
     color: var(--white);
     text-shadow: 0 2px 12px rgba(10, 79, 46, .35);
 }
-.hero-accent {                          /* white text with a yellow marker stroke under it */
-    background: linear-gradient(transparent 80%, rgba(255, 198, 26, .9) 80%, rgba(255, 198, 26, .9) 94%, transparent 94%);
-    padding-bottom: .05em;
-}
-.hero .lead { max-width: 30em; margin-bottom: 2rem; font-size: clamp(1.05rem, 1.6vw, 1.25rem); font-weight: 600; }
+.hero-accent { display: block; background: none; padding: 0; }
+.hero .lead { max-width: 26em; margin-bottom: 2.2rem; font-size: clamp(1.3rem, 2.3vw, 1.75rem); line-height: 1.45; font-weight: 600; }
 
 .hero .actions { align-items: center; gap: .8rem 1rem; }
 .btn-lg { padding: .9em 1.6em; font-size: 1.05rem; }
 .hero .btn-sun { box-shadow: 0 10px 26px rgba(10, 79, 46, .35); }
-.hero-link {
-    color: var(--white);
-    font-weight: 800;
-    text-decoration: none;
-    padding: .5em .15em;
-    border-bottom: 2px solid rgba(255, 255, 255, .55);
-    transition: border-color .15s;
-}
-.hero-link:hover { border-color: var(--white); }
 
 /* short laptop screens: keep buttons and stats above the fold */
 @media (min-width: 1001px) and (max-height: 780px) {
     .hero { padding: calc(2rem + 72px) 0 6rem; }
-    .hero h1 { margin: .8rem 0; font-size: clamp(2.3rem, 4vw, 3.3rem); }
-    .hero .lead { margin-bottom: 1.4rem; font-size: 1.15rem; }
+    .hero h1 { margin: 0 0 1rem; font-size: clamp(2.8rem, 5.4vw, 4.6rem); }
+    .hero .lead { margin-bottom: 1.6rem; font-size: 1.4rem; }
     .hero-caption { margin-top: 1.8rem; }
 }
 
 /* --- photo side: floating badges + caption --- */
 .hero-visual { position: relative; }
-.hero-card { animation: hero-float 6s ease-in-out infinite; }
-@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 
 .hero-badge {
     position: absolute;
@@ -1457,9 +1459,8 @@ p {
     .hero-badge--match { right: .6rem; }
 }
 @media (max-width: 640px) {
-    .hero h1 { font-size: clamp(2.2rem, 9.5vw, 2.8rem); }
+    .hero h1 { font-size: clamp(2.5rem, 11.5vw, 3.2rem); }
     .hero .actions .btn { flex: 1 1 100%; text-align: center; }
-    .hero-link { margin-inline: auto; }
     .hero-badge--match { display: none; }
 }
 
