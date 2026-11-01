@@ -40,16 +40,34 @@ document.querySelectorAll('main section[id]').forEach(s => observer.observe(s));
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
-/* ---------- Hero stacked cards ---------- */
+/* ---------- Hero stacked cards (+ caption, status badge and dots) ---------- */
 const stackCards = [...document.querySelectorAll('.stack-card')];
-if (stackCards.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  let front = 0;
-  setInterval(() => {
-    front = (front + 1) % stackCards.length;
-    stackCards.forEach((card, i) => {
-      card.dataset.pos = (i - front + stackCards.length) % stackCards.length;
-    });
-  }, 3500);
+if (stackCards.length > 1) {
+  const visual = document.querySelector('.hero-visual');
+  const dots = [...document.querySelectorAll('.hero-dot')];
+  const statusEl = visual.querySelector('[data-hero-status]');
+  const titleEl = visual.querySelector('[data-hero-title]');
+  const metaEl = visual.querySelector('[data-hero-meta]');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const n = stackCards.length;
+  let front = 0, timer;
+
+  function showFront(i) {
+    front = (i + n) % n;
+    stackCards.forEach((card, k) => { card.dataset.pos = (k - front + n) % n; });
+    const card = stackCards[front];
+    visual.dataset.state = card.dataset.state;
+    statusEl.textContent = card.dataset.state === 'home' ? 'Reunited' : 'Missing';
+    titleEl.textContent = card.dataset.title;
+    metaEl.textContent = card.dataset.meta;
+    dots.forEach((d, k) => d.setAttribute('aria-current', String(k === front)));
+  }
+  function startRotation() {
+    clearInterval(timer);
+    if (!reduceMotion) timer = setInterval(() => showFront(front + 1), 3500);
+  }
+  dots.forEach((d, k) => d.addEventListener('click', () => { showFront(k); startRotation(); }));
+  startRotation();
 }
 
 /* =========================================================
@@ -94,8 +112,15 @@ function showMessage(text, isError = false) {
   authMsg.classList.toggle('error', isError);
 }
 
+/* Text that changes with the tab: the green panel on the left and the heading above the form */
+const AUTH_COPY = {
+  login:  { kicker: 'Welcome back to', tag: 'Check on your reports and see new matches.', heading: 'Log in to your account', sub: 'Pick up where you left off.' },
+  signup: { kicker: 'Welcome to',      tag: 'Help every lost pet find the way home.',   heading: 'Create your account',   sub: 'It only takes a minute.' }
+};
+
 function setTab(name) {
   activeTab = name;
+  dialog.querySelectorAll('[data-copy]').forEach(el => { el.textContent = AUTH_COPY[name][el.dataset.copy]; });
   tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.tab === name));
   panels.forEach(p => (p.hidden = p.dataset.panel !== name));
   showMessage('');
@@ -105,6 +130,7 @@ function openAuth(tab = 'login') {
   setTab(tab);
   closeMenu();
   if (!dialog.open) dialog.showModal();
+  renderGoogleButtons();
   setTimeout(() => dialog.querySelector(`[data-panel="${tab}"] input`)?.focus(), 0);
 }
 
@@ -210,6 +236,31 @@ dialog.addEventListener('click', e => {
   t.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
 });
 
+/* Sign up: password strength bar + "passwords match" hint */
+const pwInput = signupForm.elements.password;
+const pwConfirm = signupForm.elements.confirm;
+const pwMeter = document.getElementById('pw-meter');
+const pwText = document.getElementById('pw-strength-text');
+const PW_LABELS = ['', 'Too short', 'Weak', 'Good', 'Strong'];
+
+function passwordLevel(v) {
+  if (!v) return 0;
+  if (v.length < 8) return 1;
+  const points = (v.length >= 12) + (/[a-z]/.test(v) && /[A-Z]/.test(v)) + /\d/.test(v) + /[^A-Za-z0-9]/.test(v);
+  return points <= 1 ? 2 : points === 2 ? 3 : 4;
+}
+function updatePasswordHints() {
+  const level = passwordLevel(pwInput.value);
+  pwMeter.dataset.level = level;
+  pwText.textContent = PW_LABELS[level];
+  pwText.dataset.level = level;
+  const a = pwInput.value, b = pwConfirm.value, wrap = pwConfirm.closest('.pw-wrap');
+  wrap.classList.toggle('is-match', !!b && a === b);
+  wrap.classList.toggle('is-mismatch', !!b && b.length >= a.length && a !== b);
+}
+pwInput.addEventListener('input', updatePasswordHints);
+pwConfirm.addEventListener('input', updatePasswordHints);
+
 function logout() {
   localStorage.removeItem(SESSION_KEY);
   if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
@@ -226,12 +277,29 @@ async function initGoogle() {
   if (!clientId || clientId.startsWith('YOUR_') || !window.google?.accounts?.id) return;
 
   google.accounts.id.initialize({ client_id: clientId, callback: handleCredential });
-  google.accounts.id.renderButton(document.getElementById('google-login'),
-    { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
-  google.accounts.id.renderButton(document.getElementById('google-signup'),
-    { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signup_with', width: 280 });
   googleReady = true;
   dialog.querySelectorAll('.auth-alt').forEach(el => (el.hidden = false));   // Google is an extra option
+  if (dialog.open) renderGoogleButtons();
+}
+
+/* Google's own button can only say "Sign in with Google" / "Sign up with Google" / "Continue with Google".
+   With this on, we draw our own face ("Log in with Google") and lay Google's real button invisibly on top,
+   so clicks still go through Google's official flow. Set to false to show Google's button as-is. */
+const GOOGLE_CUSTOM_LABEL = true;
+
+/* Same outlined pill on both tabs, as wide as the form (Google allows 200-400px).
+   Needs the dialog to be open so the slot has a real width; called from openAuth(). */
+function renderGoogleButtons() {
+  if (!googleReady) return;
+  // Google only offers fixed labels: signin_with = "Sign in with Google", signup_with = "Sign up with Google"
+  [['google-login', 'signin_with'], ['google-signup', 'signup_with']].forEach(([id, label]) => {
+    const slot = document.getElementById(id);
+    slot.closest('.google-btn')?.classList.toggle('google-btn--custom', GOOGLE_CUSTOM_LABEL);
+    const w = Math.min(400, Math.max(200, Math.floor(slot.getBoundingClientRect().width) || 360));
+    slot.innerHTML = '';
+    google.accounts.id.renderButton(slot,
+      { theme: 'outline', size: 'large', shape: 'pill', text: label, logo_alignment: 'left', width: w });
+  });
 }
 
 /* ---------- Events ---------- */
@@ -239,6 +307,11 @@ document.querySelectorAll('[data-open-auth]').forEach(btn =>
   btn.addEventListener('click', () => openAuth(btn.dataset.openAuth)));
 
 tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+dialog.addEventListener('click', e => {
+  const link = e.target.closest('[data-switch-tab]'); if (!link) return;
+  setTab(link.dataset.switchTab);
+  dialog.querySelector(`[data-panel="${link.dataset.switchTab}"] input`)?.focus();
+});
 document.getElementById('auth-close').addEventListener('click', closeAuth);
 dialog.addEventListener('click', e => { if (e.target === dialog) closeAuth(); });
 document.getElementById('logout-btn').addEventListener('click', logout);
@@ -248,7 +321,8 @@ document.querySelectorAll('[data-requires-auth]').forEach(btn =>
   btn.addEventListener('click', () => {
     const target = btn.dataset.target;
     if (getSession()) {
-      document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+      if (btn.dataset.href) location.href = btn.dataset.href;      // hero buttons open the report form
+      else document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
     } else {
       pendingTarget = target;
       openAuth('login');
@@ -336,6 +410,7 @@ function renderReports() {
   const home = all.filter(r => r.status === 'reunited').sort(byNewest).slice(0, 3);
   const fill = RECOVERED_SAMPLES.slice(0, Math.max(0, 3 - home.length));
   document.getElementById('recovered-list').innerHTML = home.concat(fill).map(recoveredCard).join('');
+
 }
 
 /* Full details need an account: ask visitors to log in, then take them to that report. */
