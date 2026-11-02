@@ -11,7 +11,29 @@
     --alert: #d93636;    /* MISSING tag: the one urgent color */
     --ink: #17342a;
     --muted: #5b7a6c;
-    --white: #ffffff;
+    --white: #ffffff;       /* always white: text on green, pills on the dark header */
+
+    /* Theme tokens: light values below, dark overrides in the [data-theme="dark"] block.
+       Use these for anything that should change with the theme. */
+    --page: #d9f2c2;            /* page background behind cards */
+    --surface: #ffffff;         /* cards, inputs, dialogs, chips */
+    --surface-tint: #f6fcf0;    /* soft panel inside a card */
+    --surface-hover: #eef9e2;   /* hover / pressed tint */
+    --line: #cfe8b8;            /* borders */
+    --line-soft: #e3eed8;       /* dividers */
+    --heading: #0f6b3f;         /* green headings, links, outlined buttons */
+    --heading-strong: #0a4f2e;
+    --leaf-text: #2fa05a;       /* leaf green used as text */
+    --mint-text: #d9f2c2;       /* light text on deep green */
+    --danger-bg: #fdeaea;
+    --danger-line: #ffd2cb;
+    --danger-text: #c0392b;
+    --warn-bg: var(--warn-bg);
+    --warn-line: var(--warn-line);
+    --warn-text: #7a5b00;
+    --link: #1a5fd0;
+    --link-hover: #0f45a0;
+    color-scheme: light;
 
     --font-display: "Fredoka", system-ui, sans-serif;
     --font-body: "Nunito", system-ui, sans-serif;
@@ -26,6 +48,40 @@
     --grad-dark: linear-gradient(135deg, var(--forest-dark), var(--forest));
     --grad-brand: linear-gradient(125deg, var(--forest-dark) 0%, var(--forest) 40%, var(--leaf) 62%, var(--logo-green) 80%, var(--lime) 96%);  /* hero + login panel */
 }
+
+/* ---------- Dark theme: same greens, deeper ----------
+   Set by js/theme.js as <html data-theme="dark">. Fills (forest, forest-dark) are
+   deepened so the sidebar, hero and buttons stay on-brand; text greens move to lime. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --forest: #0c5a37;
+    --forest-dark: #062b1b;
+    --leaf: #23864a;   /* a touch deeper so white text on leaf-green fills keeps 4.5:1 */
+    --mint: #1a3a2a;
+    --page: #0a1a12;
+    --surface: #112a1d;
+    --surface-tint: #0e2318;
+    --surface-hover: #1b3d2b;
+    --line: #2b5040;
+    --line-soft: #1f3a2c;
+    --ink: #e6f3e8;
+    --muted: #9bb9a8;
+    --heading: #8fcf5a;
+    --heading-strong: #b4e384;
+    --leaf-text: #5fcf86;
+    --danger-bg: #3a1b1c;
+    --danger-line: #6b2a2a;
+    --danger-text: #ff8f85;
+    --warn-bg: #3b3110;
+    --warn-line: #6b5a1c;
+    --warn-text: #f3d36b;
+    --link: #8ab8ff;
+    --link-hover: #b3d0ff;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+
+:root[data-theme="dark"] ::placeholder { color: var(--muted); opacity: 1; }
+:root[data-theme="dark"] .hero-caption { background: rgba(4, 36, 20, .8); }
 
 /* ---------- Base ---------- */
 *,
@@ -45,7 +101,7 @@ body {
     font-size: 1.05rem;
     line-height: 1.65;
     color: var(--ink);
-    background: var(--white);
+    background: var(--surface);
 }
 
 html,
@@ -133,7 +189,7 @@ p {
 
 .btn-sun {
     background: linear-gradient(135deg, #ffd34d, var(--sun));
-    color: var(--ink);
+    color: #17342a;   /* always dark: sits on yellow in both themes */
 }
 
 .btn-sun:hover {
@@ -165,18 +221,18 @@ p {
 
 .btn-plain {
     background: transparent;
-    color: var(--forest);
-    border-color: var(--forest);
+    color: var(--heading);
+    border-color: var(--heading);
 }
 
 /* Edit button: calm mint, for something you already sent (the yellow button is for starting something new) */
 .btn-edit {
     background: var(--mint);
-    color: var(--forest-dark);
+    color: var(--heading-strong);
 }
 
 .btn-edit:hover {
-    background: #c8eaac;
+    background: var(--surface-hover);
 }
 
 /* Must come AFTER the variants above: their `background:` shorthand resets origin/repeat, which is what
@@ -396,7 +452,7 @@ p {
     inset: 0;
     margin: 0;
     padding: 1rem;
-    background: var(--white);
+    background: var(--surface);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     transition: transform .7s cubic-bezier(.4, .2, .2, 1), opacity .7s ease;
@@ -423,7 +479,7 @@ p {
     left: 0;
     width: 100%;
     height: 90px;
-    fill: var(--mint);
+    fill: var(--page);
 }
 
 /* Wave divider at the top of a section.
@@ -439,13 +495,13 @@ p {
     left: 0;
     width: 100%;
     height: 80px;
-    fill: var(--mint);
+    fill: var(--page);
     transform: scaleY(-1);
     pointer-events: none;
 }
 
 .wave-top--white {
-    fill: var(--white);
+    fill: var(--surface);
 }
 
 .wave-top--flip {
@@ -458,7 +514,7 @@ p {
 }
 
 .section-mint {
-    background: var(--mint);
+    background: var(--page);
 }
 
 .section-forest {
@@ -512,12 +568,12 @@ p {
 }
 
 .link-light {
-    color: var(--mint);
+    color: var(--mint-text);
     font-weight: 700;
 }
 
 .link-dark {
-    color: var(--forest);
+    color: var(--heading);
     font-weight: 700;
 }
 
@@ -546,7 +602,7 @@ p {
     display: flex;
     align-items: center;
     gap: 1rem;
-    background: var(--white);
+    background: var(--surface);
     border-radius: 20px;
     border-left: 6px solid var(--leaf);
     padding: 1.1rem 1.5rem;
@@ -555,7 +611,7 @@ p {
 
 .facts h3 {
     margin: 0;
-    color: var(--leaf);
+    color: var(--leaf-text);
     font-size: 1.1rem;
 }
 
@@ -619,7 +675,7 @@ p {
 .pet-card {
     display: flex;
     align-items: stretch;
-    background: var(--white);
+    background: var(--surface);
     color: var(--ink);
     border-radius: var(--radius);
     overflow: hidden;
@@ -696,7 +752,7 @@ p {
 .panel .card {
     position: relative;
     overflow: hidden;
-    background: var(--white);
+    background: var(--surface);
     color: var(--ink);
 }
 
@@ -711,7 +767,7 @@ p {
 }
 
 .panel .card h3 {
-    color: var(--forest);
+    color: var(--heading);
 }
 
 /* Vertical grid variant (Lost pets): large photo, MISSING tag, 3 per row */
@@ -865,12 +921,12 @@ p {
 .form-note {
     margin: 0;
     font-weight: 700;
-    color: var(--forest);
+    color: var(--heading);
     min-height: 1.5em;
 }
 
 .form-note.error {
-    color: #c0392b;
+    color: var(--danger-text);
 }
 
 /* ---------- Auth dialog ---------- */
@@ -906,7 +962,7 @@ p {
     font-size: 2rem;
     line-height: 1;
     cursor: pointer;
-    color: var(--forest);
+    color: var(--heading);
 }
 
 .tabs {
@@ -927,7 +983,7 @@ p {
     font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
-    color: var(--forest);
+    color: var(--heading);
 }
 
 .tab[aria-selected="true"] {
@@ -962,10 +1018,10 @@ p {
 .auth-form input {
     width: 100%;
     padding: .72em 1em;
-    border: 2px solid #cfe8b8;
+    border: 2px solid var(--line);
     border-radius: 16px;
     font: inherit;
-    background: var(--white);
+    background: var(--surface);
     color: var(--ink);
 }
 
@@ -988,7 +1044,7 @@ p {
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: var(--forest);
+    color: var(--heading);
     cursor: pointer;
 }
 
@@ -1004,7 +1060,7 @@ p {
 .auth-submit[disabled] { opacity: .65; cursor: progress; transform: none; }
 
 .auth-or { display: flex; align-items: center; gap: .8rem; margin: 1.1rem 0 .9rem; color: var(--muted); font-weight: 700; font-size: .85rem; }
-.auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: #cfe8b8; }
+.auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .auth-or span { text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
 
 .dialog .form-note { margin-top: .8rem; }
@@ -1017,7 +1073,7 @@ p {
     padding: 0;
     overflow: hidden;
     text-align: left;
-    background: var(--white);
+    background: var(--surface);
     /* the browser's own dialog cap is a little shorter than the viewport; make it explicit so
        .auth-main can scroll inside when the window is short */
     max-height: calc(100vh - 1.5rem);
@@ -1155,7 +1211,7 @@ p {
     padding: 0 0 .15rem;
     border-radius: 50%;
     background: var(--mint);
-    color: var(--forest);
+    color: var(--heading);
     font-size: 1.5rem;
     transition: background .15s, color .15s;
 }
@@ -1211,7 +1267,7 @@ p {
     border-radius: 50%;
     background: rgba(255, 255, 255, .14);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
-    color: var(--mint);
+    color: var(--mint-text);
 }
 .auth-perk-icon svg { width: 1rem; height: 1rem; }
 
@@ -1234,7 +1290,7 @@ p {
     width: 10rem;
     height: min(13.5rem, 100%);
     padding: .45rem;
-    background: var(--white);
+    background: var(--surface);
     border-radius: 18px;
     box-shadow: 0 16px 32px rgba(4, 36, 20, .38);
 }
@@ -1259,7 +1315,7 @@ p {
     border-radius: 999px;
     box-shadow: 0 10px 24px rgba(4, 36, 20, .35);
 }
-.auth-match-icon { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--mint); color: var(--forest); }
+.auth-match-icon { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--mint); color: var(--heading); }
 .auth-match-icon svg { width: 1.1rem; height: 1.1rem; }
 .auth-match-text { display: grid; line-height: 1.2; }
 .auth-match-text strong { font-size: .85rem; }
@@ -1268,7 +1324,7 @@ p {
 /* --- right column: heading, roomier padding --- */
 .auth-main { padding: 2.25rem 2.5rem 1.4rem; }
 #auth-dialog .auth-head { padding-right: 2.5rem; margin-bottom: 1rem; }
-#auth-dialog .auth-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.6rem; line-height: 1.15; color: var(--forest-dark); }
+#auth-dialog .auth-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.6rem; line-height: 1.15; color: var(--heading-strong); }
 #auth-dialog .auth-head p { margin: .2rem 0 0; font-size: .95rem; font-weight: 600; color: var(--muted); }
 
 /* --- tabs: the active one looks raised --- */
@@ -1295,17 +1351,17 @@ p {
 #auth-dialog .auth-form .field { position: relative; }
 .field-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
 .pw-strength-text { font-size: .75rem; font-weight: 800; color: var(--muted); }
-.pw-strength-text[data-level="1"] { color: #c0392b; }
+.pw-strength-text[data-level="1"] { color: var(--danger-text); }
 .pw-strength-text[data-level="2"] { color: #c77d00; }
-.pw-strength-text[data-level="3"], .pw-strength-text[data-level="4"] { color: var(--leaf); }
+.pw-strength-text[data-level="3"], .pw-strength-text[data-level="4"] { color: var(--leaf-text); }
 .pw-meter { position: absolute; left: 1rem; right: 1rem; bottom: -.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; height: 4px; opacity: 0; transition: opacity .15s; pointer-events: none; }
 .pw-meter:not([data-level="0"]) { opacity: 1; }
-.pw-meter span { border-radius: 4px; background: #dcebd0; transition: background .2s; }
+.pw-meter span { border-radius: 4px; background: var(--surface-hover); transition: background .2s; }
 .pw-meter[data-level="1"] span:nth-child(-n+1) { background: #e0513f; }
 .pw-meter[data-level="2"] span:nth-child(-n+2) { background: #f0a31c; }
 .pw-meter[data-level="3"] span:nth-child(-n+3) { background: var(--logo-green); }
 .pw-meter[data-level="4"] span { background: var(--leaf); }
-.pw-match { position: absolute; top: 50%; right: 2.9rem; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: var(--leaf); display: none; }
+.pw-match { position: absolute; top: 50%; right: 2.9rem; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: var(--leaf-text); display: none; }
 .pw-match svg { width: 100%; height: 100%; display: block; }
 .pw-wrap.is-match .pw-match { display: block; }
 .pw-wrap.is-match input { border-color: var(--leaf); padding-right: 5.2rem; }
@@ -1316,12 +1372,12 @@ p {
 #auth-dialog .auth-submit:hover { box-shadow: 0 10px 22px rgba(15, 107, 63, .36); }
 #auth-dialog .auth-submit:focus-visible { outline: 3px solid var(--leaf); outline-offset: 3px; }
 .auth-terms { margin: .7rem 0 0; font-size: .78rem; line-height: 1.4; text-align: center; color: var(--muted); }
-.auth-terms a { color: var(--forest); font-weight: 700; }
+.auth-terms a { color: var(--heading); font-weight: 700; }
 
 /* --- "New to TunTon?" link under the log in form --- */
 .auth-switch { margin: 1.5rem 0 0; text-align: center; font-size: .92rem; font-weight: 600; color: var(--muted); }
-.auth-switch button { border: 0; background: none; padding: 0; font: inherit; font-weight: 800; color: var(--forest); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.auth-switch button:hover { color: var(--leaf); }
+.auth-switch button { border: 0; background: none; padding: 0; font: inherit; font-weight: 800; color: var(--heading); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.auth-switch button:hover { color: var(--leaf-text); }
 .auth-switch button:focus-visible { outline: 3px solid var(--leaf); outline-offset: 3px; border-radius: 4px; }
 .auth-panels > .tab-panel[data-panel="login"] .auth-submit { margin-top: 1.1rem; }
 
@@ -1424,7 +1480,7 @@ p {
     display: inline-flex;
     align-items: center;
     gap: .6rem;
-    background: var(--white);
+    background: var(--surface);
     color: var(--ink);
     border-radius: 999px;
     box-shadow: 0 10px 26px rgba(10, 79, 46, .28);
@@ -1433,7 +1489,7 @@ p {
 .hero-badge-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--alert); animation: tag-pulse 1.6s ease-in-out infinite; }
 .hero-visual[data-state="home"] .hero-badge-dot { background: var(--leaf); animation: none; }
 .hero-badge--match { right: -1.2rem; bottom: 2.6rem; padding: .55rem 1.15rem .55rem .55rem; }
-.hero-badge-icon { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--mint); color: var(--forest); }
+.hero-badge-icon { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--mint); color: var(--heading); }
 .hero-badge-icon svg { width: 1.2rem; height: 1.2rem; }
 .hero-badge-text { display: grid; line-height: 1.2; }
 .hero-badge-text strong { font-size: .92rem; }
@@ -1487,7 +1543,7 @@ p {
 /* ---------- Footer ---------- */
 .footer {
     background: linear-gradient(to bottom, var(--forest-dark) 0%, var(--forest-dark) 40%, var(--forest) 100%);
-    color: var(--mint);
+    color: var(--mint-text);
     text-align: center;
     padding: 6rem 0 2rem;
     font-size: .95rem;
@@ -1663,3 +1719,40 @@ p {
 .pet-card button.btn {
     font-family: var(--font-display);
 }
+
+/* ---------- Theme toggle (landing header + dashboard sidebar) ---------- */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    cursor: pointer;
+}
+
+.theme-toggle svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.theme-toggle .ico-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .ico-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .ico-moon { display: none; }
+
+.theme-toggle--icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--white);
+    background: transparent;
+    color: var(--white);
+}
+
+.theme-toggle--icon:hover { background: rgba(255, 255, 255, .18); }
+.theme-toggle:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }

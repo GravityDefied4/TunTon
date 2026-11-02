@@ -13,7 +13,7 @@
   align-items: center;
   gap: .6rem;
   padding: .15rem 1rem;
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
   border: 2px solid transparent;
@@ -30,7 +30,7 @@
   padding: .5em 1.05em;
   border: 0;
   border-radius: 999px;
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font: inherit;
   font-weight: 700;
@@ -39,15 +39,15 @@
   box-shadow: 0 1px 4px rgba(15, 107, 63, .15);
 }
 
-.fchip:hover { background: #eef9e2; }
+.fchip:hover { background: var(--surface-hover); }
 .fchip.is-on { background: var(--forest-dark); color: var(--white); }
 
 .map-actions { display: flex; align-items: center; gap: .6rem; }
 .radius-pick { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: .92rem; }
-.radius-pick select { padding: .45em .8em; border: 0; border-radius: var(--radius-sm); background: var(--white); font: inherit; font-weight: 700; color: var(--ink); box-shadow: var(--shadow); }
+.radius-pick select { padding: .45em .8em; border: 0; border-radius: var(--radius-sm); background: var(--surface); font: inherit; font-weight: 700; color: var(--ink); box-shadow: var(--shadow); }
 
 .map-status { margin: .2rem .3rem 1rem; font-weight: 700; font-size: .92rem; color: var(--muted); max-width: none; }
-.map-status b { color: var(--forest); }
+.map-status b { color: var(--heading); }
 .dot-sep { margin: 0 .3rem; }
 
 .map-grid {
@@ -79,7 +79,7 @@
   max-width: calc(100% - 20px);
   padding: .4rem .8rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, .94);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
   font-weight: 700;
   font-size: .8rem;
@@ -102,11 +102,11 @@
   padding: 0;
   border: 2px solid rgba(0, 0, 0, .2);
   border-radius: 4px;
-  background: #fff;
-  color: var(--forest);
+  background: var(--surface);
+  color: var(--heading);
   cursor: pointer;
 }
-.map-ctl:hover { background: #f0f0f0; }
+.map-ctl:hover { background: var(--surface-hover); }
 .map-ctl .ico { width: 18px; height: 18px; }
 
 .pin {
@@ -178,7 +178,7 @@
   overflow: hidden;
   position: relative;
   z-index: 0;
-  border: 2px solid #cfe8b8;
+  border: 2px solid var(--line);
 }
 
 /* style.css sets img { max-width: 100% }, which breaks Leaflet's map tiles */
@@ -197,7 +197,7 @@
 .map-side {
   display: flex;
   flex-direction: column;
-  background: var(--white);
+  background: var(--surface);
   border-radius: 20px;
   box-shadow: var(--shadow);
   height: clamp(360px, 62vh, 520px);   /* same height as the map so the two columns line up */
@@ -235,7 +235,7 @@
   cursor: pointer;
 }
 
-.vcard:hover, .vcard:focus-visible { background: #eef9e2; outline: 0; }
+.vcard:hover, .vcard:focus-visible { background: var(--surface-hover); outline: 0; }
 
 .vthumb { position: relative; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; background: var(--mint); }
 .vthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -255,7 +255,7 @@
 .vbadge--found { background: rgba(15, 107, 63, .95); }
 
 .vinfo { display: grid; align-content: start; gap: .1rem; min-width: 0; }
-.vtitle { font-size: .98rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vtitle { font-size: .98rem; line-height: 1.25; display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .vmeta { font-size: .8rem; color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* detail state */
@@ -266,27 +266,27 @@
   width: calc(100% + 2rem);
   margin: -1rem -1rem .6rem;
   padding: .7rem 1rem;
-  background: var(--white);
+  background: var(--surface);
   text-align: left;
   border: 0;
   font: inherit;
   font-weight: 700;
-  color: var(--forest);
+  color: var(--heading);
   cursor: pointer;
 }
 
 .side-back:hover { text-decoration: underline; }
 .side-photo img { width: 100%; aspect-ratio: 16 / 9; max-height: 170px; height: auto; object-fit: cover; border-radius: 16px; }
 .side-thumbs { display: flex; gap: .4rem; margin: .4rem 0 .6rem; }
-.side-thumbs button { width: 48px; height: 48px; padding: 0; border: 2px solid #cfe8b8; border-radius: 10px; overflow: hidden; cursor: pointer; background: none; }
+.side-thumbs button { width: 48px; height: 48px; padding: 0; border: 2px solid var(--line); border-radius: 10px; overflow: hidden; cursor: pointer; background: none; }
 .side-thumbs img { width: 100%; height: 100%; object-fit: cover; }
 .side-name { margin-top: .5rem; }
 .side-text { margin: 0; font-size: .95rem; white-space: pre-line; }
 .fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
-.fact { display: grid; gap: .05rem; padding: .5rem .7rem; border-radius: 12px; background: #f3fbea; }
+.fact { display: grid; gap: .05rem; padding: .5rem .7rem; border-radius: 12px; background: var(--surface-tint); }
 .fact span { font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .fact b { font-size: .95rem; }
-.side-contact { font-weight: 700; color: var(--forest); word-break: break-word; }
+.side-contact { font-weight: 700; color: var(--heading); word-break: break-word; }
 .side-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.1rem; }
 
 /* the selected pin on the map */
@@ -336,3 +336,35 @@
 }
 
 .zoom-far .city-label { display: none; }   /* hide the label when the whole region is in view */
+
+
+/* Leaflet's own white UI follows the theme */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background-color: var(--surface);
+  color: var(--ink);
+  border-bottom-color: var(--line);
+}
+
+.leaflet-bar a:hover { background-color: var(--surface-hover); }
+.leaflet-bar a.leaflet-disabled { background-color: var(--surface-tint); color: var(--muted); }
+
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  color: var(--muted);
+}
+
+.leaflet-control-attribution a { color: var(--heading); }
+.leaflet-container { background: var(--surface-tint); }
+
+/* Dark theme: the basemap tiles are the one thing CSS can't recolor, so a lit frame keeps them from glaring */
+:root[data-theme="dark"] #map,
+:root[data-theme="dark"] .pick,
+:root[data-theme="dark"] #d-map { box-shadow: 0 0 0 1px var(--line), var(--shadow); }

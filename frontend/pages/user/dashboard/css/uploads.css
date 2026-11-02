@@ -13,7 +13,7 @@
   margin: 0;
   border: 3px dashed var(--leaf);
   border-radius: var(--radius);
-  background: #f6fcf0;
+  background: var(--surface-tint);
   text-align: center;
   cursor: pointer;
   overflow: hidden;
@@ -32,7 +32,7 @@
   height: 48px;
   border-radius: 50%;
   background: var(--mint);
-  color: var(--forest);
+  color: var(--heading);
   font: 700 2rem/1 var(--font-display);
 }
 
@@ -54,8 +54,8 @@
   gap: .35rem;
   padding: .25rem .7rem;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid #cfe8b8;
+  background: var(--surface);
+  border: 1px solid var(--line);
   color: var(--muted);
   font-size: .9rem;
   font-weight: 800;
@@ -63,12 +63,12 @@
 
 .form .drop.has-photos {
   border-style: solid;
-  background: #eff9e8;
+  background: var(--surface-hover);
 }
 
 .form .drop.has-photos .upload-status {
-  background: #e0f4d5;
-  color: var(--forest);
+  background: var(--surface-hover);
+  color: var(--heading);
   border-color: var(--leaf);
 }
 
@@ -79,7 +79,7 @@
 .form .drop b {
   font-family: var(--font-display);
   font-size: 1.2rem;
-  color: var(--forest);
+  color: var(--heading);
 }
 
 .form .drop .hint {
@@ -113,9 +113,9 @@
   align-items: center;
   gap: .6rem;
   padding: .3rem .5rem .3rem .3rem;
-  border: 2px solid #cfe8b8;
+  border: 2px solid var(--line);
   border-radius: 16px;
-  background: var(--white);
+  background: var(--surface);
 }
 
 .file-open {
@@ -130,7 +130,7 @@
   background: none;
   font: inherit;
   font-weight: 700;
-  color: var(--forest);
+  color: var(--heading);
   text-align: left;
   cursor: pointer;
 }
@@ -145,8 +145,8 @@
   height: 58px;
   object-fit: cover;
   border-radius: 10px;
-  background: #f6fcf0;
-  border: 1px solid #cfe8b8;
+  background: var(--surface-tint);
+  border: 1px solid var(--line);
 }
 
 .file-open .file-name {
@@ -196,7 +196,7 @@
 }
 
 .file-remove:hover {
-  background: #fdeaea;
+  background: var(--danger-bg);
 }
 
 /* Photo preview dialog */
@@ -210,7 +210,7 @@
   max-height: 75vh;
   object-fit: contain;
   border-radius: 16px;
-  background: #f6fcf0;
+  background: var(--surface-tint);
 }
 
 .preview-name {

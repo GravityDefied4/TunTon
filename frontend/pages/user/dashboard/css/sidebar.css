@@ -134,7 +134,7 @@
   display: flex;
   align-items: center;
   gap: .75rem;
-  color: var(--mint);
+  color: var(--mint-text);
   font-weight: 700;
   text-decoration: none;
   padding: .4rem 1rem;
@@ -146,7 +146,8 @@
 }
 
 .home-link svg,
-#logout svg {
+#logout svg,
+#theme-toggle svg {
   width: 20px;
   height: 20px;
   flex: none;
@@ -157,7 +158,8 @@
   stroke-linejoin: round;
 }
 
-#logout {
+#logout,
+#theme-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,7 +177,7 @@
   display: grid;
   place-items: center;
   flex: none;
-  color: var(--forest);
+  color: var(--heading);
   font: 600 1rem var(--font-display);
 }
 
@@ -249,7 +251,8 @@
     border-left-width: 0;
   }
 
-  .side-min .btn-plain#logout {
+  .side-min .btn-plain#logout,
+  .side-min .btn-plain#theme-toggle {
     padding-inline: 0;
   }
 }

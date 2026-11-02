@@ -188,7 +188,15 @@ const contactCardHTML = (r, role) => {
 };
 
 const pinIcon = k => L.divIcon({ className: '', html: `<div class="pin pin--${k}"><span>${k === 'lost' ? ICON.paw : ICON.search}</span></div>`, iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -34] });
-const tiles = m => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(m);
+/* Basemap. TILE_URL_DARK is optional: OpenStreetMap's tiles are light-only and CSS filters would hurt
+   readability, so dark tiles need a provider with a dark style (most need an API key and have their own
+   attribution/usage terms: check them first). Leave it empty to keep the standard tiles in dark mode. */
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_URL_DARK = '';
+const tileLayers = [];
+const tileUrl = () => (TILE_URL_DARK && document.documentElement.dataset.theme === 'dark') ? TILE_URL_DARK : TILE_URL;
+const tiles = m => { const t = L.tileLayer(tileUrl(), { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(m); tileLayers.push(t); return t; };
+window.addEventListener('tunton:themechange', () => tileLayers.forEach(t => t.setUrl(tileUrl())));
 
 /* ---------- Skeleton loading placeholders (styles: css/skeleton.css) ---------- */
 const sk = (cls = '') => `<span class="sk ${cls}" aria-hidden="true"></span>`;

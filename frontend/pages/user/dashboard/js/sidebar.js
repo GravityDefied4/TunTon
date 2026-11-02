@@ -24,6 +24,7 @@ window.sidebarReady = (async function () {
 
     mount.replaceWith(sb, scrim);
     main.prepend(top);
+    window.TunTonTheme?.sync();   /* label/aria of the theme button that just arrived */
 
     /* highlight the link for the current page */
     let here = location.pathname.split('/').pop() || 'dashboard.html';

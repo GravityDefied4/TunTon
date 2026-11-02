@@ -3,10 +3,10 @@
   flex: 1 1 220px;
   min-width: 0;
   padding: .5em 1em;
-  border: 2px solid #cfe8b8;
+  border: 2px solid var(--line);
   border-radius: var(--radius-sm);
   font: inherit;
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -91,7 +91,7 @@
   width: 1rem;
   height: 1rem;
   margin-top: .2em;
-  color: var(--leaf);
+  color: var(--leaf-text);
 }
 
 /* Reporter: pinned to the bottom of the body so it lines up across a row of cards */
@@ -102,7 +102,7 @@
   width: 100%;
   margin: auto 0 0;
   padding-top: .65rem;
-  border-top: 1px solid #e3efd8;
+  border-top: 1px solid var(--line-soft);
   font-size: .85rem;
   color: var(--muted);
 }
@@ -117,7 +117,7 @@
   height: 1.9rem;
   border-radius: 50%;
   background: var(--mint);
-  color: var(--forest);
+  color: var(--heading);
   font: 700 .8rem/1 var(--font-display);
 }
 
@@ -168,14 +168,14 @@
 #all-list .pet-actions > .pet-status {
   border: 2px solid transparent;
   border-radius: var(--radius-sm);
-  background: #f1f6ec;
+  background: var(--surface-tint);
   color: var(--muted);
   cursor: default;
 }
 
 #all-list .pet-actions > .pet-status--found {
   background: rgba(47, 160, 90, .14);
-  color: var(--forest);
+  color: var(--heading);
 }
 
 /* The "View details" outline button fills in on hover / keyboard focus */

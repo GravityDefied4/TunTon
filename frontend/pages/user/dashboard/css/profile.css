@@ -78,7 +78,7 @@
 .pf-stats b {
   display: block;
   font: 600 2.4rem/1.1 var(--font-display);
-  color: var(--forest);
+  color: var(--heading);
 }
 
 .pf-stats span {
@@ -105,7 +105,7 @@
   align-items: center;
   gap: 1rem;
   padding: .75rem;
-  border: 2px solid #e3f3d3;
+  border: 2px solid var(--line);
   border-radius: 20px;
 }
 
@@ -137,7 +137,7 @@
 
 .rep-alert {
   font-weight: 700;
-  color: var(--forest);
+  color: var(--heading);
 }
 
 .rep-actions {
@@ -196,7 +196,7 @@
 #profile-form select:disabled {
   opacity: .82;
   cursor: default;
-  background: #f5f8f1;
+  background: var(--surface-tint);
 }
 #pf-picture-controls[hidden], #pf-edit-actions[hidden], #pf-edit-button[hidden] { display: none !important; }
 @media (max-width: 480px) {
@@ -207,12 +207,12 @@
 /* Clear editing state and subtle camera overlay for profile photo */
 .pf-avatar-frame { position: relative; width: 88px; height: 88px; flex: none; }
 .pf-avatar-frame .pf-avatar { width: 100%; height: 100%; }
-.pf-camera-button { position: absolute; right: -2px; bottom: -2px; z-index: 2; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; background: #e3e7e5; color: #34453d; box-shadow: 0 2px 7px #123e2d2b; cursor: pointer; transition: background .15s ease, transform .15s ease; }
-.pf-camera-button:hover { background: #cbd3cf; transform: translateY(-1px); }
+.pf-camera-button { position: absolute; right: -2px; bottom: -2px; z-index: 2; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; background: var(--surface-hover); color: var(--ink); box-shadow: 0 2px 7px #123e2d2b; cursor: pointer; transition: background .15s ease, transform .15s ease; }
+.pf-camera-button:hover { background: var(--surface-hover); transform: translateY(-1px); }
 .pf-camera-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pf-camera-button[hidden] { display: none !important; }
-#profile-form.is-editing { padding: .75rem; border: 1px solid #2b9b62; border-radius: 14px; background: #f4faef; }
-#profile-form.is-editing input:not(:disabled), #profile-form.is-editing select:not(:disabled) { border-color: #2b9b62; background: #fff; box-shadow: 0 0 0 2px #dcefd5; }
+#profile-form.is-editing { padding: .75rem; border: 1px solid #2b9b62; border-radius: 14px; background: var(--surface-tint); }
+#profile-form.is-editing input:not(:disabled), #profile-form.is-editing select:not(:disabled) { border-color: #2b9b62; background: var(--surface); box-shadow: 0 0 0 2px #dcefd5; }
 #pf-picture-controls[hidden] { display: none !important; }
 
 
@@ -224,24 +224,24 @@
 }
 .pf-profile-card .pf-head {
   padding-bottom: 1.35rem;
-  border-bottom: 2px solid #e3f3d3;
+  border-bottom: 2px solid var(--line);
 }
 .pf-identity { min-width: 0; }
 .pf-details-section { padding-top: 1.25rem; }
 .pf-details-heading { margin-bottom: .85rem; }
 #pf-profile-card.is-editing {
   border: 3px solid var(--forest);
-  background: #f7fbf3;
+  background: var(--surface-tint);
   box-shadow: 0 4px 0 rgba(18, 62, 45, .08);
 }
 #pf-profile-card.is-editing .pf-head {
-  border-bottom-color: #cfe5bf;
+  border-bottom-color: var(--line);
 }
 #profile-form.is-editing {
   padding: 1rem;
   border: 0;
   border-radius: 12px;
-  background: #edf6e6;
+  background: var(--surface-hover);
 }
 @media (max-width: 640px) {
   .pf-profile-card .pf-head { padding-bottom: 1rem; }
@@ -275,14 +275,14 @@
   min-width: 0;
   text-align: center;
   padding: .7rem .45rem;
-  border: 2px solid #e3f3d3;
+  border: 2px solid var(--line);
   border-radius: 14px;
-  background: #fbfdf8;
+  background: var(--surface-tint);
 }
 .pf-stats .pf-stat b {
   display: block;
   font: 700 clamp(1.35rem, 2.2vw, 1.9rem)/1.1 var(--font-display);
-  color: var(--forest);
+  color: var(--heading);
 }
 .pf-stats .pf-stat span {
   display: block;
@@ -294,7 +294,7 @@
 #profile-form input[type="url"]:disabled {
   opacity: .82;
   cursor: default;
-  background: #f5f8f1;
+  background: var(--surface-tint);
 }
 @media (max-width: 760px) {
   .pf-head {
@@ -320,9 +320,9 @@
   justify-content: center;
   min-height: 96px;
   padding: .85rem .55rem;
-  border: 2px solid #d9edc7;
+  border: 2px solid var(--line);
   border-radius: 18px;
-  background: linear-gradient(180deg, #fbfef7 0%, #f0f8e8 100%);
+  background: linear-gradient(180deg, var(--surface-tint) 0%, var(--surface-tint) 100%);
   box-shadow: 0 3px 0 rgba(24, 91, 57, .06);
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
@@ -332,7 +332,7 @@
   box-shadow: 0 5px 12px rgba(24, 91, 57, .1);
 }
 .pf-stats .pf-stat b { font-size: clamp(1.65rem, 2.5vw, 2.15rem); }
-.pf-stats .pf-stat span { color: var(--forest); font-weight: 800; font-size: .82rem; }
+.pf-stats .pf-stat span { color: var(--heading); font-weight: 800; font-size: .82rem; }
 .pf-edit-icon-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; }
 .pf-edit-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .rep-icon-button {
@@ -345,7 +345,7 @@
   border-radius: 12px;
 }
 .rep-icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.rep-icon-button.danger:hover { background: #fff0ed; }
+.rep-icon-button.danger:hover { background: var(--danger-bg); }
 #pf-display-name-field[hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .pf-stat { transition: none; }
@@ -356,10 +356,10 @@
 .pf-delete-dialog {
   width: min(92vw, 440px);
   padding: 2rem;
-  border: 2px solid #d9edc7;
+  border: 2px solid var(--line);
   border-radius: 24px;
-  color: var(--ink, #153c2e);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
   box-shadow: 0 24px 70px rgba(13, 62, 42, .25);
   text-align: center;
 }
@@ -367,11 +367,11 @@
 .pf-delete-icon {
   width: 58px; height: 58px; margin: 0 auto .9rem;
   display: grid; place-items: center; border-radius: 18px;
-  color: #b9322a; background: #fff0ed; border: 1px solid #ffd2cb;
+  color: var(--danger-text); background: var(--danger-bg); border: 1px solid var(--danger-line);
 }
 .pf-delete-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.pf-delete-dialog h2 { margin: 0 0 .5rem; font: 700 1.55rem/1.2 var(--font-display); color: var(--forest, #0d5838); }
-.pf-delete-dialog p { margin: 0; color: var(--muted, #587166); line-height: 1.55; }
+.pf-delete-dialog h2 { margin: 0 0 .5rem; font: 700 1.55rem/1.2 var(--font-display); color: var(--heading); }
+.pf-delete-dialog p { margin: 0; color: var(--muted); line-height: 1.55; }
 .pf-delete-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .65rem; margin-top: 1.5rem; }
 .pf-delete-confirm { color: #fff; background: #c63830; border: 2px solid #c63830; }
 .pf-delete-confirm:hover { background: #a92c26; border-color: #a92c26; }
@@ -384,23 +384,23 @@
 .pf-picture-note { max-width: 190px; margin: 0; font-size: .78rem; line-height: 1.45; }
 .pf-camera-button {
   display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
-  padding: .42rem .72rem; border: 1px solid #cbd4ce; border-radius: 9px;
-  background: #e9eeeb; color: #34453d; cursor: pointer;
+  padding: .42rem .72rem; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--surface-hover); color: var(--ink); cursor: pointer;
   font: 700 .82rem/1.2 var(--font-body); text-align: left;
   transition: background .18s ease, border-color .18s ease;
 }
-.pf-camera-button:hover, .pf-camera-button:focus-visible { background: #dce5df; border-color: #aabbb0; outline: 2px solid #cfe5bf; outline-offset: 2px; }
+.pf-camera-button:hover, .pf-camera-button:focus-visible { background: var(--surface-hover); border-color: var(--line); outline: 2px solid var(--line); outline-offset: 2px; }
 .pf-camera-button svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pf-camera-button[hidden], #pf-picture-note[hidden] { display: none !important; }
 
 /* Prominent name without decorative gradients or underline. */
 #pf-name-big {
   display: block; max-width: 100%; margin: 0 0 .6rem; padding: 0;
-  color: #0d5838 !important; font-family: 'Fredoka', sans-serif !important;
+  color: var(--heading) !important; font-family: 'Fredoka', sans-serif !important;
   font-size: clamp(2.8rem, 4.4vw, 3.6rem) !important;
   line-height: 1.08 !important; font-weight: 700 !important; letter-spacing: -.02em;
   text-shadow: none !important; background: none !important;
-  -webkit-text-fill-color: #0d5838 !important;
+  -webkit-text-fill-color: var(--heading) !important;
 }
 #pf-name-big::before, #pf-name-big::after { content: none !important; display: none !important; }
 @media (max-width: 640px) {
@@ -417,17 +417,17 @@
 .pf-camera-overlay[hidden], .pf-change-photo-link[hidden] { display: none !important; }
 .pf-avatar-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; max-width: 190px; }
 .pf-picture-note { max-width: 190px; margin: 0; font-size: .78rem; line-height: 1.45; }
-#pf-picture-note-label { font-size: 1rem; font-weight: 800; color: #174d35; }
-.pf-change-photo-link { color: #176b45; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: .88rem; }
-.pf-change-photo-link:hover { color: #0d5838; }
+#pf-picture-note-label { font-size: 1rem; font-weight: 800; color: var(--heading); }
+.pf-change-photo-link { color: var(--heading); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: .88rem; }
+.pf-change-photo-link:hover { color: var(--heading); }
 #pf-name-big { font-size: clamp(2.35rem, 3.5vw, 2.9rem) !important; line-height: 1.08 !important; }
 @media (max-width: 640px) { .pf-avatar-frame { width: 96px; height: 96px; } #pf-name-big { font-size: clamp(2.15rem, 7vw, 2.55rem) !important; } }
 
 /* Report navigation is a simple text link; Delete remains the only button. */
-.rep-view-link { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .25rem; color: #176b45; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.rep-view-link { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .25rem; color: var(--heading); font-weight: 800; text-decoration: none; white-space: nowrap; }
 .rep-view-label { text-decoration: none; text-underline-offset: 3px; }
 .rep-view-arrow { display: inline-block; font-size: 1.45em; line-height: .8; text-decoration: none; transition: transform .15s ease; }
-.rep-view-link:hover { color: #0d5838; text-decoration: none; }
+.rep-view-link:hover { color: var(--heading); text-decoration: none; }
 .rep-view-link:hover .rep-view-label { text-decoration: underline; }
 .rep-view-link:hover .rep-view-arrow { transform: translateX(3px); text-decoration: none; }
 .rep-actions { align-items: center; gap: .85rem; }
@@ -446,8 +446,8 @@
 #profile-form.is-editing select[aria-invalid="true"]:not(:disabled) {
   border-color: #c8322b !important;
   outline: none !important;
-  box-shadow: 0 0 0 2px #ffe0dc !important;
-  background: #fffafa !important;
+  box-shadow: 0 0 0 2px var(--danger-line) !important;
+  background: var(--danger-bg) !important;
 }
 #profile-form input[aria-invalid="true"]:focus,
 #profile-form select[aria-invalid="true"]:focus,
@@ -463,7 +463,7 @@
 }
 .field-error {
   margin: .4rem 0 0;
-  color: #b72e29;
+  color: var(--danger-text);
   font-size: .9rem;
   font-weight: 700;
   line-height: 1.4;
@@ -474,7 +474,7 @@
 
 /* Cancel: thick red outline, transparent fill. The 3rd pixel is an inset ring so the button keeps the same size as Save. */
 #pf-cancel-button {
-  color: #b72e29;
+  color: var(--danger-text);
   border: 2px solid #c8322b;
   box-shadow: inset 0 0 0 1px #c8322b;
   background: transparent;

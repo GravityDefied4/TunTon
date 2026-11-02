@@ -31,10 +31,10 @@ fieldset {
 .form textarea {
   width: 100%;
   padding: .7em 1em;
-  border: 2px solid #cfe8b8;
+  border: 2px solid var(--line);
   border-radius: 16px;
   font: inherit;
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -53,9 +53,9 @@ fieldset {
   align-items: center;
   gap: .4rem;
   padding: .4em .6em;
-  border: 2px solid #cfe8b8;
+  border: 2px solid var(--line);
   border-radius: 16px;
-  background: var(--white);
+  background: var(--surface);
   cursor: text;
 }
 
@@ -130,9 +130,9 @@ fieldset {
   display: inline-block;
   padding: .45em 1.1em;
   border-radius: var(--radius-sm);
-  border: 2px solid #cfe8b8;
+  border: 2px solid var(--line);
   font-weight: 700;
-  background: var(--white);
+  background: var(--surface);
 }
 
 .chips input:checked+span {
@@ -191,7 +191,7 @@ fieldset {
 .pills.is-disabled {
   opacity: .55;
   cursor: not-allowed;
-  background: #f3f3f3;
+  background: var(--surface-tint);
 }
 
 .form textarea {
@@ -644,4 +644,74 @@ main.is-choosing .type-card b {
   .wizard-nav .btn {
     flex: 1 1 0;
   }
+}
+
+
+/* Dark theme: keep the "choose a species first" hint readable while the box is inactive */
+:root[data-theme="dark"] .pills.is-disabled { opacity: .85; }
+
+/* ---------- Dark theme: Add pet report ----------
+   The cards, steps and progress bar used fixed light colors; point them at the theme tokens. */
+:root[data-theme="dark"] .type-card {
+  --tone-soft: rgba(95, 207, 134, .14);
+  --tone-ring: rgba(95, 207, 134, .28);
+  --tone-glow: rgba(0, 0, 0, .45);
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+
+:root[data-theme="dark"] .type-card--lost {
+  --tone: #ff8f85;
+  --tone-soft: rgba(255, 143, 133, .14);
+  --tone-ring: rgba(255, 143, 133, .28);
+}
+
+:root[data-theme="dark"] .type-card--found {
+  --tone: #5fcf86;
+}
+
+:root[data-theme="dark"] .type-pick input:checked+.type-card {
+  background: linear-gradient(180deg, var(--tone-soft) 0%, var(--surface) 70%);
+  box-shadow: 0 0 0 4px var(--tone-ring), 0 14px 30px var(--tone-glow);
+}
+
+:root[data-theme="dark"] .type-pick input:checked+.type-card svg {
+  stroke: var(--page);   /* dark glyph on the light solid icon keeps contrast */
+}
+
+:root[data-theme="dark"] .step {
+  border-color: var(--line-soft);
+  background: var(--surface-tint);
+}
+
+:root[data-theme="dark"] .step-head {
+  border-bottom-color: var(--line);
+}
+
+:root[data-theme="dark"] .wp-bar {
+  background: var(--line-soft);
+}
+
+:root[data-theme="dark"] .wp-dot b {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .wp-dot.is-done b {
+  background: var(--mint);
+  border-color: var(--leaf-text);
+  color: var(--heading);
+}
+
+:root[data-theme="dark"] .wp-dot.is-current {
+  color: var(--heading);
+}
+
+:root[data-theme="dark"] .wp-dot.is-current b {
+  color: var(--white);
+}
+
+:root[data-theme="dark"] .step-eyebrow {
+  color: var(--leaf-text);
 }

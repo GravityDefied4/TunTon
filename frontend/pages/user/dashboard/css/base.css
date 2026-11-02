@@ -1,6 +1,6 @@
 /* Page background, main content area, headings and shared small components */
 body {
-  background: var(--mint);
+  background: var(--page);
 }
 
 main {
@@ -34,14 +34,14 @@ main {
 }
 
 .box {
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: clamp(1.1rem, 3vw, 2rem);
 }
 
 .chip {
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius-sm);
   padding: .35em 1em;
   font-weight: 700;
