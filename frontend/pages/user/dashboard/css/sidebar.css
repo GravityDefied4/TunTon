@@ -1,5 +1,16 @@
-/* Sidebar (the nav, turned vertical) */
+/* =========================================================
+   Sidebar. One shape language: soft rounded rectangles (12px) for every
+   row and button, 10px for the small square icon buttons. No circles or
+   pills here, except the logo. Active tab = one highlight that slides
+   between tabs (.side-indicator, moved by js/sidebar.js).
+   ========================================================= */
 .sidebar {
+  --side-r: 12px;          /* rows: nav links, profile card, log out */
+  --side-r-sm: 10px;       /* small square buttons and the avatar */
+  --side-hover: rgba(255, 255, 255, .09);
+  --side-fill: rgba(255, 255, 255, .15);
+  --side-ease: cubic-bezier(.4, 0, .2, 1);
+
   position: sticky;
   top: 0;
   height: 100vh;
@@ -35,22 +46,39 @@
   object-fit: contain;
 }
 
-.side-collapse {
+/* Small square icon buttons: collapse + theme share this look */
+.side-collapse,
+.theme-toggle--side {
   flex: none;
   width: 36px;
   height: 36px;
+  padding: 0;
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .12);
+  border-radius: var(--side-r-sm);
+  background: var(--side-hover);
   color: var(--white);
   cursor: pointer;
-  transition: background .15s ease;
+  transition: background .2s var(--side-ease), transform .2s var(--side-ease);
 }
 
-.side-collapse:hover {
-  background: rgba(255, 255, 255, .24);
+.side-collapse:hover,
+.theme-toggle--side:hover {
+  background: var(--side-fill);
+  transform: none;
+}
+
+.side-collapse:active,
+.theme-toggle--side:active { transform: scale(.94); }
+
+.side-collapse:focus-visible,
+.theme-toggle--side:focus-visible,
+.side-nav a:focus-visible,
+.who:focus-visible,
+.sidebar #logout:focus-visible {
+  outline: 3px solid var(--lime);
+  outline-offset: 2px;
 }
 
 .side-collapse svg {
@@ -61,36 +89,54 @@
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform .25s ease;
+  transition: transform .3s var(--side-ease);
 }
 
+/* ---------- Nav tabs ---------- */
 .side-nav {
+  position: relative;
   display: grid;
-  gap: .35rem;
+  gap: .3rem;
+}
+
+/* The highlight behind the active tab. It slides from the previous tab to the new one. */
+.side-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-radius: var(--side-r);
+  background: var(--side-fill);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+  pointer-events: none;
+  transition: transform .4s var(--side-ease), height .4s var(--side-ease);
 }
 
 .side-nav a {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: .75rem;
-  padding: .75rem 1rem;
-  border-radius: 16px;
-  border-left: 4px solid transparent;
-  color: var(--white);
+  min-height: 46px;
+  padding: .6rem 1rem;
+  border-radius: var(--side-r);
+  color: var(--mint-text);
   text-decoration: none;
   font-weight: 700;
+  transition: background .2s var(--side-ease), color .2s var(--side-ease);
 }
 
-.side-nav a:hover {
-  background: rgba(255, 255, 255, .1);
-}
+.side-nav a:hover { background: var(--side-hover); color: var(--white); }
 
-.side-nav a[aria-current="page"] {
-  background: rgba(255, 255, 255, .16);
-  border-left-color: var(--lime);
-}
+.side-nav a[aria-current="page"] { color: var(--white); background: transparent; }
 
-.side-nav svg {
+/* Without JS there is no sliding highlight, so fill the tab itself */
+.side-nav:not(.has-indicator) a[aria-current="page"] { background: var(--side-fill); }
+
+.side-nav svg,
+.sidebar #logout svg {
   width: 22px;
   height: 22px;
   flex: none;
@@ -99,77 +145,55 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transition: transform .25s var(--side-ease), color .2s var(--side-ease);
 }
 
+.side-nav a[aria-current="page"] svg { color: var(--lime); }
+.side-nav a:hover svg { transform: scale(1.08); }
+
+/* ---------- Footer: profile card, then log out ---------- */
 .side-user {
   margin-top: auto;
   display: grid;
-  gap: .75rem;
+  gap: .5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+}
+
+.side-profile {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem;
+  border-radius: var(--side-r);
+  background: var(--side-hover);
 }
 
 .who {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: .6rem;
-  font-weight: 700;
+  gap: .65rem;
   min-width: 0;
   color: var(--white);
+  font-weight: 700;
   text-decoration: none;
+  border-radius: var(--side-r-sm);
 }
 
-.who span {
+.who span:not(.avatar) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sidebar .btn-plain {
-  background: transparent;
-  color: var(--white);
-  border-color: var(--white);
-  text-align: center;
-}
-
-.home-link {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  color: var(--mint-text);
-  font-weight: 700;
-  text-decoration: none;
-  padding: .4rem 1rem;
-  border-radius: 16px;
-}
-
-.home-link:hover {
-  color: var(--white);
-}
-
-.home-link svg,
-#logout svg,
-#theme-toggle svg {
-  width: 20px;
-  height: 20px;
+/* Avatar: a rounded square to match everything else */
+.sidebar .avatar {
+  width: 36px;
+  height: 36px;
   flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-#logout,
-#theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: .6rem;
-}
-
-
-.sidebar #logout:hover {
-  background: #b82a2a;
-  border-color: #b82a2a;
+  border-radius: var(--side-r-sm);
+  object-fit: cover;
 }
 
 /* First-letter avatar, shown when the user has no Google photo */
@@ -181,7 +205,63 @@
   font: 600 1rem var(--font-display);
 }
 
-/* Mobile: sidebar becomes a slide-in drawer */
+/* Log out: same row shape as the tabs, quiet until hovered */
+.sidebar #logout {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: .75rem;
+  width: 100%;
+  min-height: 46px;
+  padding: .6rem 1rem;
+  border: 0;
+  border-radius: var(--side-r);
+  background: transparent;
+  color: var(--mint-text);
+  font: 700 1rem var(--font-body);
+  text-align: left;
+  transform: none;
+  transition: background .2s var(--side-ease), color .2s var(--side-ease);
+}
+
+.sidebar #logout:hover {
+  background: rgba(217, 54, 54, .22);
+  color: #ffd7d2;
+  transform: none;
+}
+
+.home-link {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  color: var(--mint-text);
+  font-weight: 700;
+  text-decoration: none;
+  padding: .4rem 1rem;
+  border-radius: var(--side-r);
+}
+
+.home-link:hover { color: var(--white); }
+
+.theme-toggle--side svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Mobile top bar: same square buttons ---------- */
+.dash-top .theme-toggle--icon,
+.dash-top .nav-toggle {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: var(--side-r-sm, 10px);
+  background: rgba(255, 255, 255, .14);
+}
+
+.dash-top .nav-toggle { display: flex; }
+.dash-top .theme-toggle--icon:hover { background: rgba(255, 255, 255, .26); }
+
+/* ---------- Mobile: sidebar becomes a slide-in drawer ---------- */
 @media (max-width: 1000px) {
   .sidebar {
     position: fixed;
@@ -192,21 +272,16 @@
     transition: transform .3s ease;
   }
 
-  .sidebar.open {
-    transform: none;
-  }
+  .sidebar.open { transform: none; }
 
-  /* The drawer always shows labels, so no collapse button there */
-  .side-collapse {
-    display: none;
-  }
+  /* The drawer always shows labels and the top bar owns the theme button */
+  .side-collapse,
+  .theme-toggle--side { display: none; }
 }
 
-/* Minimized sidebar (icons only), desktop only */
+/* ---------- Minimized sidebar (icons only), desktop only ---------- */
 @media (min-width: 1001px) {
-  .side-min .dash {
-    grid-template-columns: 80px 1fr;
-  }
+  .side-min .dash { grid-template-columns: 80px 1fr; }
 
   .side-min .sidebar {
     padding: 1.5rem .6rem;
@@ -218,41 +293,34 @@
     gap: .9rem;
   }
 
-  .side-min .side-logo {
-    display: none;
-  }
-
-  .side-min .side-logo-mini {
-    display: block;
-  }
-
-  .side-min .side-collapse svg {
-    transform: rotate(180deg);
-  }
+  .side-min .side-logo { display: none; }
+  .side-min .side-logo-mini { display: block; }
+  .side-min .side-collapse svg { transform: rotate(180deg); }
 
   .side-min .side-nav,
-  .side-min .side-user {
-    width: 100%;
-  }
+  .side-min .side-user { width: 100%; }
 
   .side-min .label,
-  .side-min #user-name {
-    display: none;
-  }
+  .side-min #user-name { display: none; }
 
   .side-min .side-nav a,
   .side-min .home-link,
-  .side-min .who {
+  .side-min .sidebar #logout {
     justify-content: center;
     padding-inline: 0;
   }
 
-  .side-min .side-nav a {
-    border-left-width: 0;
+  .side-min .side-profile {
+    flex-direction: column;
+    gap: .5rem;
+    padding: .45rem 0;
   }
 
-  .side-min .btn-plain#logout,
-  .side-min .btn-plain#theme-toggle {
-    padding-inline: 0;
-  }
+  .side-min .who { flex: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-indicator,
+  .side-nav svg,
+  .side-collapse svg { transition: none; }
 }

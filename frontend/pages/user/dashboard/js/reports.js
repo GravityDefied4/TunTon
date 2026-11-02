@@ -59,23 +59,31 @@ function card(r) {
   </article>`;
 }
 
-function draw() {
+function draw(fresh = false) {
+  grid.classList.toggle('is-fresh', fresh);   // only newly loaded cards animate in, not a redraw for distance
   $('#rcount').textContent = reports.length + (reports.length === 1 ? ' report' : ' reports');
   if (reports.length) grid.innerHTML = reports.map(card).join('');
   else message('No reports match your filters.');
 }
 
+let firstLoad = true;
 let ticket = 0;   // ignore slow responses that were overtaken by a newer request
 async function load() {
   const mine = ++ticket;
   grid.setAttribute('aria-busy', 'true');
+  grid.classList.remove('is-fresh');
   grid.innerHTML = skeletonCards(6);   // placeholders while the reports load
+  $('#rcount').textContent = 'Loading…';
   try {
-    const data = await ReportsAPI.list(filters());
+    /* The reports are read locally and arrive instantly, which would hide the skeleton.
+       Keep it up for a moment (longer on the first load) so the loading state is seen. */
+    const wait = new Promise(r => setTimeout(r, firstLoad ? 900 : 350));
+    const [data] = await Promise.all([ReportsAPI.list(filters()), wait]);
+    firstLoad = false;
     if (mine !== ticket) return;
     reports = data.slice().sort((a, b) => isOwner(b) - isOwner(a));   // your own reports first
     grid.removeAttribute('aria-busy');
-    draw();
+    draw(true);
   } catch (err) {
     if (mine !== ticket) return;
     grid.removeAttribute('aria-busy');

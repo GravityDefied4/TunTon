@@ -5,7 +5,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 8px;
-  background: #e3efd8;
+  background: var(--sk-base);
 }
 
 .sk::after {
@@ -13,7 +13,7 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .65), transparent);
+  background: linear-gradient(90deg, transparent, var(--sk-shine), transparent);
   animation: sk-shimmer 1.4s ease-in-out infinite;
 }
 
@@ -40,10 +40,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
+
+:root[data-theme="dark"] .sk-card { box-shadow: 0 0 0 1px var(--line-soft), var(--shadow); }
 
 .sk-card .sk-thumb { aspect-ratio: 16 / 10; border-radius: 0; }
 
@@ -53,7 +55,7 @@
   padding: 1rem 1.15rem .75rem;
 }
 
-.sk-card .sk-by { display: flex; align-items: center; gap: .5rem; padding-top: .65rem; border-top: 1px solid #e3efd8; }
+.sk-card .sk-by { display: flex; align-items: center; gap: .5rem; padding-top: .65rem; border-top: 1px solid var(--line-soft); }
 .sk-card .sk-by .sk-line { flex: 1; }
 
 .sk-card .sk-actions {
@@ -91,7 +93,7 @@
   display: grid;
   place-items: center;
   border-radius: 20px;
-  background: #e3efd8;
+  background: var(--sk-base);
   overflow: hidden;
   transition: opacity .3s ease;
 }
@@ -101,8 +103,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(rgba(255, 255, 255, .45) 2px, transparent 2px) 0 0 / 64px 64px,
-    linear-gradient(90deg, rgba(255, 255, 255, .45) 2px, transparent 2px) 0 0 / 64px 64px;
+    linear-gradient(var(--sk-grid) 2px, transparent 2px) 0 0 / 64px 64px,
+    linear-gradient(90deg, var(--sk-grid) 2px, transparent 2px) 0 0 / 64px 64px;
 }
 
 .map-skel::after {
@@ -110,7 +112,7 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .6), transparent);
+  background: linear-gradient(90deg, transparent, var(--sk-shine), transparent);
   animation: sk-shimmer 1.6s ease-in-out infinite;
 }
 
@@ -119,9 +121,9 @@
   z-index: 1;
   padding: .45em 1em;
   border-radius: 999px;
-  background: var(--white);
+  background: var(--surface);
   box-shadow: var(--shadow);
-  color: var(--forest);
+  color: var(--heading);
   font-weight: 700;
   font-size: .95rem;
 }

@@ -33,6 +33,10 @@
     --warn-text: #7a5b00;
     --link: #1a5fd0;
     --link-hover: #0f45a0;
+    /* Skeleton loading tokens */
+    --sk-base: #e3efd8;
+    --sk-shine: rgba(255, 255, 255, .65);
+    --sk-grid: rgba(255, 255, 255, .45);
     color-scheme: light;
 
     --font-display: "Fredoka", system-ui, sans-serif;
@@ -78,6 +82,9 @@
     --link: #8ab8ff;
     --link-hover: #b3d0ff;
     --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    --sk-base: #1b3a29;                      /* a step lighter than --surface so blocks read on cards */
+    --sk-shine: rgba(143, 207, 90, .13);     /* soft lime glint instead of a white flash */
+    --sk-grid: rgba(143, 207, 90, .07);
 }
 
 :root[data-theme="dark"] ::placeholder { color: var(--muted); opacity: 1; }

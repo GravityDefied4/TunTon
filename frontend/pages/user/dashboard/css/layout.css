@@ -52,3 +52,23 @@
     width: auto;
   }
 }
+
+/* Page transition between dashboard tabs: content rises in on arrival and fades out on leaving
+   (html.is-leaving is set by js/sidebar.js just before it navigates). */
+.dash-main main {
+  animation: page-in .4s cubic-bezier(.2, .7, .2, 1) backwards;
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+html.is-leaving .dash-main main {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-main main { animation: none; transition: none; }
+}
