@@ -1,9 +1,9 @@
 /* =========================================================
-   Lost / found report form, shared by lost.html and found.html.
-   Each page calls initReportForm('lost') or initReportForm('found').
+   Lost / found report form, shared by add-report.html.
+   add-report.js calls initReportForm('lost') or initReportForm('found') when that form is first shown.
    ========================================================= */
 
-/* The form markup lives in lost.html and found.html. This only fills in what depends on the user or the day:
+/* The form markup lives in add-report.html (#view-lost and #view-found). This only fills in what depends on the user or the day:
    barangay list, saved barangay, today's date, contact, and the "other animal" suggestions. */
 function fillForm(k, host) {
   const form = host.querySelector('form');
@@ -115,7 +115,7 @@ function setupForm(k, host) {
   form.addEventListener('reset', () => setTimeout(syncSpecies));
   syncSpecies();
 
-  // A user who recognizes a found-pet report can send their lost-pet details to THAT found report (lost.html?claim=<id>).
+  // A user who recognizes a found-pet report can send their lost-pet details to THAT found report (add-report.html?claim=<id>).
   // This never creates a lost report of its own: the details are added to the found report for its finder to confirm.
   // The user must still confirm the missing date/location and upload a photo before submitting.
   let claimTarget = null, claimEdit = null;
@@ -222,7 +222,7 @@ function setupForm(k, host) {
     else previewPhoto(photos[i].name, photos[i].data);
   });
 
-  /* ---------- Edit mode: lost.html?edit=<id> / found.html?edit=<id> (owner only) ---------- */
+  /* ---------- Edit mode: add-report.html?edit=<id> (owner only) ---------- */
   const editId = new URLSearchParams(location.search).get('edit');
   const editing = editId ? read(REPORTS_KEY, []).find(x => x.id === editId && x.owner === myId && x.kind === k) : null;
   if (editId && !editing) {
@@ -260,7 +260,7 @@ function setupForm(k, host) {
     form.querySelector('button[type="submit"]').textContent = 'Save changes';
     host.querySelector('.again')?.remove();
     document.title = 'Edit report | TunTon';
-    host.querySelectorAll('h1').forEach(h => { h.textContent = 'Edit your ' + k + ' report'; });
+    document.querySelectorAll('.view-head h1').forEach(h => { h.textContent = 'Edit your ' + k + ' report'; });
   }
 
   if (claimEdit) {
@@ -269,7 +269,7 @@ function setupForm(k, host) {
     form.querySelector('button[type="submit"]').textContent = 'Save changes';
     host.querySelector('.again')?.remove();
     document.title = 'Edit lost report | TunTon';
-    host.querySelectorAll('h1').forEach(h => { h.textContent = 'Edit your lost report'; });
+    document.querySelectorAll('.view-head h1').forEach(h => { h.textContent = 'Edit your lost report'; });
   }
 
   form.addEventListener('submit', e => {
@@ -354,7 +354,7 @@ function setupForm(k, host) {
   return { map: m, form, host };
 }
 
-/* Fills in and wires up the form that is already on the page (#view-lost or #view-found). */
+/* Fills in and wires up the form that is already on the page (#view-lost or #view-found in add-report.html). */
 function initReportForm(k) {
   const host = $('#view-' + k);
   if (typeof L === 'undefined') {

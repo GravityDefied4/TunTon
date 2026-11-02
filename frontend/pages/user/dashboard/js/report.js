@@ -166,7 +166,7 @@ function show(r) {
         ${owner ? `<div class="d-options">
           <button type="button" class="d-options-btn" id="d-options-btn" aria-label="Report options" aria-haspopup="menu" aria-expanded="false">${ICON.more}</button>
           <div class="d-menu" id="d-menu" role="menu" hidden>
-            <a role="menuitem" href="${lost ? 'lost' : 'found'}.html?edit=${encodeURIComponent(r.id)}">${ICON.edit}Edit report</a>
+            <a role="menuitem" href="add-report.html?edit=${encodeURIComponent(r.id)}">${ICON.edit}Edit report</a>
             <button type="button" role="menuitem" class="d-menu-danger" id="d-delete-report">${ICON.trash}Remove report</button>
           </div>
         </div>` : ''}

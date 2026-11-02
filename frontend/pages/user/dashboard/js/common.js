@@ -71,7 +71,7 @@ const myPendingClaim = r => claimsOf(r).find(c => c.by === myId && c.status === 
    mint    = you already did it    (Edit my found report / Edit my lost report) */
 const respondButton = (r, attrs = '') => {
   const lost = r.kind === 'lost', mine = lost ? myPendingFind(r) : myPendingClaim(r);
-  const href = (lost ? 'found.html?match=' : 'lost.html?claim=') + encodeURIComponent(r.id);
+  const href = (lost ? 'add-report.html?match=' : 'add-report.html?claim=') + encodeURIComponent(r.id);
   return mine
     ? `<a class="btn btn-edit" ${attrs} href="${href}&update=1">Edit my ${lost ? 'found' : 'lost'} report</a>`
     : `<a class="btn btn-sun" ${attrs} href="${href}">${lost ? 'I found this pet' : 'This is my lost pet'}</a>`;
