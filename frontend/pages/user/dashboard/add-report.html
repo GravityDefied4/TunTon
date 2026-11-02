@@ -46,92 +46,150 @@
 
 <section class="report-pane" id="view-lost" hidden>
       <div class="box">
-        <form class="form" novalidate>
-          <label class="drop full"><span class="upload-icon" aria-hidden="true">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span class="upload-status" aria-live="polite">No photos selected yet</span>
-            <input type="file" name="photo" accept="image/*" multiple aria-label="Choose pet photos">
-          </label>
-          <ul class="files full" aria-label="Selected pet photos"></ul>
-
+        <form class="form steps" novalidate>
+          <section class="step full" aria-labelledby="lost-step1">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">1</span>
+              <div>
+                <span class="step-eyebrow">Step 1 of 5</span>
+                <h2 id="lost-step1">Photos</h2>
+                <p>Clear photos help people recognize your pet. Add up to 5.</p>
+              </div>
+            </header>
+            <div class="step-body">
+          <label class="drop full"><span aria-hidden="true" class="upload-icon">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span aria-live="polite" class="upload-status">No photos selected yet</span>
+<input accept="image/*" aria-label="Choose pet photos" multiple="" name="photo" type="file"/>
+</label>
+          <ul aria-label="Selected pet photos" class="files full"></ul>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="lost-step2">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">2</span>
+              <div>
+                <span class="step-eyebrow">Step 2 of 5</span>
+                <h2 id="lost-step2">About your pet</h2>
+                <p>The basics: what kind of animal it is and what it looks like.</p>
+              </div>
+            </header>
+            <div class="step-body">
           <fieldset class="full">
-            <legend>Species</legend>
-            <div class="chips">
-            <label><input type="radio" name="species" value="Dog" required><span><i aria-hidden="true"></i> Dog</span></label>
-            <label><input type="radio" name="species" value="Cat" required><span><i aria-hidden="true"></i> Cat</span></label>
-            <label><input type="radio" name="species" value="Other" required><span><i aria-hidden="true"></i> Other</span></label>
-          </div>
-          </fieldset>
-          <div class="full other-species" hidden>
-            <label for="lost-otherspecies">What kind of animal is it?</label>
-            <input type="text" id="lost-otherspecies" name="otherSpecies" maxlength="30" autocomplete="off" list="lost-otherspecies-list" placeholder="e.g. Rabbit, Parrot, Hamster" aria-required="true" disabled>
-            <datalist id="lost-otherspecies-list"></datalist>
-          </div>
-
-        <div>
-          <label for="lost-name">Pet's name</label>
-          <input type="text" id="lost-name" name="name" maxlength="40">
-        </div>
-        <div>
-          <label for="lost-breed">Breed</label>
-          <div class="pills" data-pills="breed" data-sep="comma"><input type="text" class="pills-input" id="lost-breed" autocomplete="off" maxlength="40" placeholder="e.g. Shih Tzu" list="lost-breed-list"></div>
-          <datalist id="lost-breed-list"></datalist>
-          <input type="hidden" name="breed">
-          <p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
-        </div>
-        <div>
-          <label for="lost-color">Main color</label>
-          <div class="pills" data-pills="color"><input type="text" class="pills-input" id="lost-color" autocomplete="off" maxlength="40" placeholder="e.g. brown, then space" aria-required="true"></div>
-          <input type="hidden" name="color">
-          <p class="hint">Press the space bar after each word to turn it into a tag.</p>
-        </div>
-
+<legend>Species</legend>
+<div class="chips">
+<label><input name="species" required="" type="radio" value="Dog"/><span><i aria-hidden="true"></i> Dog</span></label>
+<label><input name="species" required="" type="radio" value="Cat"/><span><i aria-hidden="true"></i> Cat</span></label>
+<label><input name="species" required="" type="radio" value="Other"/><span><i aria-hidden="true"></i> Other</span></label>
+</div>
+</fieldset>
+          <div class="full other-species" hidden="">
+<label for="lost-otherspecies">What kind of animal is it?</label>
+<input aria-required="true" autocomplete="off" disabled="" id="lost-otherspecies" list="lost-otherspecies-list" maxlength="30" name="otherSpecies" placeholder="e.g. Rabbit, Parrot, Hamster" type="text"/>
+<datalist id="lost-otherspecies-list"></datalist>
+</div>
+          <div>
+<label for="lost-name">Pet's name</label>
+<input id="lost-name" maxlength="40" name="name" type="text"/>
+</div>
+          <div>
+<label for="lost-breed">Breed</label>
+<div class="pills" data-pills="breed" data-sep="comma"><input autocomplete="off" class="pills-input" id="lost-breed" list="lost-breed-list" maxlength="40" placeholder="e.g. Shih Tzu" type="text"/></div>
+<datalist id="lost-breed-list"></datalist>
+<input name="breed" type="hidden"/>
+<p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
+</div>
+          <div>
+<label for="lost-color">Main color</label>
+<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="lost-color" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<input name="color" type="hidden"/>
+<p class="hint">Press the space bar after each word to turn it into a tag.</p>
+</div>
           <fieldset>
-            <legend>Size</legend>
-            <div class="chips">
-            <label><input type="radio" name="size" value="Small" required><span>Small</span></label>
-            <label><input type="radio" name="size" value="Medium" required><span>Medium</span></label>
-            <label><input type="radio" name="size" value="Large" required><span>Large</span></label>
-          </div>
-          </fieldset>
-
+<legend>Size</legend>
+<div class="chips">
+<label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
+<label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
+<label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
+</div>
+</fieldset>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="lost-step3">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">3</span>
+              <div>
+                <span class="step-eyebrow">Step 3 of 5</span>
+                <h2 id="lost-step3">More details</h2>
+                <p>Anything that helps someone tell your pet apart from others.</p>
+              </div>
+            </header>
+            <div class="step-body">
           <div class="full">
-            <label for="lost-marks">Markings and other details</label>
-            <textarea id="lost-marks" name="markings" rows="3" maxlength="300" placeholder="Collar, scars, spots&hellip;"></textarea>
-          </div>
-        <div class="full">
-          <label for="lost-desc">Description</label>
-          <textarea id="lost-desc" name="description" rows="4" maxlength="500" required placeholder="Tell us more about your pet: how it went missing, its personality, whether it answers to its name, if it is shy or friendly&hellip;"></textarea>
-        </div>
-
-          <div>
-            <label for="lost-brgy">Barangay</label>
-            <select id="lost-brgy" name="brgy" required><option value="">Select&hellip;</option></select>
-          </div>
-          <div>
-            <label for="lost-date">Date last seen</label>
-            <input type="date" id="lost-date" name="date" required>
-          </div>
-        <div>
-          <label for="lost-zone">Search zone (geofence)</label>
-          <select id="lost-zone" name="zone"><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select>
-        </div>
-          <div>
-            <label for="lost-contact">Contact (phone or email)</label>
-            <input type="text" id="lost-contact" name="contact" maxlength="80" required>
-          </div>
-          <div>
-            <label for="lost-fb">Facebook profile (optional)</label>
-            <input type="text" id="lost-fb" name="facebook" maxlength="120" autocomplete="off" placeholder="facebook.com/yourname">
-          </div>
-
+<label for="lost-marks">Markings and other details</label>
+<textarea id="lost-marks" maxlength="300" name="markings" placeholder="Collar, scars, spots…" rows="3"></textarea>
+</div>
           <div class="full">
-            <label>Where was it last seen?</label>
-            <div class="pick"></div>
-            <p class="hint pick-hint">Tap the map to drop a pin. The red circle is your search zone, or <button type="button" class="btn btn-small locate-pin">use my current location</button></p>
-            <input type="hidden" name="lat"><input type="hidden" name="lng">
-          </div>
+<label for="lost-desc">Description</label>
+<textarea id="lost-desc" maxlength="500" name="description" placeholder="Tell us more about your pet: how it went missing, its personality, whether it answers to its name, if it is shy or friendly…" required="" rows="4"></textarea>
+</div>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="lost-step4">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">4</span>
+              <div>
+                <span class="step-eyebrow">Step 4 of 5</span>
+                <h2 id="lost-step4">Where and when was it last seen?</h2>
+                <p>Pick the area, then drop a pin on the map. The red circle is your search zone.</p>
+              </div>
+            </header>
+            <div class="step-body">
+          <div>
+<label for="lost-brgy">Barangay</label>
+<select id="lost-brgy" name="brgy" required=""><option value="">Select…</option></select>
+</div>
+          <div>
+<label for="lost-date">Date last seen</label>
+<input id="lost-date" name="date" required="" type="date"/>
+</div>
+          <div>
+<label for="lost-zone">Search zone (geofence)</label>
+<select id="lost-zone" name="zone"><option value="500">500 m</option><option selected="" value="1000">1 km</option><option value="2000">2 km</option><option value="5000">5 km</option></select>
+</div>
+          <div class="full">
+<label>Where was it last seen?</label>
+<div class="pick"></div>
+<p class="hint pick-hint">Tap the map to drop a pin. The red circle is your search zone, or <button class="btn btn-small locate-pin" type="button">use my current location</button></p>
+<input name="lat" type="hidden"/><input name="lng" type="hidden"/>
+</div>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="lost-step5">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">5</span>
+              <div>
+                <span class="step-eyebrow">Step 5 of 5</span>
+                <h2 id="lost-step5">How can we reach you?</h2>
+                <p>Only people who may have found your pet will see this.</p>
+              </div>
+            </header>
+            <div class="step-body">
+          <div>
+<label for="lost-contact">Contact (phone or email)</label>
+<input id="lost-contact" maxlength="80" name="contact" required="" type="text"/>
+</div>
+          <div>
+<label for="lost-fb">Facebook profile (optional)</label>
+<input autocomplete="off" id="lost-fb" maxlength="120" name="facebook" placeholder="facebook.com/yourname" type="text"/>
+</div>
+            </div>
+          </section>
 
           <p class="form-note error full err" role="alert"></p>
-          <div class="full"><button type="submit" class="btn btn-sun">Submit lost report</button></div>
+          <div class="wizard-nav full">
+            <button class="btn btn-plain wiz-back" type="button" hidden>Back</button>
+            <button class="btn btn-small wiz-next" type="button">Next</button>
+            <button class="btn btn-sun wiz-submit" type="submit" hidden>Submit lost report</button>
+          </div>
         </form>
 
         <div class="done" hidden>
@@ -144,88 +202,146 @@
 
 <section class="report-pane" id="view-found" hidden>
       <div class="box">
-        <form class="form" novalidate>
-          <label class="drop full"><span class="upload-icon" aria-hidden="true">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span class="upload-status" aria-live="polite">No photos selected yet</span>
-            <input type="file" name="photo" accept="image/*" multiple aria-label="Choose pet photos">
-          </label>
-          <ul class="files full" aria-label="Selected pet photos"></ul>
-
+        <form class="form steps" novalidate>
+          <section class="step full" aria-labelledby="found-step1">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">1</span>
+              <div>
+                <span class="step-eyebrow">Step 1 of 5</span>
+                <h2 id="found-step1">Photos</h2>
+                <p>Add clear photos of the pet you found. Up to 5.</p>
+              </div>
+            </header>
+            <div class="step-body">
+          <label class="drop full"><span aria-hidden="true" class="upload-icon">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span aria-live="polite" class="upload-status">No photos selected yet</span>
+<input accept="image/*" aria-label="Choose pet photos" multiple="" name="photo" type="file"/>
+</label>
+          <ul aria-label="Selected pet photos" class="files full"></ul>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="found-step2">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">2</span>
+              <div>
+                <span class="step-eyebrow">Step 2 of 5</span>
+                <h2 id="found-step2">About the pet</h2>
+                <p>The basics: what kind of animal it is and what it looks like.</p>
+              </div>
+            </header>
+            <div class="step-body">
           <fieldset class="full">
-            <legend>Species</legend>
-            <div class="chips">
-            <label><input type="radio" name="species" value="Dog" required><span><i aria-hidden="true"></i> Dog</span></label>
-            <label><input type="radio" name="species" value="Cat" required><span><i aria-hidden="true"></i> Cat</span></label>
-            <label><input type="radio" name="species" value="Other" required><span><i aria-hidden="true"></i> Other</span></label>
-          </div>
-          </fieldset>
-          <div class="full other-species" hidden>
-            <label for="found-otherspecies">What kind of animal is it?</label>
-            <input type="text" id="found-otherspecies" name="otherSpecies" maxlength="30" autocomplete="off" list="found-otherspecies-list" placeholder="e.g. Rabbit, Parrot, Hamster" aria-required="true" disabled>
-            <datalist id="found-otherspecies-list"></datalist>
-          </div>
-
-        <div>
-          <label for="found-breed">Breed</label>
-          <div class="pills" data-pills="breed" data-sep="comma"><input type="text" class="pills-input" id="found-breed" autocomplete="off" maxlength="40" placeholder="e.g. Shih Tzu" list="found-breed-list"></div>
-          <datalist id="found-breed-list"></datalist>
-          <input type="hidden" name="breed">
-          <p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
-        </div>
-        <div>
-          <label for="found-color">Main color</label>
-          <div class="pills" data-pills="color"><input type="text" class="pills-input" id="found-color" autocomplete="off" maxlength="40" placeholder="e.g. brown, then space" aria-required="true"></div>
-          <input type="hidden" name="color">
-          <p class="hint">Press the space bar after each word to turn it into a tag.</p>
-        </div>
-
+<legend>Species</legend>
+<div class="chips">
+<label><input name="species" required="" type="radio" value="Dog"/><span><i aria-hidden="true"></i> Dog</span></label>
+<label><input name="species" required="" type="radio" value="Cat"/><span><i aria-hidden="true"></i> Cat</span></label>
+<label><input name="species" required="" type="radio" value="Other"/><span><i aria-hidden="true"></i> Other</span></label>
+</div>
+</fieldset>
+          <div class="full other-species" hidden="">
+<label for="found-otherspecies">What kind of animal is it?</label>
+<input aria-required="true" autocomplete="off" disabled="" id="found-otherspecies" list="found-otherspecies-list" maxlength="30" name="otherSpecies" placeholder="e.g. Rabbit, Parrot, Hamster" type="text"/>
+<datalist id="found-otherspecies-list"></datalist>
+</div>
+          <div>
+<label for="found-breed">Breed</label>
+<div class="pills" data-pills="breed" data-sep="comma"><input autocomplete="off" class="pills-input" id="found-breed" list="found-breed-list" maxlength="40" placeholder="e.g. Shih Tzu" type="text"/></div>
+<datalist id="found-breed-list"></datalist>
+<input name="breed" type="hidden"/>
+<p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
+</div>
+          <div>
+<label for="found-color">Main color</label>
+<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="found-color" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<input name="color" type="hidden"/>
+<p class="hint">Press the space bar after each word to turn it into a tag.</p>
+</div>
           <fieldset>
-            <legend>Size</legend>
-            <div class="chips">
-            <label><input type="radio" name="size" value="Small" required><span>Small</span></label>
-            <label><input type="radio" name="size" value="Medium" required><span>Medium</span></label>
-            <label><input type="radio" name="size" value="Large" required><span>Large</span></label>
-          </div>
-          </fieldset>
-
+<legend>Size</legend>
+<div class="chips">
+<label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
+<label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
+<label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
+</div>
+</fieldset>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="found-step3">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">3</span>
+              <div>
+                <span class="step-eyebrow">Step 3 of 5</span>
+                <h2 id="found-step3">How you found it</h2>
+                <p>Tell the owner what happened, in your own words.</p>
+              </div>
+            </header>
+            <div class="step-body">
           <div class="full">
-            <label for="found-marks">Markings and other details</label>
-            <textarea id="found-marks" name="markings" rows="3" maxlength="300" placeholder="Collar, scars, spots&hellip;"></textarea>
-          </div>
-        <div class="full">
-          <label for="found-how">How was the pet found?</label>
-          <textarea id="found-how" name="howfound" rows="4" maxlength="500" required placeholder="Describe how you found it: where it was, what it was doing, its condition (hungry, hurt, friendly) and what you did with it&hellip;"></textarea>
-        </div>
-
-          <div>
-            <label for="found-brgy">Barangay</label>
-            <select id="found-brgy" name="brgy" required><option value="">Select&hellip;</option></select>
-          </div>
-          <div>
-            <label for="found-date">Date found</label>
-            <input type="date" id="found-date" name="date" required>
-          </div>
-        <div>
-          <label for="found-where">Where is the pet now?</label>
-          <select id="found-where" name="where"><option>With me</option><option>At a shelter or vet</option><option>Left where I found it</option></select>
-        </div>
-          <div>
-            <label for="found-contact">Contact (phone or email)</label>
-            <input type="text" id="found-contact" name="contact" maxlength="80" required>
-          </div>
-          <div>
-            <label for="found-fb">Facebook profile (optional)</label>
-            <input type="text" id="found-fb" name="facebook" maxlength="120" autocomplete="off" placeholder="facebook.com/yourname">
-          </div>
-
+<label for="found-marks">Markings and other details</label>
+<textarea id="found-marks" maxlength="300" name="markings" placeholder="Collar, scars, spots…" rows="3"></textarea>
+</div>
           <div class="full">
-            <label>Where did you find it?</label>
-            <div class="pick"></div>
-            <p class="hint pick-hint">Tap the map to drop a pin, or <button type="button" class="btn btn-small locate-pin">use my current location</button></p>
-            <input type="hidden" name="lat"><input type="hidden" name="lng">
-          </div>
+<label for="found-how">How was the pet found?</label>
+<textarea id="found-how" maxlength="500" name="howfound" placeholder="Describe how you found it: where it was, what it was doing, its condition (hungry, hurt, friendly) and what you did with it…" required="" rows="4"></textarea>
+</div>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="found-step4">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">4</span>
+              <div>
+                <span class="step-eyebrow">Step 4 of 5</span>
+                <h2 id="found-step4">Where and when did you find it?</h2>
+                <p>Pick the area, then drop a pin on the map.</p>
+              </div>
+            </header>
+            <div class="step-body">
+          <div>
+<label for="found-brgy">Barangay</label>
+<select id="found-brgy" name="brgy" required=""><option value="">Select…</option></select>
+</div>
+          <div>
+<label for="found-date">Date found</label>
+<input id="found-date" name="date" required="" type="date"/>
+</div>
+          <div>
+<label for="found-where">Where is the pet now?</label>
+<select id="found-where" name="where"><option>With me</option><option>At a shelter or vet</option><option>Left where I found it</option></select>
+</div>
+          <div class="full">
+<label>Where did you find it?</label>
+<div class="pick"></div>
+<p class="hint pick-hint">Tap the map to drop a pin, or <button class="btn btn-small locate-pin" type="button">use my current location</button></p>
+<input name="lat" type="hidden"/><input name="lng" type="hidden"/>
+</div>
+            </div>
+          </section>
+          <section class="step full" aria-labelledby="found-step5">
+            <header class="step-head">
+              <span class="step-num" aria-hidden="true">5</span>
+              <div>
+                <span class="step-eyebrow">Step 5 of 5</span>
+                <h2 id="found-step5">How can the owner reach you?</h2>
+                <p>Only the owner of a matching lost report will see this.</p>
+              </div>
+            </header>
+            <div class="step-body">
+          <div>
+<label for="found-contact">Contact (phone or email)</label>
+<input id="found-contact" maxlength="80" name="contact" required="" type="text"/>
+</div>
+          <div>
+<label for="found-fb">Facebook profile (optional)</label>
+<input autocomplete="off" id="found-fb" maxlength="120" name="facebook" placeholder="facebook.com/yourname" type="text"/>
+</div>
+            </div>
+          </section>
 
           <p class="form-note error full err" role="alert"></p>
-          <div class="full"><button type="submit" class="btn btn-sun">Submit found report</button></div>
+          <div class="wizard-nav full">
+            <button class="btn btn-plain wiz-back" type="button" hidden>Back</button>
+            <button class="btn btn-small wiz-next" type="button">Next</button>
+            <button class="btn btn-sun wiz-submit" type="submit" hidden>Submit found report</button>
+          </div>
         </form>
 
         <div class="done" hidden>

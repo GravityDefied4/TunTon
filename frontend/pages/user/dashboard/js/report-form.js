@@ -272,14 +272,87 @@ function setupForm(k, host) {
     document.querySelectorAll('.view-head h1').forEach(h => { h.textContent = 'Edit your lost report'; });
   }
 
+
+  /* ---------- Step-by-step wizard (like Google Forms): one step at a time, Back / Next, progress bar ---------- */
+  const steps = [...form.querySelectorAll('.step')];
+  const btnBack = form.querySelector('.wiz-back'), btnNext = form.querySelector('.wiz-next'), btnSubmit = form.querySelector('.wiz-submit');
+  const stepNames = steps.map(s => s.querySelector('h2').textContent);
+  const progress = document.createElement('nav');
+  progress.className = 'wizard-progress';
+  progress.setAttribute('aria-label', 'Form progress');
+  progress.innerHTML = `<div class="wp-bar" aria-hidden="true"><span></span></div><ol class="wp-dots">${steps.map((_, i) =>
+    `<li><button type="button" class="wp-dot" data-i="${i}" aria-label="Go to step ${i + 1}: ${esc(stepNames[i])}"><b>${i + 1}</b><span>${esc(stepNames[i])}</span></button></li>`).join('')}</ol>`;
+  form.insertBefore(progress, form.firstChild);
+  let cur = 0;
+
+  const labelOf = el => (el.id && form.querySelector(`label[for="${el.id}"]`)?.textContent.trim()) || 'this field';
+
+  /* Returns { msg, el } for the first problem in step i, or null when the step is complete. */
+  const stepError = i => {
+    const s = steps[i];
+    s.querySelectorAll('.pills').forEach(b => b.pills.commit());
+    if (s.contains(form.elements.photo) && !photos.length) return { msg: 'Please add at least one photo of the pet.', el: s.querySelector('.drop input') };
+    if (s.querySelector('input[name="species"]')) {
+      if (!species()) return { msg: 'Please choose a species.', el: s.querySelector('input[name="species"]') };
+      if (species() === 'Other' && !otherInput.value.trim()) return { msg: 'Please tell us what kind of animal it is.', el: otherInput };
+      if (!form.elements.color.value) return { msg: 'Please add the main color (type a color and press the space bar).', el: s.querySelector('.pills[data-pills="color"] input') };
+      if (!form.querySelector('input[name="size"]:checked')) return { msg: 'Please choose a size.', el: s.querySelector('input[name="size"]') };
+    }
+    for (const el of s.querySelectorAll('input:not([type=radio]):not([type=hidden]):not([type=file]):not(.pills-input), select, textarea')) {
+      if (el.disabled) continue;
+      if (el.required && !el.value.trim()) return { msg: `Please fill in “${labelOf(el)}”.`, el };
+      if (!el.checkValidity()) return { msg: el.validationMessage || `Please check “${labelOf(el)}”.`, el };
+    }
+    if (s.contains(form.elements.lat) && !pin) return { msg: 'Please drop a pin on the map.', el: null };
+    return null;
+  };
+
+  const show = (i, { scroll = true } = {}) => {
+    cur = Math.max(0, Math.min(steps.length - 1, i));
+    steps.forEach((s, n) => { s.hidden = n !== cur; });
+    btnBack.hidden = cur === 0;
+    btnNext.hidden = cur === steps.length - 1;
+    btnSubmit.hidden = cur !== steps.length - 1;
+    progress.querySelector('.wp-bar span').style.width = ((cur + 1) / steps.length * 100) + '%';
+    progress.querySelectorAll('.wp-dot').forEach((d, n) => {
+      d.classList.toggle('is-current', n === cur);
+      d.classList.toggle('is-done', n < cur);
+      d.toggleAttribute('aria-current', n === cur);
+    });
+    err.textContent = '';
+    m.invalidateSize();                       // the map is created while hidden: re-measure when its step appears
+    if (scroll) {
+      const h = steps[cur].querySelector('h2');
+      h.tabIndex = -1; h.focus({ preventScroll: true });
+      progress.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  /* Go to step n. Moving forward checks every step on the way, so nobody can skip a required one. */
+  const goTo = n => {
+    for (let i = cur; i < n; i++) {
+      const bad = stepError(i);
+      if (bad) { show(i); err.textContent = bad.msg; bad.el?.focus(); return false; }
+    }
+    show(n);
+    return true;
+  };
+  btnNext.addEventListener('click', () => goTo(cur + 1));
+  btnBack.addEventListener('click', () => show(cur - 1));
+  progress.addEventListener('click', e => { const d = e.target.closest('.wp-dot'); if (d) goTo(+d.dataset.i); });
+  form.addEventListener('reset', () => setTimeout(() => show(0, { scroll: false })));
+  form.wizard = { goTo, show, stepError, steps };
+  show(0, { scroll: false });
+
   form.addEventListener('submit', e => {
     e.preventDefault(); err.textContent = '';
-    form.querySelectorAll('.pills').forEach(b => b.pills.commit());
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    if (species() === 'Other' && !otherInput.value.trim()) { err.textContent = 'Please tell us what kind of animal it is.'; otherInput.focus(); return; }
-    if (!form.elements.color.value) { err.textContent = 'Please add the main color (type a color and press the space bar).'; form.querySelector('.pills[data-pills="color"] input').focus(); return; }
-    if (!photos.length) { err.textContent = 'Please add at least one photo of the pet.'; return; }
-    if (!pin) { err.textContent = 'Please drop a pin on the map.'; return; }
+    /* Enter pressed in the middle of the form: treat it as "Next" instead of submitting */
+    if (cur < steps.length - 1) { goTo(cur + 1); return; }
+    /* Last step: check every step once more and jump back to the first one that is incomplete */
+    for (let i = 0; i < steps.length; i++) {
+      const bad = stepError(i);
+      if (bad) { show(i); err.textContent = bad.msg; bad.el?.focus(); return; }
+    }
     const f = new FormData(form);
     const matchId = form.dataset.matchFor || '';
     if (matchId) {
