@@ -17,9 +17,9 @@ INSERT INTO barangays (barangay_id, name, center) VALUES
 -- 4. Users (Password for both is 'password123', hashed with bcrypt)
 -- Hash generated for 'password123'
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, status) VALUES 
-(1, 'Juan Dela Cruz', 'user1@example.com', '09171234567', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGfa3ZlW', 'user', 'active'),
-(2, 'Maria Santos', 'user2@example.com', '09187654321', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGfa3ZlW', 'user', 'active'),
-(3, 'Admin User', 'admin@tunton.com', '09190000000', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGfa3ZlW', 'admin', 'active');
+(1, 'Juan Dela Cruz', 'user1@example.com', '09171234567', '$2a$10$ZkZ5M0YROSweqb/fCY3JY.jLCxyfRAyj6U5eExuU6m3CGVs2VOVRq', 'user', 'active'),
+(2, 'Maria Santos', 'user2@example.com', '09187654321', '$2a$10$ZkZ5M0YROSweqb/fCY3JY.jLCxyfRAyj6U5eExuU6m3CGVs2VOVRq', 'user', 'active'),
+(3, 'Admin User', 'admin@tunton.com', '09190000000', '$2a$10$ZkZ5M0YROSweqb/fCY3JY.jLCxyfRAyj6U5eExuU6m3CGVs2VOVRq', 'admin', 'active');
 
 -- 5. Pet Reports (Lost brown Aspin in Pantal, Found brown Aspin nearby)
 INSERT INTO pet_reports (report_id, user_id, report_type, pet_name, species_id, breed_id, size, sex, age_group, markings, event_date, location, barangay_id, search_radius_km, status) VALUES 

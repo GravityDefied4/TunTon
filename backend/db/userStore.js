@@ -34,13 +34,35 @@ module.exports = {
   findByEmail: email => findOne('email = ?', [email]),
   findByGoogleSub: sub => findOne('google_sub = ?', [sub]),
 
+  /* Login only: the one place password_hash is read. It is never part of COLS, so it cannot leak into API output. */
+  async findCredentials(email) {
+    const [rows] = await pool.query('SELECT user_id, password_hash, status FROM users WHERE email = ? LIMIT 1', [email]);
+    return rows[0] || null;
+  },
+
+  /* Email + password sign-up. Role is always 'user': the email is not verified, so ADMIN_EMAILS must not apply here. */
+  async createWithPassword({ email, full_name, password_hash }) {
+    const f = fit({ email, full_name, picture: null });
+    const [r] = await pool.query(
+      'INSERT INTO users (full_name, email, password_hash, role, last_login_at) VALUES (?, ?, ?, \'user\', NOW())',
+      [f.full_name, f.email, password_hash]);
+    return module.exports.findById(r.insertId);
+  },
+
+  async markLogin(id) {
+    await pool.query('UPDATE users SET last_login_at = NOW() WHERE user_id = ?', [id]);
+    return module.exports.findById(id);
+  },
+
   async create({ google_sub, email, full_name, picture, role }) {
     const f = fit({ email, full_name, picture });
     /* A seeded account (no google_sub yet) with the same email is claimed instead of duplicated. */
     const existing = await findOne('email = ?', [f.email]);
     if (existing) {
       if (existing.google_sub && existing.google_sub !== google_sub) throw Object.assign(new Error('That email belongs to another account.'), { status: 409 });
-      await pool.query('UPDATE users SET google_sub = ?, full_name = ?, picture_url = ?, role = ?, last_login_at = NOW() WHERE user_id = ?',
+      /* Google has verified this email, a password sign-up has not. Drop any password on the row so someone who
+         registered a victim's email first cannot keep a way in after the real owner signs in with Google. */
+      await pool.query('UPDATE users SET google_sub = ?, full_name = ?, picture_url = ?, role = ?, password_hash = NULL, last_login_at = NOW() WHERE user_id = ?',
         [google_sub, f.full_name, f.picture, role, existing.user_id]);
       return module.exports.findById(existing.user_id);
     }

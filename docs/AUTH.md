@@ -29,6 +29,8 @@ The frontend never trusts the decoded Google token by itself; only the server's 
 | Method | Endpoint | Body | Notes |
 |---|---|---|---|
 | GET | /api/auth/config | | `data.googleClientId` |
+| POST | /api/auth/register | `{ name, email, password }` | Email sign-up. `data: { token, user }`, 201. Duplicate email: 409. Always role `user`. Password 8 to 72 chars, stored as a bcrypt hash |
+| POST | /api/auth/login | `{ email, password }` | `data: { token, user }`. Wrong email/password and Google-only accounts: the same 401. Suspended: 403. Limited to 10 failed tries per 15 min per IP |
 | POST | /api/auth/google | `{ credential, mode: "login"\|"signup" }` | `data: { token, user }`. Login with no account: 404 `data.code = "NO_ACCOUNT"`. Suspended: 403 |
 | GET | /api/auth/me | | Bearer. `data.user`. Used to validate a stored token |
 | POST | /api/auth/logout | | Stateless; browser discards the JWT |
@@ -60,7 +62,8 @@ CREATE TABLE users (
   last_login_at DATETIME NULL
 );
 ```
-`password_hash`, `/auth/register`, `/auth/login` and `/users/me/password` from the plan are no longer needed; bcrypt can be dropped from the library list.
+_Update: email + password login is back. `users.password_hash` holds a bcrypt hash (bcryptjs, cost 12); `/auth/register` and `/auth/login` are implemented. `/users/me/password` is not._
+Security notes: password sign-ups are never admin (the email is unverified, so `ADMIN_EMAILS` only applies to Google sign-in). When someone signs in with Google using an email that already has a password account, that account's password is removed, so a person who registered someone else's email first cannot keep access.
 
 ## 6. Notes
 - Reports/profile are still saved in the browser (localStorage) until the reports API exists; only login is real for now.
