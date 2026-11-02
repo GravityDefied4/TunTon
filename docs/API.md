@@ -29,7 +29,9 @@ Errors keep the same shape (`success: false`, `data: null`, `message` = text saf
 | POST | /auth/google | `{ credential, mode: "login"\|"signup" }` (see AUTH.md) |
 | GET | /auth/me, POST /auth/logout | |
 | GET | /users/me | `data.user = { id, name, given_name, email, picture, role, phone }` |
-| PUT | /users/me | `{ full_name?, phone? }` send only what changes. `phone` like `09171234567` or `+639171234567`; `""` clears it |
+| PUT | /users/me | `{ full_name?, phone? }` send only what changes. `phone` like `09171234567` or `+63 917 123 4567` (spaces/hyphens ignored, stored as `09...`); `""` clears it |
+| POST | /users/me/picture | multipart, field `picture` (JPG/PNG/WebP, max 5 MB, content checked). The file goes in `backend/uploads/avatars/`; `users.picture_url` stores only the file name (Google pictures keep their full URL). The API returns the full `/uploads/avatars/<name>` path in `picture`. The old file is deleted. Returns `data.user` |
+| DELETE | /users/me/picture | Removes the custom picture |
 
 ## P2 Reports
 | Method | Endpoint | Notes |

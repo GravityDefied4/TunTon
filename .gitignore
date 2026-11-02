@@ -4,6 +4,8 @@ backend/db/data/
 backend/uploads/*
 !backend/uploads/reports/
 !backend/uploads/proofs/
+!backend/uploads/avatars/
 backend/uploads/reports/*
 backend/uploads/proofs/*
+backend/uploads/avatars/*
 !.gitkeep

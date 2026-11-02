@@ -6,8 +6,11 @@ const { verifyGoogleCredential } = require('../services/google');
 const adminEmails = () => (process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const roleFor = email => (adminEmails().includes(email) ? 'admin' : 'user');
 
+/* The database keeps only the file name of an uploaded picture. The browser gets the full path; Google URLs pass through. */
+const pictureUrl = p => (p && !/^(https?:)?\//.test(p) ? '/uploads/avatars/' + p : p || null);
+
 const publicUser = u => ({ id: u.user_id, name: u.full_name, given_name: u.given_name, email: u.email,
-  picture: u.picture, role: u.role });
+  picture: pictureUrl(u.picture), role: u.role });
 
 const signToken = u => jwt.sign({ role: u.role }, process.env.JWT_SECRET,
   { subject: String(u.user_id), expiresIn: process.env.JWT_EXPIRES_IN || '7d' });

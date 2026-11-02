@@ -7,6 +7,9 @@
    ========================================================= */
 const pool = require('./pool');
 
+/* picture_url holds either a Google URL (starts with http) or just the file name of a picture the person uploaded
+   (e.g. 3f2a....jpg, kept in backend/uploads/avatars/). A Google login refreshes the Google picture but must not replace an uploaded one. */
+
 const COLS = `user_id, google_sub, full_name, email, phone, picture_url AS picture, role, status, created_at, last_login_at`;
 
 const withGivenName = u => u && { ...u, given_name: (u.full_name || u.email).split(' ')[0] };
@@ -49,6 +52,12 @@ module.exports = {
     return module.exports.findById(r.insertId);
   },
 
+  /* Uploaded profile picture (file name only) or null to remove it. */
+  async setPicture(id, url) {
+    await pool.query('UPDATE users SET picture_url = ? WHERE user_id = ?', [url, id]);
+    return module.exports.findById(id);
+  },
+
   async markLogin(id) {
     await pool.query('UPDATE users SET last_login_at = NOW() WHERE user_id = ?', [id]);
     return module.exports.findById(id);
@@ -62,7 +71,7 @@ module.exports = {
       if (existing.google_sub && existing.google_sub !== google_sub) throw Object.assign(new Error('That email belongs to another account.'), { status: 409 });
       /* Google has verified this email, a password sign-up has not. Drop any password on the row so someone who
          registered a victim's email first cannot keep a way in after the real owner signs in with Google. */
-      await pool.query('UPDATE users SET google_sub = ?, full_name = ?, picture_url = ?, role = ?, password_hash = NULL, last_login_at = NOW() WHERE user_id = ?',
+      await pool.query(`UPDATE users SET google_sub = ?, full_name = ?, picture_url = IF(picture_url IS NOT NULL AND picture_url NOT LIKE 'http%', picture_url, ?), role = ?, password_hash = NULL, last_login_at = NOW() WHERE user_id = ?`,
         [google_sub, f.full_name, f.picture, role, existing.user_id]);
       return module.exports.findById(existing.user_id);
     }
@@ -75,7 +84,7 @@ module.exports = {
   /* Refresh profile fields from Google and stamp the login time. */
   async touchLogin(id, { email, full_name, picture, role }) {
     const f = fit({ email, full_name, picture });
-    await pool.query('UPDATE users SET email = ?, full_name = ?, picture_url = ?, role = ?, last_login_at = NOW() WHERE user_id = ?',
+    await pool.query(`UPDATE users SET email = ?, full_name = ?, picture_url = IF(picture_url IS NOT NULL AND picture_url NOT LIKE 'http%', picture_url, ?), role = ?, last_login_at = NOW() WHERE user_id = ?`,
       [f.email, f.full_name, f.picture, role, id]);
     return module.exports.findById(id);
   },

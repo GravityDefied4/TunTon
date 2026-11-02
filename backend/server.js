@@ -37,6 +37,10 @@ app.use('/api', notFound);
 app.use('/uploads/reports', express.static(path.join(__dirname, 'uploads', 'reports'),
   { index: false, dotfiles: 'deny', maxAge: '1d', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
 
+/* Profile pictures are shown on report cards too, so they are public like report photos (random names, no listing). */
+app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avatars'),
+  { index: false, dotfiles: 'deny', maxAge: '1h', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
+
 /* ---- Frontend ---- */
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 

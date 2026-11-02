@@ -12,7 +12,7 @@ const IMAGES_AND_PDF = { ...IMAGES, 'application/pdf': '.pdf' };   // vet record
 const MAX_BYTES = 5 * 1024 * 1024;
 const UPLOAD_ROOT = path.join(__dirname, '..', 'uploads');
 
-const make = (folder, allowed, message) => multer({
+const make = (folder, allowed, message) => (require('fs').mkdirSync(path.join(UPLOAD_ROOT, folder), { recursive: true }), multer({
   storage: multer.diskStorage({
     destination: path.join(UPLOAD_ROOT, folder),
     /* Never trust the original name: random name, extension from the declared MIME type. */
@@ -21,7 +21,7 @@ const make = (folder, allowed, message) => multer({
   limits: { fileSize: MAX_BYTES, files: 5 },
   fileFilter: (req, file, cb) =>
     allowed[file.mimetype] ? cb(null, true) : cb(Object.assign(new Error(message), { status: 400 }))
-});
+}));
 
 /* The MIME type comes from the browser, so also check the file's first bytes. */
 const SIGNATURES = [
@@ -50,6 +50,7 @@ const discardFiles = (files = []) => Promise.all(files.map(f => fs.unlink(f.path
 
 module.exports = {
   reportPhotos: make('reports', IMAGES, 'Only JPG, PNG or WebP images are allowed.').array('photos', 5),   // POST /api/reports
+  avatar: make('avatars', IMAGES, 'Only JPG, PNG or WebP images are allowed.').single('picture'),   // POST /api/users/me/picture
   proofFiles: make('proofs', IMAGES_AND_PDF, 'Only JPG, PNG, WebP or PDF files are allowed.').array('proofs', 3),   // POST /api/claims/:id/proofs
   checkFiles, discardFiles, UPLOAD_ROOT
 };
