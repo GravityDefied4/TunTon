@@ -47,10 +47,19 @@
         <!-- Two-column grid: results panel (left) + map (right) -->
         <div class="map-grid">
           <aside class="map-side" id="side" aria-label="Reports">
-            <div class="side-body" id="side-body" aria-live="polite"></div>
+            <div class="side-body" id="side-body" aria-live="polite">
+              <!-- Placeholder until the first results are drawn (dashboard.js replaces it) -->
+              <ul class="sk-vlist" aria-hidden="true">
+                <li class="sk-vcard"><span class="sk sk-thumb"></span><div class="sk-info"><span class="sk sk-line sk-line--title"></span><span class="sk sk-line sk-line--mid"></span><span class="sk sk-line sk-line--short"></span></div></li>
+                <li class="sk-vcard"><span class="sk sk-thumb"></span><div class="sk-info"><span class="sk sk-line sk-line--title"></span><span class="sk sk-line sk-line--mid"></span><span class="sk sk-line sk-line--short"></span></div></li>
+                <li class="sk-vcard"><span class="sk sk-thumb"></span><div class="sk-info"><span class="sk sk-line sk-line--title"></span><span class="sk sk-line sk-line--mid"></span><span class="sk sk-line sk-line--short"></span></div></li>
+                <li class="sk-vcard"><span class="sk sk-thumb"></span><div class="sk-info"><span class="sk sk-line sk-line--title"></span><span class="sk sk-line sk-line--mid"></span><span class="sk sk-line sk-line--short"></span></div></li>
+              </ul>
+            </div>
           </aside>
           <div class="map-wrap">
             <div id="map" role="application" aria-label="Map of lost pet reports"></div>
+            <div class="map-skel" id="map-skel" aria-hidden="true"><span>Loading map&hellip;</span></div>
             <div class="legend" aria-label="Map legend">
               <span><i style="background:var(--alert)"></i>Lost</span>
               <span><i style="background:var(--leaf)"></i>Potentially found</span>

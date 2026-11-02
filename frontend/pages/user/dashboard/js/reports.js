@@ -68,14 +68,17 @@ function draw() {
 let ticket = 0;   // ignore slow responses that were overtaken by a newer request
 async function load() {
   const mine = ++ticket;
-  message('Loading reports…');
+  grid.setAttribute('aria-busy', 'true');
+  grid.innerHTML = skeletonCards(6);   // placeholders while the reports load
   try {
     const data = await ReportsAPI.list(filters());
     if (mine !== ticket) return;
     reports = data.slice().sort((a, b) => isOwner(b) - isOwner(a));   // your own reports first
+    grid.removeAttribute('aria-busy');
     draw();
   } catch (err) {
     if (mine !== ticket) return;
+    grid.removeAttribute('aria-busy');
     console.error(err);
     $('#rcount').textContent = '';
     message('Could not load reports. Please try again.');

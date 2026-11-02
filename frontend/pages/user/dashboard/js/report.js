@@ -303,7 +303,7 @@ function show(r) {
   /* ----- map ----- */
   if (typeof L === 'undefined') { $('#d-map').textContent = 'The map library failed to load. Check your internet connection.'; return; }
   const m = L.map('d-map', { scrollWheelZoom: false }).setView([r.lat, r.lng], 16);
-  tiles(m);
+  mapSkeleton($('#d-map'), tiles(m));   // cover until the map tiles have drawn
   lockToDagupan(m);
   L.marker([r.lat, r.lng], { icon: pinIcon(r.kind) }).addTo(m);
   if (lost && r.zone) {
@@ -318,6 +318,7 @@ function show(r) {
 (async () => {
   const id = new URLSearchParams(location.search).get('id');
   if (!id) return notFound();
+  host.innerHTML = skeletonDetail();   // placeholders until the report arrives
   try {
     const r = await ReportsAPI.get(id);
     r ? show(r) : notFound();

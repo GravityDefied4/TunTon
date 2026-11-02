@@ -190,6 +190,37 @@ const contactCardHTML = (r, role) => {
 const pinIcon = k => L.divIcon({ className: '', html: `<div class="pin pin--${k}"><span>${k === 'lost' ? ICON.paw : ICON.search}</span></div>`, iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -34] });
 const tiles = m => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(m);
 
+/* ---------- Skeleton loading placeholders (styles: css/skeleton.css) ---------- */
+const sk = (cls = '') => `<span class="sk ${cls}" aria-hidden="true"></span>`;
+const skeletonCards = (n = 6) => Array.from({ length: n }, () => `
+  <div class="sk-card" aria-hidden="true">
+    ${sk('sk-thumb')}
+    <div class="sk-body">${sk('sk-line sk-line--title')}${sk('sk-line sk-line--mid')}${sk('sk-line sk-line--short')}
+      <div class="sk-by">${sk('sk-circle')}${sk('sk-line')}</div></div>
+    <div class="sk-actions">${sk('sk-btn')}${sk('sk-btn')}</div>
+  </div>`).join('');
+const skeletonList = (n = 5) => `<ul class="sk-vlist" aria-hidden="true">${Array.from({ length: n }, () => `
+  <li class="sk-vcard">${sk('sk-thumb')}<div class="sk-info">${sk('sk-line sk-line--title')}${sk('sk-line sk-line--mid')}${sk('sk-line sk-line--short')}</div></li>`).join('')}</ul>`;
+const skeletonDetail = () => `
+  <div class="sk-detail" aria-hidden="true">
+    <div class="d-top">
+      <div>${sk('sk-photo')}<div class="sk-thumbs">${sk()}${sk()}${sk()}</div></div>
+      <div class="box">${sk('sk-pill')}${sk('sk-line sk-line--title')}${sk('sk-line sk-line--mid')}${sk('sk-line sk-line--short')}${sk('sk-btn')}</div>
+    </div>
+    <div class="box">${sk('sk-line sk-line--title')}${sk('sk-line')}${sk('sk-line sk-line--mid')}${sk('sk-line')}</div>
+    <div class="box">${sk('sk-line sk-line--title')}${sk('sk-block')}</div>
+  </div>
+  <span class="sr-only">Loading report…</span>`;
+/* Map cover shown until the map's tiles have drawn. */
+const mapSkeleton = (wrap, layer) => {
+  if (!wrap) return;
+  let cover = wrap.querySelector('.map-skel');
+  if (!cover) { cover = document.createElement('div'); cover.className = 'map-skel'; cover.innerHTML = '<span>Loading map…</span>'; wrap.appendChild(cover); }
+  const done = () => { cover.classList.add('is-done'); setTimeout(() => cover.remove(), 350); };
+  const stop = setTimeout(done, 8000);   // never leave the cover up if tiles are blocked or offline
+  layer.once('load', () => { clearTimeout(stop); done(); });
+};
+
 /* ---------- Session / profile ---------- */
 const logout = () => { localStorage.removeItem(SESSION_KEY); location.replace(HOME); };
 const readSession = () => {

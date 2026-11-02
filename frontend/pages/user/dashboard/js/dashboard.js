@@ -4,6 +4,8 @@
    ========================================================= */
 
 if (typeof L === 'undefined') {
+  document.getElementById('map-skel')?.remove();
+  $('#side-body').innerHTML = '';
   $('#map').textContent = 'The map library failed to load. Check your internet connection.';
   throw new Error('Leaflet not loaded');
 }
@@ -11,7 +13,7 @@ if (typeof L === 'undefined') {
 let me = null;
 /* The map can be viewed anywhere (only FILING a report is limited to Dagupan City). */
 const map = L.map('map', { minZoom: 6 }).setView(DAGUPAN, 13);
-tiles(map);
+mapSkeleton($('#map').parentElement, tiles(map));   // the static cover in dashboard.html goes away once tiles draw
 const city = highlightDagupan(map);   // green outline of the city, no restriction
 const CityControl = L.Control.extend({
   options: { position: 'topleft' },
