@@ -40,6 +40,18 @@
   </aside>
   <div class="scrim" id="scrim"></div>
 
+  <dialog class="logout-dialog" id="logout-dialog" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
+    <div class="logout-dialog__content">
+      <div class="logout-dialog__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/><path d="m16 17 5-5-5-5M21 12H9"/></svg></div>
+      <h2 id="logout-dialog-title">Log out of TunTon?</h2>
+      <p id="logout-dialog-description">Are you sure you want to log out? You will need to sign in again to access your reports and profile.</p>
+      <div class="logout-dialog__actions">
+        <button type="button" class="logout-dialog__cancel" id="cancel-logout">Stay signed in</button>
+        <button type="button" class="logout-dialog__confirm" id="confirm-logout">Yes, log out</button>
+      </div>
+    </div>
+  </dialog>
+
 <div class="dash-top">
       <a href="../../../index.html" aria-label="TunTon home"><img src="../../../assets/logo/tunton.png" alt="TunTon"></a>
       <div class="dash-top-actions"><button type="button" class="btn theme-toggle theme-toggle--icon" data-theme-toggle aria-pressed="false"><svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button><button class="nav-toggle" id="side-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar"><span></span><span></span><span></span></button></div>

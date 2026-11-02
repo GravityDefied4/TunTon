@@ -225,9 +225,14 @@
 }
 
 .sidebar #logout:hover {
-  background: rgba(217, 54, 54, .22);
-  color: #ffd7d2;
+  background: #c92f36;
+  color: #ffffff;
   transform: none;
+}
+
+.sidebar #logout:focus-visible {
+  outline: 3px solid #ffb4b4;
+  outline-offset: 2px;
 }
 
 .home-link {
@@ -324,3 +329,30 @@
   .side-nav svg,
   .side-collapse svg { transition: none; }
 }
+
+
+/* Accessible logout confirmation dialog, shared by dashboard pages. */
+.logout-dialog {
+  width: min(92vw, 420px);
+  max-width: calc(100vw - 2rem);
+  padding: 0;
+  border: 1px solid rgba(130, 190, 155, .28);
+  border-radius: 20px;
+  color: var(--text, #f4fff7);
+  background: var(--panel, #123b2a);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+}
+.logout-dialog::backdrop { background: rgba(2, 15, 10, .68); backdrop-filter: blur(3px); }
+.logout-dialog__content { padding: 1.5rem; }
+.logout-dialog__icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 1rem; border-radius: 14px; color: #ffdddd; background: rgba(201, 47, 54, .2); }
+.logout-dialog__icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.logout-dialog h2 { margin: 0 0 .5rem; color: inherit; font: 700 1.25rem var(--font-display, inherit); }
+.logout-dialog p { margin: 0; color: var(--muted, #b6d3c4); line-height: 1.55; }
+.logout-dialog__actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.5rem; }
+.logout-dialog__actions button { min-height: 42px; padding: .65rem 1rem; border-radius: 12px; font: 700 .95rem var(--font-body, inherit); cursor: pointer; }
+.logout-dialog__cancel { border: 1px solid rgba(180, 215, 195, .35); color: var(--text, #f4fff7); background: transparent; }
+.logout-dialog__cancel:hover { background: rgba(255, 255, 255, .09); }
+.logout-dialog__confirm { border: 1px solid #c92f36; color: #fff; background: #c92f36; }
+.logout-dialog__confirm:hover { border-color: #a92229; background: #a92229; }
+.logout-dialog button:focus-visible { outline: 3px solid #9be7b7; outline-offset: 2px; }
+@media (max-width: 420px) { .logout-dialog__actions { flex-direction: column-reverse; } .logout-dialog__actions button { width: 100%; } }

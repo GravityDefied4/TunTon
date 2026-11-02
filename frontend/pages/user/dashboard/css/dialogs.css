@@ -12,3 +12,60 @@
   font-size: 1.6rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
 }
+
+/* Custom report action confirmation and feedback dialog */
+.report-action-dialog {
+  width: min( min( calc(100% - 2rem), 440px), 440px );
+  max-width: calc(100% - 2rem);
+  padding: 0;
+  border: 1px solid var(--border, rgba(70, 110, 85, .2));
+  border-radius: 20px;
+  color: var(--text, #183b2b);
+  background: var(--surface, #fff);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+}
+.report-action-dialog::backdrop {
+  background: rgba(8, 24, 16, .58);
+  backdrop-filter: blur(4px);
+}
+.report-action-dialog__content { padding: 1.6rem; }
+.report-action-dialog__icon {
+  display: grid; place-items: center; width: 48px; height: 48px;
+  margin-bottom: 1rem; border-radius: 15px;
+  color: var(--forest, #176b43); background: rgba(35, 145, 86, .12);
+}
+.report-action-dialog__icon svg {
+  width: 25px; height: 25px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.report-action-dialog__title {
+  margin: 0 0 .5rem; color: var(--text, #183b2b);
+  font: 700 1.3rem var(--font-display, inherit);
+}
+.report-action-dialog__message {
+  margin: 0; color: var(--muted, #63766a); line-height: 1.6;
+}
+.report-action-dialog__actions {
+  display: flex; justify-content: flex-end; gap: .7rem; margin-top: 1.5rem;
+}
+.report-action-dialog__actions button {
+  min-height: 42px; padding: .65rem 1rem; border-radius: 11px;
+  font: 700 .95rem var(--font-body, inherit); cursor: pointer;
+}
+.report-action-dialog__cancel {
+  border: 1px solid var(--border, #d6e2d9);
+  color: var(--text, #183b2b); background: transparent;
+}
+.report-action-dialog__cancel:hover { background: rgba(30, 90, 55, .07); }
+.report-action-dialog__confirm {
+  border: 1px solid var(--forest, #176b43);
+  color: #fff; background: var(--forest, #176b43);
+}
+.report-action-dialog__confirm.is-danger { border-color: #c9363e; background: #c9363e; }
+.report-action-dialog__confirm:hover { filter: brightness(.92); }
+.report-action-dialog button:focus-visible { outline: 3px solid #9be7b7; outline-offset: 2px; }
+.report-action-dialog button[hidden] { display: none; }
+@media (max-width: 420px) {
+  .report-action-dialog__actions { flex-direction: column-reverse; }
+  .report-action-dialog__actions button { width: 100%; }
+}

@@ -148,7 +148,11 @@ fieldset {
 
 /* Banner shown on the found form when reporting a match for a lost pet */
 .match-banner {
-  margin-bottom: 1.25rem;
+  display: block;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0 0 1.25rem;
   padding: .9rem 1.2rem;
   border-radius: 20px;
   border-left: 6px solid var(--leaf);

@@ -492,3 +492,41 @@
   margin-right: .25em;
   vertical-align: -.12em;
 }
+
+
+/* Dark-mode polish for the profile edit form.
+   Use a single, restrained field border instead of stacking a border and halo. */
+:root[data-theme="dark"] #profile-form.is-editing input:not(:disabled),
+:root[data-theme="dark"] #profile-form.is-editing select:not(:disabled) {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] #profile-form.is-editing input:not(:disabled):focus,
+:root[data-theme="dark"] #profile-form.is-editing select:not(:disabled):focus {
+  border-color: var(--leaf);
+  outline: 2px solid rgba(95, 207, 134, .55);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* A filled muted-red cancel button is easier to distinguish from the dark panel. */
+:root[data-theme="dark"] #pf-cancel-button {
+  color: #ffd8d5;
+  background: #542426;
+  border: 1px solid #a94b4b;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] #pf-cancel-button:hover {
+  color: #ffffff;
+  background: #743033;
+  border-color: #d16a65;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] #pf-cancel-button:focus-visible {
+  outline: 2px solid #ff9b91;
+  outline-offset: 3px;
+}

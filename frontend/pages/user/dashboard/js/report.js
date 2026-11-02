@@ -229,7 +229,48 @@ function show(r) {
   if (optBtn) {
     const setMenu = open => { optMenu.hidden = !open; optBtn.setAttribute('aria-expanded', open); };
     optBtn.addEventListener('click', e => { e.stopPropagation(); setMenu(optMenu.hidden); });
-    document.addEventListener('click', e => { if (!e.target.closest('.d-options')) setMenu(false); });
+    /* In-page confirmation dialog (avoids native browser confirm/alert popups). */
+function showReportDialog({ title, message, confirmText = 'Continue', danger = false, showCancel = true }) {
+  return new Promise(resolve => {
+    let dialog = document.getElementById('report-action-dialog');
+    if (!dialog) {
+      dialog = document.createElement('dialog');
+      dialog.id = 'report-action-dialog';
+      dialog.className = 'report-action-dialog';
+      dialog.innerHTML = `
+        <div class="report-action-dialog__content">
+          <div class="report-action-dialog__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg>
+          </div>
+          <h2 class="report-action-dialog__title"></h2>
+          <p class="report-action-dialog__message"></p>
+          <div class="report-action-dialog__actions">
+            <button type="button" class="report-action-dialog__cancel">Cancel</button>
+            <button type="button" class="report-action-dialog__confirm"></button>
+          </div>
+        </div>`;
+      document.body.append(dialog);
+    }
+    const titleEl = dialog.querySelector('.report-action-dialog__title');
+    const messageEl = dialog.querySelector('.report-action-dialog__message');
+    const cancel = dialog.querySelector('.report-action-dialog__cancel');
+    const confirm = dialog.querySelector('.report-action-dialog__confirm');
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    confirm.textContent = confirmText;
+    confirm.classList.toggle('is-danger', danger);
+    cancel.hidden = !showCancel;
+    const finish = value => { dialog.close(); resolve(value); };
+    cancel.onclick = () => finish(false);
+    confirm.onclick = () => finish(true);
+    dialog.oncancel = event => { event.preventDefault(); finish(false); };
+    dialog.onclick = event => { if (event.target === dialog) finish(false); };
+    dialog.showModal();
+    (showCancel ? cancel : confirm).focus();
+  });
+}
+
+document.addEventListener('click', e => { if (!e.target.closest('.d-options')) setMenu(false); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
     optMenu.addEventListener('click', () => setMenu(false));
   }
@@ -284,18 +325,20 @@ function show(r) {
     d.showModal();
   };
   $('#d-zoom').addEventListener('click', () => openPreview(pics[i], img.alt));
-  host.querySelectorAll('.d-find').forEach(card => card.addEventListener('click', e => {
+  host.querySelectorAll('.d-find').forEach(card => card.addEventListener('click', async e => {
     const f = finds.find(x => x.id === card.dataset.fid); if (!f) return;
     const ph = e.target.closest('button[data-fp]');
     if (ph) return openPreview(f.photos[+ph.dataset.fp], 'Photo ' + (+ph.dataset.fp + 1));
     const ok = e.target.closest('button[data-confirm]'), no = e.target.closest('button[data-reject]');
     if (!ok && !no) return;
-    if (ok && !confirm(lost ? 'Confirm that this is your pet? The report will be marked as Found and the other found reports will be closed.' : 'Confirm that this person is the owner of this pet? The report will be marked as Owner found and the other lost reports will be closed.')) return;
-    if (no && !confirm(lost ? 'Mark this found report as not your pet?' : 'Mark this lost report as not the owner?')) return;
+    const message = ok
+      ? (lost ? 'Confirm that this is your pet? The report will be marked as Found and the other found reports will be closed.' : 'Confirm that this person is the owner of this pet? The report will be marked as Owner found and the other lost reports will be closed.')
+      : (lost ? 'Mark this found report as not your pet?' : 'Mark this lost report as not the owner?');
+    if (!await showReportDialog({ title: ok ? 'Confirm match' : 'Reject match', message, confirmText: ok ? 'Yes, confirm' : 'Yes, reject', danger: !ok })) return;
     const next = finds.map(x => x.id === f.id ? { ...x, status: ok ? 'confirmed' : 'rejected', reviewedAt: Date.now() }
       : ok && x.status === 'pending' ? { ...x, status: 'rejected', reviewedAt: Date.now() } : x);
     try { const { found: _old, ...rest } = r; saveReport({ ...rest, [key]: next }); }
-    catch { alert('Could not save (browser storage is full).'); return; }
+    catch { await showReportDialog({ title: 'Unable to save', message: 'Could not save your changes. Your browser storage may be full.', confirmText: 'OK', showCancel: false }); return; }
     show({ ...r, [key]: next, found: undefined });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }));

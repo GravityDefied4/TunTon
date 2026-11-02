@@ -293,7 +293,18 @@ const applyIdentity = () => {
   applyIdentity();
   const customPicture = prof().picture;
   if (customPicture || sess?.picture) { const a = $('#user-avatar'); a.src = customPicture || sess.picture; a.hidden = false; $('#user-initial').hidden = true; }
-  $('#logout').addEventListener('click', logout);
+  const logoutDialog = $('#logout-dialog');
+  const cancelLogout = $('#cancel-logout');
+  const confirmLogout = $('#confirm-logout');
+  $('#logout').addEventListener('click', () => {
+    if (logoutDialog?.showModal) logoutDialog.showModal();
+    else if (window.confirm('Are you sure you want to log out of TunTon?')) logout();
+  });
+  cancelLogout?.addEventListener('click', () => logoutDialog?.close());
+  confirmLogout?.addEventListener('click', logout);
+  logoutDialog?.addEventListener('click', event => {
+    if (event.target === logoutDialog) logoutDialog.close();
+  });
 
   /* ---------- Sidebar (mobile drawer) ---------- */
   const side = $('#sidebar'), scrim = $('#scrim'), tgl = $('#side-toggle');
