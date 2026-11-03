@@ -120,45 +120,6 @@ const Insight = (() => {
       .sort((a, b) => b.percent - a.percent || (b.report.created || 0) - (a.report.created || 0));
   }
 
-  /* Plain-language reason for one attribute */
-  function noteFor(key, res, me, other) {
-    const st = status(res.score), a = clean(res.mine), b = clean(res.theirs);
-    if (st === 'na') {
-      const mineBlank = empty(me, key), theirsBlank = empty(other, key);
-      const who = mineBlank && theirsBlank ? 'both reports' : mineBlank ? 'your report' : 'this report';
-      return key === 'location' ? 'A map pin is missing on one report, so distance could not be checked.'
-        : `Left blank on ${who}. It is skipped, not counted against the match.`;
-    }
-    if (key === 'species') return `Same species: ${a}.`;
-    if (key === 'color') {
-      const x = [...new Set(colorWords(me.color))], y = [...new Set(colorWords(other.color))];
-      const shared = x.filter(w => y.includes(w)), onlyA = x.filter(w => !y.includes(w)), onlyB = y.filter(w => !x.includes(w));
-      return [shared.length ? 'In common: ' + join(shared) + '.' : 'No color in common.',
-        onlyA.length ? 'Only on yours: ' + join(onlyA) + '.' : '', onlyB.length ? 'Only on this one: ' + join(onlyB) + '.' : ''].filter(Boolean).join(' ');
-    }
-    if (key === 'breed') {
-      const generic = GENERIC.test(a.toLowerCase()) && GENERIC.test(b.toLowerCase());
-      if (st === 'yes') return generic ? 'Both are mixed or local breeds, the most common kind, so this says little on its own.' : 'Same breed.';
-      if (st === 'part') return res.score <= .3 ? 'One is a named breed and the other is mixed. We cannot tell them apart from text, so it earns a small partial score.' : 'The breed names overlap a little.';
-      return 'Different breeds are listed.';
-    }
-    if (key === 'size') {
-      if (st === 'yes') return 'Same size.';
-      return st === 'part' ? `One size apart (${a} and ${b}). Size is judged by eye, so small gaps are common.` : 'Two sizes apart. Unlikely to be the same pet unless one report is off.';
-    }
-    if (key === 'markings') {
-      if (thin(me.markings) || thin(other.markings)) return 'Very short text, so even an exact match is weak evidence. Look at the photos for real markings.';
-      const x = words(me.markings), y = words(other.markings), shared = [...new Set(x.filter(w => y.includes(w)))];
-      if (shared.length) return 'Details in common: ' + join(shared.slice(0, 6)) + '.';
-      return 'No details in common. Markings are written freehand, so also check the photos.';
-    }
-    /* location */
-    const lost = me.kind === 'lost' ? me : other, zone = lost.zone || 0, d = res.dist;
-    const sameB = me.brgy && me.brgy === other.brgy;
-    const far = d < .05 ? 'Practically the same spot' : (sameB ? 'Same barangay' : 'Different barangays') + ', ' + distText(d) + ' apart';
-    return far + (zone ? (d <= zone / 1000 ? ', inside the ' : ', outside the ') + zoneLabel(zone) + ' search zone' : '') + '.';
-  }
-
   function analyse(m, me, pool) {
     const other = m.report, parts = m.parts;
     const cands = candidates(me, pool), others = cands.filter(c => c.report.id !== other.id), total = others.length + 1;
@@ -204,108 +165,79 @@ const Insight = (() => {
     const gapPts = rank === 1 && nextBest ? m.percent - nextBest.percent : 0;
     const close = others.filter(c => Math.abs(c.percent - m.percent) <= 10).length;
 
+    /* Three short stats, nothing more */
     const tiles = [
-      { label: 'Confidence', main: conf.main, tone: conf.tone,
-        sub: `${reliable.length} of ${KEYS.length} attributes compared reliably, ${coverage}% of the scoring weight.` },
+      { label: 'Confidence', main: conf.main, tone: conf.tone, sub: `${coverage}% of the score is solid` },
       others.length
-        ? { label: 'Ranking', main: `#${rank} of ${total}`, tone: rank === 1 ? (gapPts >= 10 ? 'good' : 'ok') : 'warn',
-            sub: rank === 1 ? (gapPts > 0 ? `${num(gapPts, 'point')} ahead of the next closest report.` : 'Tied with another report.') : `${num(lead - m.percent, 'point')} behind the top match (${lead}%).` }
-        : { label: 'Ranking', main: 'Only one', tone: '', sub: 'No other reports to compare it with yet.' },
-      others.length
-        ? { label: 'Look-alikes', main: close === 0 ? (rank === 1 ? 'Stands out' : 'No close rivals') : `${close} similar`, tone: close === 0 ? (rank === 1 ? 'good' : '') : close === 1 ? 'ok' : 'warn',
-            sub: close === 0 ? 'No other report scores within 10 points of it.' : `${num(close, 'other report')} ${close === 1 ? 'scores' : 'score'} within 10 points. Compare ${close === 1 ? 'it' : 'them'} before deciding.` }
-        : { label: 'Look-alikes', main: 'None yet', tone: '', sub: 'Too few reports to judge how distinctive this is.' },
-      { label: 'Where and when', main: hasD ? (d < .05 ? 'Same spot' : distText(d) + ' apart') : 'Unknown',
+        ? { label: 'Ranking', main: `#${rank} of ${total}`, tone: rank === 1 ? 'good' : 'ok',
+            sub: rank === 1 ? (gapPts > 0 ? `${gapPts} pts ahead of #2` : 'Tied for first') : `${lead - m.percent} pts behind #1` }
+        : { label: 'Ranking', main: 'Only match', tone: '', sub: 'No other reports yet' },
+      { label: 'Distance', main: hasD ? (d < .05 ? 'Same spot' : distText(d)) : 'Unknown',
         tone: gap < 0 || inZone === false ? 'warn' : (inZone || sameB) ? 'good' : 'ok',
-        sub: cap([inZone === true ? 'inside the ' + zoneLabel(zone) + ' search zone' : inZone === false ? 'outside the ' + zoneLabel(zone) + ' search zone' : sameB ? 'same barangay' : '', gapText].filter(Boolean).join(', ')) + '.' }
+        sub: gap < 0 ? 'Dates look off' : inZone === true ? 'Inside search zone' : inZone === false ? 'Outside search zone' : sameB ? 'Same barangay' : 'Between the two pins' }
     ];
-
-    /* Strong points and things to double-check */
-    const good = [], check = [];
-    const solid = hit.filter(k => !(k === 'markings' && thinMarks));
-    if (solid.length) good.push(`${cap(join(solid.map(lower)))} ${solid.length > 1 ? 'agree' : 'agrees'}, worth ${solid.reduce((s, k) => s + WEIGHTS[k], 0)} of the ${possible} points that could be compared.`);
-    if (rareKeys.length) good.push(`Uncommon among the other reports: ${join(rareKeys.map(lower))}. Matching on these says more than matching on common traits.`);
-    if (hasD && (inZone || sameB)) good.push(d < .05 ? 'The two locations are practically the same.' : `The two locations are ${distText(d)} apart${inZone ? ', inside the search zone' : ''}.`);
-    if (gap >= 0 && gap <= 14) good.push(`The dates fit: ${gapText}.`);
-    if (!good.length) good.push('Nothing stands out strongly yet.');
-
-    const hints = { color: 'Lighting in photos can change how color looks.', breed: 'Breed is often a guess, so it may still be the same pet.', size: 'Size is judged by eye, so check the photos.', markings: 'Check the photos for the real markings.', location: 'Pets can travel, so this may still be right.' };
-    compared.filter(k => (status(parts[k].score) === 'part' || status(parts[k].score) === 'no') && !(k === 'location' && inZone === false)).forEach(k => {
-      const a = clean(parts[k].mine), b = clean(parts[k].theirs);
-      check.push(k === 'location' ? `The locations are ${hasD ? distText(d) : 'far'} apart. ${hints.location}` : `${LABELS[k]} differs: yours says \u201c${a}\u201d, this one says \u201c${b}\u201d. ${hints[k] || ''}`.trim());
-    });
-    if (skipped.length) check.push(`Not compared: ${join(skipped.map(lower))}. Adding these details would sharpen the match.`);
-    if (thinMarks) check.push(`The markings text (\u201c${clean(thin(me.markings) ? me.markings : other.markings)}\u201d) is very short, so it is treated as weak evidence.`);
-    if (commonKeys.length) check.push(`Shared by most other reports: ${join(commonKeys.map(lower))}. Matching on these says little on its own.`);
-    if (gap < 0) check.push(`This report is ${gapText}. Check the dates.`);
-    if (inZone === false) check.push(`The pin is outside the search zone (${distText(d)} apart). Pets do wander, but look closely.`);
-    check.push('A percentage cannot confirm identity. Compare the photos and ask for a detail only the real owner would know.');
-
-    return { tiles, good, check, rarity, earned, possible, skipped };
+    return { tiles, earned, possible, skipped, thinMarks };
   }
 
-  return { candidates, analyse, noteFor };
+  return { candidates, analyse };
 })();
 
 
 /* ---------- Display ---------- */
+/* Icons for the three quick stats */
+const STAT_ICON = {
+  Confidence: ico('<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/><path d="m9 12 2 2 4-4"/>'),
+  Ranking: ico('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>'),
+  Distance: ICON.pin
+};
 const fmtPts = n => String(Math.round(n * 10) / 10);
 
-/* One attribute: the row itself and, underneath, why it scored that way */
-function attrRow(key, res, me, other, rarity) {
+/* One attribute row: what each report says, the points it earned, and the result */
+function attrRow(key, res, thin) {
   const st = status(res.score), clean = v => (v && String(v).trim()) || '\u2014';
-  const away = key === 'location' && res.dist > .05 ? `<small>${esc(distText(res.dist))} apart</small>` : '';
+  const hint = key === 'location' && res.dist > .05 ? `${distText(res.dist)} apart` : key === 'markings' && thin ? 'Very short, counts for little' : '';
   const why = { yes: 'Same or very close', part: 'Some overlap', no: 'Does not match', na: 'Not enough information' }[st];
   const w = WEIGHTS[key], pts = res.score == null ? null : w * res.score;
-  const rar = rarity && rarity[key] ? ` <span class="m-sig m-sig--${rarity[key].level}">${esc(rarity[key].text)}</span>` : '';
   return `<tr class="m-row m-row--${st}">
     <th scope="row">${LABELS[key]}</th>
     <td data-label="Your report">${esc(clean(res.mine))}</td>
-    <td data-label="This report">${esc(clean(res.theirs))}${away}</td>
+    <td data-label="This report">${esc(clean(res.theirs))}${hint ? `<small>${esc(hint)}</small>` : ''}</td>
     <td class="m-pts" data-label="Points">${pts === null ? '<span class="m-pts-num m-pts-num--na">\u2014</span>'
-      : `<span class="m-pts-num">${fmtPts(pts)}<small>/${w}</small></span><span class="m-meter" aria-hidden="true"><i style="width:${Math.round(res.score * 100)}%"></i></span>`}</td>
+      : `<span class="m-pts-num">${fmtPts(pts)}<small>/${w}</small></span>`}</td>
     <td class="m-result"><span class="m-badge m-badge--${st}" title="${why}">${STATUS_ICON[st]}${STATUS_TEXT[st]}</span></td>
-  </tr>
-  <tr class="m-note m-note--${st}"><td colspan="5">${esc(Insight.noteFor(key, res, me, other))}${rar}</td></tr>`;
+  </tr>`;
 }
 
-/* Full breakdown: percentage, evidence tiles, attribute-by-attribute table, strong points and checks.
+/* The details panel: the score first, three quick stats, then the attribute table.
    `pool` is every report the person can see; it lets us rank this match against the others. */
 function matchPanelHTML(m, mine, pool) {
   const p = m.percent, hit = matchKeys(m), compared = comparedKeys(m), a = Insight.analyse(m, mine, pool || []);
-  const names = hit.map(k => LABELS[k].toLowerCase());
-  const sentence = hit.length
-    ? `Both reports agree on ${names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names.slice(-1) : names[0]}.`
-    : 'No attribute matches closely, so this is only a weak lead.';
-  const list = (items, icon) => items.map(t => `<li><span class="mi-ico" aria-hidden="true">${icon}</span><span>${esc(t)}</span></li>`).join('');
   return `<section class="box d-card d-wide m-why m-why--${tier(p)}" id="match" aria-labelledby="match-title">
-    <div class="m-why-head">
-      <div>
-        <h2 id="match-title">Why this matches your report</h2>
-        <p class="m-why-sub">Compared with your ${esc(mine.kind)} report &ldquo;${esc(mine.name || [mine.color, speciesOf(mine)].filter(Boolean).join(' ') || 'Pet')}&rdquo;. ${esc(sentence)}</p>
-      </div>
-      <div class="m-score" role="img" aria-label="${p} percent match">
-        <div class="m-pct">${p}<small>%</small></div>
+    <h2 id="match-title">${ico('<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>')}Match analysis</h2>
+
+    <div class="mw-hero">
+      <div class="m-score mw-score" role="img" aria-label="${p} percent match">
+        <div class="mw-gauge">
+          <svg viewBox="0 0 220 118" aria-hidden="true" focusable="false">
+            <path class="mw-track" d="M 20 110 A 90 90 0 0 1 200 110" pathLength="100"/>
+            ${p > 0 ? `<path class="mw-fill" d="M 20 110 A 90 90 0 0 1 200 110" pathLength="100" style="stroke-dasharray:${p} 100"/>` : ''}
+          </svg>
+          <div class="m-pct">${p}<small>%</small></div>
+        </div>
         <div class="m-verdict">${verdict(p)}</div>
-        <div class="m-bar"><span style="width:${p}%"></span></div>
       </div>
+      <ul class="mw-stats">
+        ${a.tiles.map(t => `<li class="mw-stat${t.tone ? ' mw-stat--' + t.tone : ''}"><span class="mw-ico" aria-hidden="true">${STAT_ICON[t.label] || ''}</span><span class="mw-label">${t.label}</span><b class="mw-main">${esc(t.main)}</b><small>${esc(t.sub)}</small></li>`).join('')}
+      </ul>
     </div>
 
-    <div class="mi-tiles" role="list">
-      ${a.tiles.map(t => `<div class="mi-tile${t.tone ? ' mi-tile--' + t.tone : ''}" role="listitem"><span class="mi-label">${t.label}</span><b class="mi-main">${esc(t.main)}</b><small>${esc(t.sub)}</small></div>`).join('')}
-    </div>
 
-    <h3 class="mi-h">How the score is built <span>points earned / points available</span></h3>
+    <h3 class="mw-h">Score breakdown</h3>
     <table class="m-table">
       <caption class="sr-only">How this report compares with yours, attribute by attribute</caption>
-      <thead><tr><th scope="col">Attribute</th><th scope="col">Your report</th><th scope="col">This report</th><th scope="col">Points</th><th scope="col"><span class="sr-only">Result</span></th></tr></thead>
-      <tbody>${Object.keys(WEIGHTS).map(k => attrRow(k, m.parts[k], mine, m.report, a.rarity)).join('')}</tbody>
+      <thead><tr><th scope="col">Attribute</th><th scope="col">Your report</th><th scope="col">This report</th><th scope="col">Points</th><th scope="col">Result</th></tr></thead>
+      <tbody>${Object.keys(WEIGHTS).map(k => attrRow(k, m.parts[k], a.thinMarks)).join('')}</tbody>
     </table>
-    <p class="hint m-why-foot">Score: ${fmtPts(a.earned)} of ${a.possible} possible points = ${p}%. ${hit.length} of ${compared.length} compared attributes match.${a.skipped.length ? ' Skipped because they are blank on a report: ' + a.skipped.map(k => LABELS[k].toLowerCase()).join(', ') + '.' : ''} Species and color carry the most weight.</p>
-
-    <div class="mi-cols">
-      <div class="mi-panel mi-panel--good"><h3>What supports this match</h3><ul class="mi-list">${list(a.good, STATUS_ICON.yes)}</ul></div>
-      <div class="mi-panel mi-panel--check"><h3>Worth double-checking</h3><ul class="mi-list">${list(a.check, '<svg viewBox="0 0 24 24"><path d="M12 7v6M12 17h.01"/></svg>')}</ul></div>
-    </div>
+    <p class="hint m-why-foot">${fmtPts(a.earned)} of ${a.possible} points &middot; ${hit.length} of ${compared.length} attributes match.${a.skipped.length ? ' Blank on a report, so skipped: ' + a.skipped.map(k => LABELS[k].toLowerCase()).join(', ') + '.' : ''} Species and color count the most.</p>
   </section>`;
 }
