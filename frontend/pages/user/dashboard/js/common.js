@@ -297,7 +297,7 @@ const applyIdentity = () => {
   const cancelLogout = $('#cancel-logout');
   const confirmLogout = $('#confirm-logout');
   $('#logout').addEventListener('click', () => {
-    if (logoutDialog?.showModal) logoutDialog.showModal();
+    if (logoutDialog?.showModal) { logoutDialog.showModal(); cancelLogout?.focus(); }   /* focus the safe choice */
     else if (window.confirm('Are you sure you want to log out of TunTon?')) logout();
   });
   cancelLogout?.addEventListener('click', () => logoutDialog?.close());
