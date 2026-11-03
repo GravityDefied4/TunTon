@@ -105,7 +105,6 @@ const Insight = (() => {
   const join = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : (a[0] || '');
   const num = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   const lower = k => LABELS[k].toLowerCase();
-  const gapDays = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 864e5);
   const zoneLabel = z => z >= 1000 ? (z / 1000) + ' km' : z + ' m';
   /* Text of 3 letters or fewer (for example "dde") tells us almost nothing, even when both reports have it */
   const thin = s => !blank(s) && String(s).replace(/[^a-z]/gi, '').length <= 3;
@@ -146,8 +145,6 @@ const Insight = (() => {
     const d = parts.location.dist, hasD = isFinite(d), zone = lost.zone || 0;
     const inZone = hasD && zone ? d <= zone / 1000 : null;
     const sameB = !!(me.brgy && me.brgy === other.brgy);
-    const gap = gapDays(lost.date, found.date);
-    const gapText = gap < 0 ? `dated ${num(-gap, 'day')} before it went missing` : gap === 0 ? 'found the same day it went missing' : `found ${num(gap, 'day')} after it went missing`;
 
     /* Confidence: how much of the score rests on details we can trust */
     const reliable = compared.filter(k => !(k === 'markings' && thinMarks));
@@ -177,9 +174,7 @@ const Insight = (() => {
         tone: inZone === false ? 'warn' : (inZone || sameB) ? 'good' : 'ok',
         sub: inZone === true ? 'Inside the search zone' : inZone === false ? 'Outside the search zone' : sameB ? 'Same barangay' : hasD ? 'Between the two pins' : 'No pin on one report' }
     ];
-    /* A date problem is not a distance, so it gets its own note under the stats */
-    const dateWarn = gap < 0 ? 'Dates look off: this was found before yours went missing.' : '';
-    return { tiles, dateWarn, earned, possible, skipped, thinMarks };
+    return { tiles, earned, possible, skipped, thinMarks };
   }
 
   return { candidates, analyse };
@@ -227,7 +222,6 @@ function matchPanelHTML(m, mine, pool) {
         <dl class="mw-stats">
           ${a.tiles.map(t => `<div class="mw-stat${t.tone ? ' mw-stat--' + t.tone : ''}"><dt>${t.label}</dt><dd class="mw-main">${esc(t.main)}</dd><dd class="mw-note">${esc(t.sub)}</dd></div>`).join('')}
         </dl>
-        ${a.dateWarn ? `<p class="mw-alert" role="note">${ico('<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>')}${esc(a.dateWarn)}</p>` : ''}
       </div>
     </div>
 
