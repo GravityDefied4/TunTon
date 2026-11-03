@@ -209,8 +209,8 @@
 .m-why > h2 { margin: 0 0 1.1rem; }
 
 /* Hero: the score gauge (big, left) and the three quick stats (right) in one row */
-.mw-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1.5rem 2.5rem; margin-bottom: 1.4rem; padding: 1.6rem 2rem; border-radius: 20px; background: var(--surface-tint); border: 1px solid var(--line-soft); }
-.mw-score { min-width: 0; text-align: center; padding-right: 2.5rem; border-right: 1px solid var(--line); }
+.mw-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1.5rem 3rem; margin-bottom: 1.4rem; padding: 1.6rem 2rem; border-radius: 20px; background: var(--surface-tint); }
+.mw-score { min-width: 0; text-align: center; padding-right: 1rem; }
 .mw-gauge { position: relative; width: 18rem; max-width: 100%; margin: 0 auto; }
 .mw-gauge svg { display: block; width: 100%; height: auto; overflow: visible; }
 .mw-gauge path { fill: none; stroke-width: 16; stroke-linecap: round; }
@@ -222,19 +222,20 @@
 .mw-gauge .m-pct small { font-size: 1.6rem; }
 .mw-score .m-verdict { margin: .6rem 0 0; font: 600 1.1rem/1.2 var(--font-display); color: var(--tone); }
 
-/* Quick stats: one line each, stacked beside the gauge */
-.mw-stats { display: grid; margin: 0; padding: 0; list-style: none; }
-.mw-stats li { display: grid; grid-template-columns: 2.5rem 6rem minmax(0, auto) minmax(0, 1fr); align-items: center; gap: .25rem 1rem; padding: .85rem 0; border-top: 1px solid var(--line); }
-.mw-stats li:first-child { border-top: 0; padding-top: 0; }
-.mw-stats li:last-child { padding-bottom: 0; }
-.mw-ico { --b: var(--muted); display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; color: var(--b); background: color-mix(in srgb, var(--b) 16%, transparent); }
-.mw-ico .ico { width: 1.2rem; height: 1.2rem; }
-.mw-stat--good .mw-ico { --b: var(--leaf-text); }
-.mw-stat--ok .mw-ico { --b: var(--m-mid); }
-.mw-stat--warn .mw-ico { --b: var(--m-fair); }
-.mw-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.mw-main { font: 700 1.25rem/1.2 var(--font-display); color: var(--ink); white-space: nowrap; }
-.mw-stats small { color: var(--muted); font-weight: 600; font-size: .88rem; }
+/* Quick stats: three compact columns beside the gauge. Each one stacks label, value and note. */
+.mw-side { min-width: 0; }
+.mw-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 2rem; margin: 0; padding: 0; }
+.mw-stat { --b: var(--muted); display: grid; align-content: start; gap: .35rem; }
+.mw-stat--good { --b: var(--leaf-text); }
+.mw-stat--ok { --b: var(--m-mid); }
+.mw-stat--warn { --b: var(--m-fair); }
+.mw-stat dt { margin: 0; font-size: .95rem; font-weight: 600; color: var(--muted); }
+.mw-stat dd { margin: 0; }
+.mw-main { display: flex; align-items: center; gap: .55rem; font: 700 1.5rem/1.2 var(--font-display); color: var(--ink); white-space: nowrap; }
+.mw-main::before { content: ""; flex: none; width: .6rem; height: .6rem; border-radius: 50%; background: var(--b); }
+.mw-note { font-size: .95rem; font-weight: 500; color: var(--muted); }
+.mw-alert { display: flex; align-items: flex-start; gap: .5rem; margin: 1.1rem 0 0; padding: .65rem .9rem; border-radius: 12px; font-size: .9rem; font-weight: 600; line-height: 1.4; color: var(--ink); background: color-mix(in srgb, var(--m-fair) 14%, transparent); }
+.mw-alert .ico { flex: none; width: 1.1rem; height: 1.1rem; margin-top: .1rem; color: var(--m-fair); }
 
 /* Section title above the table */
 .mw-h { margin: 0 0 .7rem; font: 600 1.15rem/1.3 var(--font-display); color: var(--ink); }
@@ -258,14 +259,13 @@
 @media (prefers-reduced-motion: reduce) { .mw-fill { animation: none; } }
 @media (max-width: 900px) {
   .mw-hero { grid-template-columns: 1fr; padding: 1.3rem 1.3rem 1.4rem; }
-  .mw-score { padding: 0 0 1.2rem; border-right: 0; border-bottom: 1px solid var(--line); }
+  .mw-score { padding: 0 0 .4rem; }
 }
 @media (max-width: 640px) {
   .m-why .mw-score { text-align: center; }
   .mw-gauge { width: 16rem; }
   .mw-gauge .m-pct { font-size: 3.8rem; }
-  .mw-stats li { grid-template-columns: 2.5rem minmax(0, 1fr); gap: .05rem .9rem; }
-  .mw-ico { grid-row: span 3; }
+  .mw-stats { grid-template-columns: 1fr; gap: 1rem; }
   .mw-main { white-space: normal; }
   .m-table { table-layout: auto; }
   .m-table th, .m-table td { padding: 0; }

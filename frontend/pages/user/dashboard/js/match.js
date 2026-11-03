@@ -165,18 +165,21 @@ const Insight = (() => {
     const gapPts = rank === 1 && nextBest ? m.percent - nextBest.percent : 0;
     const close = others.filter(c => Math.abs(c.percent - m.percent) <= 10).length;
 
-    /* Three short stats, nothing more */
+    /* Three short stats, nothing more. Each has a plain value and one short note. */
+    const confNote = ['Few details to go on', 'Some details are missing', 'Most details were compared'][lvl];
     const tiles = [
-      { label: 'Confidence', main: conf.main, tone: conf.tone, sub: `${coverage}% of the score is solid` },
+      { label: 'Confidence', main: conf.main, tone: conf.tone, sub: confNote },
       others.length
         ? { label: 'Ranking', main: `#${rank} of ${total}`, tone: rank === 1 ? 'good' : 'ok',
-            sub: rank === 1 ? (gapPts > 0 ? `${gapPts} pts ahead of #2` : 'Tied for first') : `${lead - m.percent} pts behind #1` }
+            sub: rank === 1 ? (gapPts > 0 ? `${num(gapPts, 'point')} ahead of the next` : 'Tied for first') : `${num(lead - m.percent, 'point')} behind #1` }
         : { label: 'Ranking', main: 'Only match', tone: '', sub: 'No other reports yet' },
       { label: 'Distance', main: hasD ? (d < .05 ? 'Same spot' : distText(d)) : 'Unknown',
-        tone: gap < 0 || inZone === false ? 'warn' : (inZone || sameB) ? 'good' : 'ok',
-        sub: gap < 0 ? 'Dates look off' : inZone === true ? 'Inside search zone' : inZone === false ? 'Outside search zone' : sameB ? 'Same barangay' : 'Between the two pins' }
+        tone: inZone === false ? 'warn' : (inZone || sameB) ? 'good' : 'ok',
+        sub: inZone === true ? 'Inside the search zone' : inZone === false ? 'Outside the search zone' : sameB ? 'Same barangay' : hasD ? 'Between the two pins' : 'No pin on one report' }
     ];
-    return { tiles, earned, possible, skipped, thinMarks };
+    /* A date problem is not a distance, so it gets its own note under the stats */
+    const dateWarn = gap < 0 ? 'Dates look off: this was found before yours went missing.' : '';
+    return { tiles, dateWarn, earned, possible, skipped, thinMarks };
   }
 
   return { candidates, analyse };
@@ -184,12 +187,6 @@ const Insight = (() => {
 
 
 /* ---------- Display ---------- */
-/* Icons for the three quick stats */
-const STAT_ICON = {
-  Confidence: ico('<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/><path d="m9 12 2 2 4-4"/>'),
-  Ranking: ico('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>'),
-  Distance: ICON.pin
-};
 const fmtPts = n => String(Math.round(n * 10) / 10);
 
 /* One attribute row: what each report says, the points it earned, and the result */
@@ -226,9 +223,12 @@ function matchPanelHTML(m, mine, pool) {
         </div>
         <div class="m-verdict">${verdict(p)}</div>
       </div>
-      <ul class="mw-stats">
-        ${a.tiles.map(t => `<li class="mw-stat${t.tone ? ' mw-stat--' + t.tone : ''}"><span class="mw-ico" aria-hidden="true">${STAT_ICON[t.label] || ''}</span><span class="mw-label">${t.label}</span><b class="mw-main">${esc(t.main)}</b><small>${esc(t.sub)}</small></li>`).join('')}
-      </ul>
+      <div class="mw-side">
+        <dl class="mw-stats">
+          ${a.tiles.map(t => `<div class="mw-stat${t.tone ? ' mw-stat--' + t.tone : ''}"><dt>${t.label}</dt><dd class="mw-main">${esc(t.main)}</dd><dd class="mw-note">${esc(t.sub)}</dd></div>`).join('')}
+        </dl>
+        ${a.dateWarn ? `<p class="mw-alert" role="note">${ico('<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>')}${esc(a.dateWarn)}</p>` : ''}
+      </div>
     </div>
 
 
