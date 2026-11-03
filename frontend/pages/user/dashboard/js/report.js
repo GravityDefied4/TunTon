@@ -108,6 +108,7 @@ function responseCard(f, kind) {
 }
 
 let current = null;   // the report being shown
+let matchPool = [];   // every report, used to rank a match against the other candidates
 
 function show(r) {
   current = r;
@@ -136,6 +137,13 @@ function show(r) {
     !lost && r.where ? ['Pet is now', r.where] : null
   ].filter(Boolean);
 
+  /* Opened from the Matching tab (report.html?id=..&match=<my report id>): explain why it matches */
+  const myMatchId = new URLSearchParams(location.search).get('match');
+  const myRep = myMatchId && mergedReports().find(x => x.id === myMatchId && isOwner(x));
+  const mm = myRep && !owner && myRep.kind !== r.kind ? scoreReport(myRep, r) : null;
+  const back = document.querySelector('.back-link');
+  if (mm && back) { back.href = 'matching.html?report=' + encodeURIComponent(myRep.id); back.innerHTML = '&larr; Back to matching'; }
+
   const pendingFinds = finds.some(f => f.status === 'pending') && !confirmed;
   const respName = lost ? 'Found reports' : 'Lost reports';
   const respHint = owner
@@ -163,6 +171,7 @@ function show(r) {
     <aside class="box d-summary">
       <div class="d-sumhead">
         <span class="badge ${home || isFound || (!lost && confirmed) ? 'badge--home' : lost ? 'badge--lost' : ''}">${home ? ICON.check + 'Reunited' : !lost && confirmed ? ICON.check + 'Owner found' : isFound ? 'Pet found' : lost ? 'Lost pet' : 'Found pet'}</span>
+        ${mm ? `<a class="m-pill m-pill--${tier(mm.percent)}" href="#match" title="See why this matches your report">${mm.percent}% match</a>` : ''}
         ${owner ? `<div class="d-options">
           <button type="button" class="d-options-btn" id="d-options-btn" aria-label="Report options" aria-haspopup="menu" aria-expanded="false">${ICON.more}</button>
           <div class="d-menu" id="d-menu" role="menu" hidden>
@@ -192,6 +201,7 @@ function show(r) {
 
   <!-- Sections run from most to least important -->
   <div class="d-grid">
+    ${mm ? matchPanelHTML(mm, myRep, matchPool) : ''}
     ${owner && pendingFinds ? foundBox : ''}
 
     <section class="box d-card d-wide d-split">
@@ -363,7 +373,8 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
   if (!id) return notFound();
   host.innerHTML = skeletonDetail();   // placeholders until the report arrives
   try {
-    const r = await ReportsAPI.get(id);
+    const [r, all] = await Promise.all([ReportsAPI.get(id), ReportsAPI.list({ kind: 'all' }).catch(() => [])]);
+    matchPool = all;
     r ? show(r) : notFound();
   } catch (err) {
     console.error(err);

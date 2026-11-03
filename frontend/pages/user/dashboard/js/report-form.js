@@ -258,7 +258,6 @@ function setupForm(k, host) {
     banner.textContent = 'You are editing your report. Change what you need, then save.';
     form.parentElement.insertBefore(banner, form);
     form.querySelector('button[type="submit"]').textContent = 'Save changes';
-    host.querySelector('.again')?.remove();
     document.title = 'Edit report | TunTon';
     document.querySelectorAll('.view-head h1').forEach(h => { h.textContent = 'Edit your ' + k + ' report'; });
   }
@@ -267,7 +266,6 @@ function setupForm(k, host) {
     fillFrom(claimEdit);
     form.dataset.updating = '1';
     form.querySelector('button[type="submit"]').textContent = 'Save changes';
-    host.querySelector('.again')?.remove();
     document.title = 'Edit lost report | TunTon';
     document.querySelectorAll('.view-head h1').forEach(h => { h.textContent = 'Edit your lost report'; });
   }
@@ -372,6 +370,7 @@ function setupForm(k, host) {
       host.querySelector('.done p').textContent = prev ? 'Your changes have been saved on the lost report.' : 'Thank you! The owner of the lost report can now see your details and will confirm if this is their pet.';
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(matchId);
       host.querySelector('.done .actions a').textContent = 'View the report';
+      host.querySelector('.see-matches').hidden = true;   /* a response to someone else's report has nothing to match */
       form.hidden = true; host.querySelector('.done').hidden = false;
       host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
       window.scrollTo(0, 0);
@@ -395,6 +394,7 @@ function setupForm(k, host) {
       host.querySelector('.done p').textContent = prev ? 'Your changes have been saved on the found report.' : "Thank you! The finder can now see your pet's details and will confirm if this is your pet.";
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(claimId);
       host.querySelector('.done .actions a').textContent = 'View the report';
+      host.querySelector('.see-matches').hidden = true;   /* a response to someone else's report has nothing to match */
       form.hidden = true; host.querySelector('.done').hidden = false;
       host.querySelector('.match-banner')?.remove(); delete form.dataset.claimFor;
       window.scrollTo(0, 0);
@@ -410,16 +410,10 @@ function setupForm(k, host) {
       else localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r)));
     }
     catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
+    { const go = host.querySelector('.see-matches'); go.href = 'matching.html?report=' + encodeURIComponent(editing ? editing.id : r.id); go.hidden = false; }
     form.hidden = true; host.querySelector('.done').hidden = false;
     host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
     window.scrollTo(0, 0);
-  });
-
-  host.querySelector('.again')?.addEventListener('click', () => {
-    form.reset(); photos = []; drawFiles(); err.textContent = '';
-    if (pin) { m.removeLayer(pin); pin = null; } if (circle) { m.removeLayer(circle); circle = null; }
-    form.hidden = false; host.querySelector('.done').hidden = true;
-    host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
   });
 
   new ResizeObserver(() => m.invalidateSize()).observe(host.querySelector('.pick'));

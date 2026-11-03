@@ -28,7 +28,7 @@ window.sidebarReady = (async function () {
 
     /* highlight the link for the current page */
     let here = location.pathname.split('/').pop() || 'dashboard.html';
-    if (here === 'report.html') here = 'reports.html';   /* details page belongs under All reports */
+    if (here === 'report.html') here = /[?&]match=/.test(location.search) ? 'matching.html' : 'reports.html';   /* details page belongs under All reports */
     document.querySelectorAll('.side-nav a').forEach(a => {
       if (a.getAttribute('href') === here) a.setAttribute('aria-current', 'page');
     });
@@ -82,7 +82,11 @@ window.sidebarReady = (async function () {
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
       const href = a.getAttribute('href');
       const tab = nav.querySelector('a[href="' + href + '"]');
-      if (href === location.pathname.split('/').pop()) { e.preventDefault(); return; }   /* already on this page */
+      if (href === location.pathname.split('/').pop()) {
+        e.preventDefault();
+        if (href === 'add-report.html' && document.querySelector('.done:not([hidden])')) location.href = href;   /* after filing: open a fresh form */
+        return;
+      }   /* already on this page */
       try { if (ind.dataset.h) sessionStorage.setItem(NAV_KEY, JSON.stringify({ y: +ind.dataset.y, h: +ind.dataset.h, t: Date.now() })); } catch (err) { /* ignore */ }
       if (reduce) return;
       e.preventDefault();

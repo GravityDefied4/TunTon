@@ -46,7 +46,6 @@ function applyMatch({ form, host, map }, r, mine) {
     form.fillFrom(mine);
     form.dataset.updating = '1';
     form.querySelector('button[type="submit"]').textContent = 'Save changes';
-    host.querySelector('.again')?.remove();
     document.title = 'Edit found report | TunTon';
     document.querySelectorAll('.view-head h1').forEach(h => { h.textContent = 'Edit your found report'; });
   }
@@ -64,11 +63,10 @@ function startForm(k) {
     if (r) applyMatch(ctx, r, params.get('update') ? myPendingFind(r) : null);
   }
 
-  /* Once a report is filed, the chooser is no use: hide it. "File another" brings it back. */
+  /* Once a report is filed, the chooser is no use: hide it. */
   ctx.form.addEventListener('submit', () => setTimeout(() => {
     if (!ctx.host.querySelector('.done').hidden) picker.hidden = true;
   }));
-  ctx.host.querySelector('.again')?.addEventListener('click', () => { picker.hidden = false; });
 }
 
 function show(k) {

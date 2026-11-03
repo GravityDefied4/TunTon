@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>try{if(localStorage.getItem("tunton_side")==="min")document.documentElement.classList.add("side-min")}catch(e){}</script>
+  <title>Attribute matching | TunTon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../css/style.css">
+  <link rel="icon" type="image/png" href="../../../assets/logo/tunton-paw.png">
+  <link rel="stylesheet" href="user.css">
+  <script src="../../../js/theme.js"></script>
+</head>
+<body>
+<div class="dash">
+  <div id="app-nav"></div>
+
+  <div class="dash-main">
+    <main>
+      <section class="view" id="view-matching">
+        <div class="view-head">
+          <h1>Attribute matching</h1>
+          <p id="match-lead">Reports that look like yours, ranked from the best match to the weakest.</p>
+        </div>
+
+        <section class="match-pick" id="match-controls" aria-label="Report being matched" hidden>
+          <span class="ms-label">Matching for</span>
+          <div class="ms" id="ms">
+            <button type="button" class="ms-trigger" id="ms-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="ms-panel"></button>
+            <div class="ms-panel" id="ms-panel" hidden></div>
+          </div>
+        </section>
+
+        <div class="mr-head" id="mr-head" hidden>
+          <div class="match-head" id="match-head"></div>
+          <div class="mr-filter">
+            <span class="mr-filter-label" id="mc-l2">Match percentage</span>
+            <div class="mc-chips" id="pct-chips" role="radiogroup" aria-labelledby="mc-l2"></div>
+          </div>
+        </div>
+
+        <div id="match-list" class="match-list" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="js/sidebar.js"></script>
+<script src="js/common.js"></script>
+<script src="js/api.js"></script>
+<script src="js/match.js"></script>
+<script src="js/matching.js"></script>
+</body>
+</html>

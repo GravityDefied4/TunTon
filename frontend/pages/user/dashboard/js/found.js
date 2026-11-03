@@ -25,7 +25,6 @@ function applyMatch({ form, host, map }, r, mine) {
     form.fillFrom(mine);
     form.dataset.updating = '1';
     form.querySelector('button[type="submit"]').textContent = 'Save changes';
-    host.querySelector('.again')?.remove();
     document.title = 'Edit found report | TunTon';
     host.querySelectorAll('h1').forEach(h => { h.textContent = 'Edit your found report'; });
   }
