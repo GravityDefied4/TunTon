@@ -2,7 +2,7 @@
    Routes are behind requireAuth + requireRole('admin'). Phone numbers are never returned here:
    phone numbers are never returned here (plan rule 5). Claims are listed only when they exist in the claims table. */
 const pool = require('../db/pool');
-const { withTransaction, logActivity } = require('../db/activityLog');
+const { withTransaction, logActivity, CLAIM_REASON_SQL } = require('../db/activityLog');
 const rq = require('../db/reportQueries');
 const { wrap } = require('../middleware/errorHandler');
 const v = require('../middleware/validate');
@@ -10,38 +10,18 @@ const { runQuietly } = require('../services/matchRunner');
 
 const like = s => '%' + String(s).trim().slice(0, 100).replace(/[\\%_]/g, '\\$&') + '%';
 
-/* Report-photo storage has varied between deployments. Resolve only from a small
-   allowlist of table/column names so report previews can use existing photo data. */
+/* Photos of one report for the moderation view. report_photos is the only photo table in schema.sql;
+   the image bytes live in image_data (older rows may have only a file_path). */
 async function reportPhotos(reportId) {
-  const tables = ['pet_report_photos', 'pet_report_images', 'report_photos', 'pet_photos', 'report_images'];
-  const [columns] = await pool.query(
-    `SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name
-       FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (${tables.map(() => '?').join(',')})`, tables);
-  const byTable = new Map();
-  for (const c of columns) {
-    if (!byTable.has(c.table_name)) byTable.set(c.table_name, new Set());
-    byTable.get(c.table_name).add(c.column_name);
-  }
-  for (const table of tables) {
-    const cols = byTable.get(table);
-    if (!cols || !cols.has('report_id')) continue;
-    const blob = ['image_data', 'photo_data', 'image_blob'].find(c => cols.has(c));
-    const path = ['file_path', 'photo_url', 'image_url', 'url'].find(c => cols.has(c));
-    if (!blob && !path) continue;
-    const id = ['photo_id', 'image_id', 'id'].find(c => cols.has(c));
-    const mime = ['mime_type', 'content_type'].find(c => cols.has(c));
-    const select = [blob, path, mime, id].filter(Boolean).map(c => `\`${c}\``).join(', ');
-    const order = id ? ` ORDER BY \`${id}\`` : '';
-    const [rows] = await pool.query(`SELECT ${select} FROM \`${table}\` WHERE report_id = ?${order}`, [reportId]);
-    return rows.map(row => {
-      const raw = blob && row[blob];
-      const mimeType = mime && row[mime] ? String(row[mime]) : 'image/jpeg';
-      const src = raw ? `data:${mimeType};base64,${Buffer.from(raw).toString('base64')}` : (path ? row[path] : '');
-      return src ? { id: id ? row[id] : null, src, mime_type: mimeType } : null;
-    }).filter(Boolean);
-  }
-  return [];
+  const [rows] = await pool.query(
+    'SELECT photo_id, file_path, image_data, mime_type FROM report_photos WHERE report_id = ? ORDER BY is_primary DESC, photo_id', [reportId]);
+  return rows.map(row => {
+    const mimeType = row.mime_type ? String(row.mime_type) : 'image/jpeg';
+    const src = row.image_data
+      ? `data:${mimeType};base64,${Buffer.from(row.image_data).toString('base64')}`
+      : (row.file_path ? `/uploads/reports/${encodeURIComponent(row.file_path)}` : '');
+    return src ? { id: row.photo_id, src, mime_type: mimeType } : null;
+  }).filter(Boolean);
 }
 
 /* GET /api/admin/users  ?q=&role=&status=&limit=&offset=  (name, email, report counts; no phone) */
@@ -90,7 +70,7 @@ exports.reports = wrap(async (req, res) => {
   if (q.status && q.status !== 'all') { where.push('r.status = ?'); params.push(v.oneOf(q.status, ['active', 'matched', 'resolved', 'closed', 'removed'], 'status')); }
   else if (q.hidden === 'true') where.push("r.status = 'removed'");
   else if (q.hidden === 'false') where.push("r.status <> 'removed'");
-  if (q.species) { if (/^\d+$/.test(q.species)) { where.push('r.species_id = ?'); params.push(Number(q.species)); } else { where.push('sp.name = ?'); params.push(String(q.species)); } }
+  if (q.species) { where.push('r.species = ?'); params.push(String(q.species).slice(0, 50)); }   // species is a text column on pet_reports
   if (q.barangay_id) { where.push('r.barangay_id = ?'); params.push(v.id(q.barangay_id, 'barangay_id')); }
   if (q.report_id) { where.push('r.report_id = ?'); params.push(v.id(q.report_id, 'report_id')); }
   if (q.user_id) { where.push('r.user_id = ?'); params.push(v.id(q.user_id, 'user_id')); }
@@ -190,7 +170,7 @@ exports.reportClaims = wrap(async (req, res) => {
   const [[report]] = await pool.query('SELECT report_id FROM pet_reports WHERE report_id = ?', [id]);
   if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
   const [rows] = await pool.query(
-    `SELECT c.claim_id AS id, c.claim_type AS type, c.status, c.created_at, c.decided_at, c.decision_reason,
+    `SELECT c.claim_id AS id, c.claim_type AS type, c.status, c.created_at, c.decided_at, ${CLAIM_REASON_SQL},
             c.claimant_user_id, cu.full_name AS claimant_name, cu.email AS claimant_email,
             c.description AS message,
             (SELECT COUNT(*) FROM claim_photos p WHERE p.claim_id = c.claim_id) AS photo_count
@@ -216,7 +196,7 @@ exports.claims = wrap(async (req, res) => {
        JOIN users cu ON cu.user_id = c.claimant_user_id
        JOIN users ru ON ru.user_id = r.user_id`;
   const [rows] = await pool.query(
-    `SELECT c.claim_id AS id, c.claim_type AS type, c.status, c.created_at, c.decided_at, c.decision_reason,
+    `SELECT c.claim_id AS id, c.claim_type AS type, c.status, c.created_at, c.decided_at, ${CLAIM_REASON_SQL},
             c.report_id, r.report_type, r.pet_name AS report_pet_name, r.user_id AS report_user_id,
             ru.full_name AS report_owner_name, cu.full_name AS claimant_name, cu.email AS claimant_email,
             (SELECT COUNT(*) FROM claim_photos p WHERE p.claim_id = c.claim_id) AS photo_count
@@ -263,8 +243,8 @@ exports.logs = wrap(async (req, res) => {
   if (q.action) { where.push('l.action LIKE ?'); params.push(like(q.action)); }
   if (q.target_table) { where.push('l.target_table = ?'); params.push(String(q.target_table).slice(0, 40)); }
   if (q.target_id) { where.push('l.target_id = ?'); params.push(v.id(q.target_id, 'target_id')); }
-  if (q.from && /^\\d{4}-\\d{2}-\\d{2}$/.test(q.from)) { where.push('l.created_at >= ?'); params.push(`${q.from} 00:00:00`); }
-  if (q.to && /^\\d{4}-\\d{2}-\\d{2}$/.test(q.to)) { where.push('l.created_at < DATE_ADD(?, INTERVAL 1 DAY)'); params.push(q.to); }
+  if (q.from && /^\d{4}-\d{2}-\d{2}$/.test(q.from)) { where.push('l.created_at >= ?'); params.push(`${q.from} 00:00:00`); }
+  if (q.to && /^\d{4}-\d{2}-\d{2}$/.test(q.to)) { where.push('l.created_at < DATE_ADD(?, INTERVAL 1 DAY)'); params.push(q.to); }
   if (q.q && String(q.q).trim()) {
     where.push(`(u.full_name LIKE ? OR u.email LIKE ? OR l.action LIKE ? OR l.target_table LIKE ?
       OR CAST(l.target_id AS CHAR) LIKE ? OR CAST(l.details AS CHAR) LIKE ?)`);

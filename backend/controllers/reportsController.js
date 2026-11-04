@@ -10,15 +10,18 @@ const { checkFiles, discardFiles, UPLOAD_ROOT } = require('../middleware/upload'
 const v = require('../middleware/validate');
 const { parsePin, parseRadius, DAGUPAN_BOUNDS, DAGUPAN_CENTER, RADIUS_KM } = require('../services/geofence');
 const { runQuietly } = require('../services/matchRunner');
+const { splitColors } = require('../services/matching');
 
 const REQUIRE_PHOTO = true;      // plan open decision 4 suggests: at least one photo per report
 const MAX_PHOTOS = 5;
 const SIZES = ['small', 'medium', 'large', 'extra_large'];
 const SEXES = ['male', 'female', 'unknown'];
-const AGES = ['baby', 'young', 'adult', 'senior', 'unknown'];
+const SPECIES_SUGGESTIONS = ['Dog', 'Cat', 'Other'];
+const COLOR_SUGGESTIONS = ['Black', 'White', 'Brown', 'Gray', 'Orange', 'Cream', 'Golden', 'Tan', 'Red', 'Tricolor', 'Brindle', 'Spotted'];
+const PHONE_RE = /^(\+63|09)[0-9]{9}$/;                    // same rule as the chk_users_phone constraint
 const PUBLIC_STATUSES = ['active', 'matched', 'resolved', 'closed'];
 
-/* "1,2" | "[1,2]" | [1,2] | "1" -> [1,2] (multipart forms send everything as strings). */
+/* "1,2" | "[1,2]" | [1,2] | "1" -> [1,2] (multipart forms send everything as strings). Used for photo ids. */
 function intList(raw, label) {
   if (raw === undefined || raw === null || raw === '') return [];
   let arr = raw;
@@ -32,18 +35,50 @@ function intList(raw, label) {
   return [...new Set(out)];
 }
 
+/* pet_reports.color is ONE text column (VARCHAR 50). Accepts "Black and White", ["Black","White"], '["Black","White"]' or
+   "Black, White" and stores them as "Black and White" (the shape the frontend already shows). */
+function colorText(raw) {
+  let list = raw;
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (t.startsWith('[')) { try { list = JSON.parse(t); } catch { throw v.bad('color is not a valid list.'); } }
+  }
+  const names = (Array.isArray(list) ? list : [list]).flatMap(c => String(c ?? '').split(/\s*(?:,|\/|&|\+|;|\band\b)\s*/i))
+    .map(c => c.trim()).filter(Boolean);
+  const unique = names.filter((c, i) => names.findIndex(x => x.toLowerCase() === c.toLowerCase()) === i);
+  if (!unique.length) throw v.bad('color is required.');
+  if (unique.length > 4) throw v.bad('Pick at most 4 colors.');
+  const out = unique.join(' and ');
+  if (out.length > 50) throw v.bad('color is too long (max 50 characters).');
+  return out;
+}
+
+/* Optional contact details stored on the report itself (phone, facebook_profile_link). Never returned by the public projection. */
+function contactFields(src) {
+  const c = {};
+  if (src.phone !== undefined) {
+    const p = v.text(src.phone, 'phone', { max: 15 });
+    if (p && !PHONE_RE.test(p)) throw v.bad('phone must look like 09XXXXXXXXX or +63XXXXXXXXXX.');
+    c.phone = p;
+  }
+  if (src.facebook_profile_link !== undefined) {
+    const l = v.text(src.facebook_profile_link, 'facebook_profile_link', { max: 255 });
+    if (l && !/^https?:\/\//i.test(l)) throw v.bad('facebook_profile_link must be a web address (https://...).');
+    c.facebook_profile_link = l;
+  }
+  return c;
+}
+
 /* Validate a full set of report fields (used by create, and by update after merging with the stored row). */
 async function normalize(src, type, db = pool) {
   const f = {};
-  f.pet_name = v.text(src.pet_name, 'pet_name', { max: 60 });
-  f.species_id = v.id(src.species_id, 'species_id');
-  f.breed_id = v.id(src.breed_id, 'breed_id');
-  const [breed] = await db.query('SELECT 1 FROM breeds WHERE breed_id = ? AND species_id = ?', [f.breed_id, f.species_id]);
-  if (!breed.length) throw v.bad('That breed does not belong to the chosen species.');
+  f.pet_name = v.text(src.pet_name, 'pet_name', { max: 60, required: true });
+  f.species = v.text(src.species, 'species', { max: 50, required: true });
+  f.breed = v.text(src.breed, 'breed', { max: 50 }) || 'Unknown';   // breed is NOT NULL in the schema
+  f.color = colorText(src.colors !== undefined && src.color === undefined ? src.colors : src.color);
 
   f.size = v.oneOf(src.size, SIZES, 'size');
   f.sex = v.oneOf(src.sex || 'unknown', SEXES, 'sex');
-  f.age_group = v.oneOf(src.age_group || 'unknown', AGES, 'age_group');
   f.markings = v.text(src.markings, 'markings', { max: 1000 });
   f.description = v.text(src.description, 'description', { max: 2000 });
   f.event_date = v.date(src.event_date, 'event_date');
@@ -62,39 +97,26 @@ async function normalize(src, type, db = pool) {
     if (!b.length) throw v.bad('Unknown barangay.');
   }
 
-  f.color_ids = intList(src.color_ids, 'color_ids');
-  if (!f.color_ids.length) throw v.bad('Pick at least one color.');
-  if (f.color_ids.length > 4) throw v.bad('Pick at most 4 colors.');
-  const [found] = await db.query('SELECT color_id FROM colors WHERE color_id IN (?)', [f.color_ids]);
-  if (found.length !== f.color_ids.length) throw v.bad('Unknown color.');
-  f.primary_color_id = src.primary_color_id ? v.id(src.primary_color_id, 'primary_color_id') : f.color_ids[0];
-  if (!f.color_ids.includes(f.primary_color_id)) throw v.bad('primary_color_id must be one of color_ids.');
+  Object.assign(f, contactFields(src));
   return f;
 }
 
-const COLUMNS = ['pet_name', 'species_id', 'breed_id', 'size', 'sex', 'age_group', 'markings', 'description',
+const COLUMNS = ['pet_name', 'species', 'breed', 'color', 'size', 'sex', 'markings', 'description',
   'event_date', 'search_radius_km', 'barangay_id'];
-
-async function writeColors(conn, reportId, f) {
-  await conn.query('DELETE FROM report_colors WHERE report_id = ?', [reportId]);
-  await conn.query('INSERT INTO report_colors (report_id, color_id, is_primary) VALUES ?',
-    [f.color_ids.map(c => [reportId, c, c === f.primary_color_id])]);
-}
+const CONTACT_COLUMNS = ['phone', 'facebook_profile_link'];   // not in the public projection, so only written when sent
 
 const ownerOnly = (report, user) => {
   if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
   if (report.user_id !== user.user_id) throw Object.assign(new Error('You can only change your own reports.'), { status: 403 });
 };
 
-/* GET /api/reports/lookups  Everything the report form needs (ids for species, breeds, colors, barangays). */
+/* GET /api/reports/lookups  What the report form needs. species / breed / color are free text now (the lookup tables
+   were removed), so species and colors are only suggestions; barangays still come from the database. */
 exports.lookups = wrap(async (req, res) => {
-  const [species] = await pool.query('SELECT species_id, name FROM species ORDER BY name');
-  const [breeds] = await pool.query('SELECT breed_id, species_id, name, is_unknown FROM breeds ORDER BY is_unknown, name');
-  const [colors] = await pool.query('SELECT color_id, name FROM colors ORDER BY name');
   const [barangays] = await pool.query('SELECT barangay_id, name, ST_Latitude(center) AS lat, ST_Longitude(center) AS lng FROM barangays ORDER BY name');
   res.ok({
-    species, breeds: breeds.map(b => ({ ...b, is_unknown: !!b.is_unknown })), colors, barangays,
-    sizes: SIZES, sexes: SEXES, age_groups: AGES, statuses: PUBLIC_STATUSES,
+    species: SPECIES_SUGGESTIONS.map(name => ({ name })), colors: COLOR_SUGGESTIONS.map(name => ({ name })), barangays,
+    sizes: SIZES, sexes: SEXES, statuses: PUBLIC_STATUSES,
     radius_km: RADIUS_KM, bounds: DAGUPAN_BOUNDS, center: DAGUPAN_CENTER, max_photos: MAX_PHOTOS
   });
 });
@@ -111,12 +133,12 @@ exports.create = wrap(async (req, res) => {
     const id = await withTransaction(async conn => {
       const barangayId = f.barangay_id ?? await rq.nearestBarangayId(f.lat, f.lng, conn);
       const [r] = await conn.query(
-        `INSERT INTO pet_reports (user_id, report_type, pet_name, species_id, breed_id, size, sex, age_group, markings,
-           description, event_date, location, barangay_id, search_radius_km)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${rq.POINT}, ?, ?)`,
-        [req.user.user_id, type, f.pet_name, f.species_id, f.breed_id, f.size, f.sex, f.age_group, f.markings,
-          f.description, f.event_date, rq.pointWkt(f.lat, f.lng), barangayId, f.search_radius_km]);
-      await writeColors(conn, r.insertId, f);
+        `INSERT INTO pet_reports (user_id, report_type, pet_name, species, breed, color, size, sex, markings,
+           description, event_date, location, barangay_id, search_radius_km, phone, facebook_profile_link)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${rq.POINT}, ?, ?, ?, ?)`,
+        [req.user.user_id, type, f.pet_name, f.species, f.breed, f.color, f.size, f.sex, f.markings,
+          f.description, f.event_date, rq.pointWkt(f.lat, f.lng), barangayId, f.search_radius_km,
+          f.phone ?? null, f.facebook_profile_link ?? null]);
       if (files.length) {
         await conn.query('INSERT INTO report_photos (report_id, file_path, image_data, mime_type, is_primary) VALUES ?',
           [files.map((file, i) => [r.insertId, file.filename, file.buffer, file.mimetype, i === 0])]);
@@ -135,10 +157,7 @@ exports.create = wrap(async (req, res) => {
 function filtersFrom(q, { allowAnyStatus = false } = {}) {
   const where = [], params = [];
   if (q.type) { v.oneOf(q.type, ['lost', 'found'], 'type'); where.push('r.report_type = ?'); params.push(q.type); }
-  if (q.species) {
-    if (/^\d+$/.test(q.species)) { where.push('r.species_id = ?'); params.push(Number(q.species)); }
-    else { where.push('sp.name = ?'); params.push(String(q.species)); }
-  }
+  if (q.species) { where.push('r.species = ?'); params.push(String(q.species).trim()); }   // case-insensitive collation
   const status = q.status || 'active';
   if (status !== 'all') {
     v.oneOf(status, allowAnyStatus ? [...PUBLIC_STATUSES, 'removed'] : PUBLIC_STATUSES, 'status');
@@ -146,14 +165,14 @@ function filtersFrom(q, { allowAnyStatus = false } = {}) {
   }
   if (q.size) { v.oneOf(q.size, SIZES, 'size'); where.push('r.size = ?'); params.push(q.size); }
   if (q.barangay_id) { where.push('r.barangay_id = ?'); params.push(v.id(q.barangay_id, 'barangay_id')); }
-  if (q.color_id) {
-    where.push('EXISTS (SELECT 1 FROM report_colors rc WHERE rc.report_id = r.report_id AND rc.color_id = ?)');
-    params.push(v.id(q.color_id, 'color_id'));
+  if (q.color && String(q.color).trim()) {
+    where.push('r.color LIKE ?');
+    params.push('%' + String(q.color).trim().slice(0, 50).replace(/[\\%_]/g, '\\$&') + '%');
   }
   if (q.q && String(q.q).trim()) {
     const like = '%' + String(q.q).trim().slice(0, 100).replace(/[\\%_]/g, '\\$&') + '%';
-    where.push('(r.pet_name LIKE ? OR r.markings LIKE ? OR r.description LIKE ? OR br.name LIKE ? OR sp.name LIKE ? OR bg.name LIKE ?)');
-    params.push(like, like, like, like, like, like);
+    where.push('(r.pet_name LIKE ? OR r.markings LIKE ? OR r.description LIKE ? OR r.breed LIKE ? OR r.species LIKE ? OR r.color LIKE ? OR bg.name LIKE ?)');
+    params.push(like, like, like, like, like, like, like);
   }
   return { where, params };
 }
@@ -165,7 +184,7 @@ function originFrom(q) {
   return { origin, maxKm: parseRadius(q.radius) };
 }
 
-/* GET /api/reports/  List with filters: type, species, status, size, color_id, barangay_id, q, lat+lng+radius, limit, offset */
+/* GET /api/reports/  List with filters: type, species, status, size, color, barangay_id, q, lat+lng+radius, limit, offset */
 exports.list = wrap(async (req, res) => {
   const { where, params } = filtersFrom(req.query);
   const geo = originFrom(req.query);
@@ -232,9 +251,7 @@ exports.update = wrap(async (req, res) => {
     const src = {
       ...Object.fromEntries(COLUMNS.map(k => [k, existing[k]])),
       lat: existing.lat, lng: existing.lng,
-      color_ids: existing.colors.map(c => c.color_id),
-      primary_color_id: existing.colors.find(c => c.is_primary)?.color_id,
-      ...Object.fromEntries(['type', ...COLUMNS, 'lat', 'lng', 'color_ids', 'primary_color_id'].filter(k => k in body && k !== 'type').map(k => [k, body[k]]))
+      ...Object.fromEntries([...COLUMNS, ...CONTACT_COLUMNS, 'lat', 'lng'].filter(k => k in body).map(k => [k, body[k]]))
     };
     /* Moving the pin re-derives the barangay unless the client picked one. */
     if (('lat' in body || 'lng' in body) && !('barangay_id' in body)) src.barangay_id = null;
@@ -247,14 +264,14 @@ exports.update = wrap(async (req, res) => {
     if (remaining > MAX_PHOTOS) throw v.bad(`A report can have at most ${MAX_PHOTOS} photos.`);
     if (REQUIRE_PHOTO && remaining < 1) throw v.bad('A report needs at least one photo.');
 
+    const contactSets = CONTACT_COLUMNS.filter(k => k in body);   // contact is not readable back, so it only changes when sent
     await withTransaction(async conn => {
       const barangayId = f.barangay_id ?? await rq.nearestBarangayId(f.lat, f.lng, conn);
       await conn.query(
-        `UPDATE pet_reports SET pet_name = ?, species_id = ?, breed_id = ?, size = ?, sex = ?, age_group = ?, markings = ?,
-           description = ?, event_date = ?, location = ${rq.POINT}, barangay_id = ?, search_radius_km = ? WHERE report_id = ?`,
-        [f.pet_name, f.species_id, f.breed_id, f.size, f.sex, f.age_group, f.markings, f.description, f.event_date,
-          rq.pointWkt(f.lat, f.lng), barangayId, f.search_radius_km, id]);
-      await writeColors(conn, id, f);
+        `UPDATE pet_reports SET pet_name = ?, species = ?, breed = ?, color = ?, size = ?, sex = ?, markings = ?,
+           description = ?, event_date = ?, location = ${rq.POINT}, barangay_id = ?, search_radius_km = ?${contactSets.map(c => `, ${c} = ?`).join('')} WHERE report_id = ?`,
+        [f.pet_name, f.species, f.breed, f.color, f.size, f.sex, f.markings, f.description, f.event_date,
+          rq.pointWkt(f.lat, f.lng), barangayId, f.search_radius_km, ...contactSets.map(c => f[c]), id]);
 
       if (removeIds.length) {
         const [gone] = await conn.query('SELECT file_path FROM report_photos WHERE photo_id IN (?)', [removeIds]);
@@ -268,7 +285,7 @@ exports.update = wrap(async (req, res) => {
       if (left.length && !left.some(p => p.is_primary)) await conn.query('UPDATE report_photos SET is_primary = TRUE WHERE photo_id = ?', [left[0].photo_id]);
 
       await logActivity({ userId: req.user.user_id, action: 'report_updated', table: 'pet_reports', id,
-        details: { fields: COLUMNS.concat(['lat', 'lng', 'color_ids', 'primary_color_id']).filter(k => k in body) } }, conn);
+        details: { fields: COLUMNS.concat(CONTACT_COLUMNS, ['lat', 'lng']).filter(k => k in body) } }, conn);
     });
 
     await Promise.all(removedFiles.map(name => fs.unlink(path.join(UPLOAD_ROOT, 'reports', name)).catch(() => {})));
@@ -295,7 +312,7 @@ exports.setStatus = wrap(async (req, res) => {
 });
 
 /* DELETE /api/reports/:id  Permanently deletes the report from the database. Owner only.
-   Its colors, photos, match suggestions and the claims sent on it (with their photos) go with it (ON DELETE CASCADE).
+   Its photos, match suggestions and the claims sent on it (with their photos) go with it (ON DELETE CASCADE).
    Photos are stored in the database; only older photos saved as files are removed from disk afterwards. */
 exports.remove = wrap(async (req, res) => {
   const id = v.id(req.params.id);
@@ -306,7 +323,7 @@ exports.remove = wrap(async (req, res) => {
   await withTransaction(async conn => {
     const [photos] = await conn.query('SELECT file_path FROM report_photos WHERE report_id = ?', [id]);
     reportFiles = photos.map(p => p.file_path);
-    await conn.query('DELETE FROM pet_reports WHERE report_id = ?', [id]);          // colors, photos, matches, claims cascade
+    await conn.query('DELETE FROM pet_reports WHERE report_id = ?', [id]);          // photos, matches, claims cascade
     await logActivity({ userId: req.user.user_id, action: 'report_deleted', table: 'pet_reports', id,
       details: { type: report.type, status: report.status } }, conn);
   });

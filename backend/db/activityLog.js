@@ -26,4 +26,10 @@ async function withTransaction(fn) {
   }
 }
 
-module.exports = { logActivity, withTransaction };
+/* claims no longer has a decision_reason column: the reason an owner gave when approving or rejecting a claim
+   is kept in the audit trail (activity_logs.details.reason). Use this as a column in a SELECT over `claims c`. */
+const CLAIM_REASON_SQL = `(SELECT JSON_UNQUOTE(JSON_EXTRACT(l.details, '$.reason')) FROM activity_logs l
+    WHERE l.target_table = 'claims' AND l.target_id = c.claim_id AND l.action IN ('claim_approved', 'claim_rejected')
+    ORDER BY l.log_id DESC LIMIT 1) AS decision_reason`;
+
+module.exports = { logActivity, withTransaction, CLAIM_REASON_SQL };

@@ -22,12 +22,13 @@ const VISIBLE = `lr.status <> 'removed' AND fr.status <> 'removed'
 
 function toMatchable(r) {
   if (!r) return null;
+  const color_names = (r.colors || []).map(c => c.name);
   return {
     ...r,
     report_id: r.id,
     event_date: String(r.event_date).slice(0, 10),
-    primary_color_id: r.colors?.find(c => c.is_primary)?.color_id ?? r.colors?.[0]?.color_id ?? null,
-    color_ids: (r.colors || []).map(c => c.color_id)
+    primary_color: r.colors?.find(c => c.is_primary)?.name ?? color_names[0] ?? null,
+    color_names
   };
 }
 

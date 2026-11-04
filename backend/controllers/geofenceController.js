@@ -10,10 +10,7 @@ const STATUSES = ['active', 'matched', 'resolved', 'closed'];
 function listFilters(q) {
   const where = [], params = [];
   if (q.type) { v.oneOf(q.type, ['lost', 'found'], 'type'); where.push('r.report_type = ?'); params.push(q.type); }
-  if (q.species) {
-    if (/^\d+$/.test(q.species)) { where.push('r.species_id = ?'); params.push(Number(q.species)); }
-    else { where.push('sp.name = ?'); params.push(String(q.species)); }
-  }
+  if (q.species) { where.push('r.species = ?'); params.push(String(q.species).trim().slice(0, 50)); }   // species is a text column on pet_reports
   const status = q.status || 'active';
   if (status !== 'all') { v.oneOf(status, STATUSES, 'status'); where.push('r.status = ?'); params.push(status); }
   return { where, params };

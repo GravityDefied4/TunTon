@@ -7,7 +7,7 @@
      pending -> rejected : the claim disappears from the report (only the claimant and admins can still see it).
    Every step is written to activity_logs. */
 const pool = require('../db/pool');
-const { withTransaction, logActivity } = require('../db/activityLog');
+const { withTransaction, logActivity, CLAIM_REASON_SQL } = require('../db/activityLog');
 const rq = require('../db/reportQueries');
 const { wrap } = require('../middleware/errorHandler');
 const { checkFiles } = require('../middleware/upload');
@@ -24,7 +24,7 @@ const err = (status, message) => Object.assign(new Error(message), { status });
 const photoUrl = name => `/uploads/claims/${name}`;
 
 /* One claim row with the claimant and the report it sits on. */
-const SELECT = `SELECT c.*, bg.name AS barangay,
+const SELECT = `SELECT c.*, bg.name AS barangay, ${CLAIM_REASON_SQL},
     cu.full_name AS claimant_name, cu.email AS claimant_email, cu.phone AS claimant_phone,
     r.user_id AS report_user_id, r.report_type, r.status AS report_status
   FROM claims c
@@ -74,6 +74,7 @@ function parseFields(body = {}, type) {
   if (has('pet_location')) out.pet_location = v.text(body.pet_location, 'pet_location', { max: 255 });
   if (has('contact')) out.contact = v.text(body.contact, 'contact', { max: 255 });
   if (has('facebook')) out.facebook = v.text(body.facebook, 'facebook', { max: 255 });
+  if (has('color')) { const c = v.text(body.color, 'color', { max: 40 }); if (c) out.color = c; }   // claims.color is NOT NULL
   if (has('event_date')) out.event_date = blank(body.event_date) ? null : v.date(String(body.event_date).trim(), 'event_date');
   if (has('lat') || has('lng')) {
     if (blank(body.lat) && blank(body.lng)) { out.lat = null; out.lng = null; }
@@ -99,6 +100,7 @@ function parseFields(body = {}, type) {
 /* Column values for INSERT / UPDATE: JSON is serialised, and a pin becomes its barangay. */
 async function toColumns(fields, db) {
   const cols = { ...fields };
+  if (cols.pet && cols.pet.color) cols.color = cols.pet.color.slice(0, 40);   // claims.color mirrors the claimed pet's color
   if ('pet' in cols) cols.pet = cols.pet ? JSON.stringify(cols.pet) : null;
   if ('lat' in cols) cols.barangay_id = cols.lat == null ? null : await rq.nearestBarangayId(cols.lat, cols.lng, db);
   return cols;
@@ -116,7 +118,7 @@ exports.create = wrap(async (req, res) => {
   if (!(await checkFiles(files))) throw v.bad('One of the files is not a valid image.');
 
   const claimId = await withTransaction(async conn => {
-    const [[report]] = await conn.query('SELECT report_id, user_id, report_type, status FROM pet_reports WHERE report_id = ? FOR UPDATE', [reportId]);
+    const [[report]] = await conn.query('SELECT report_id, user_id, report_type, color, status FROM pet_reports WHERE report_id = ? FOR UPDATE', [reportId]);
     if (!report || report.status === 'removed') throw err(404, 'Report not found.');
     if (report.user_id === req.user.user_id) throw err(403, 'You cannot send a claim on your own report.');
     if (report.status !== 'active') throw err(409, 'This report is no longer open for claims.');
@@ -127,6 +129,7 @@ exports.create = wrap(async (req, res) => {
     const fields = parseFields(req.body, type);
     if (!hasContent(fields, files.length)) throw v.bad(NEEDS_CONTENT);
     const cols = { report_id: reportId, claimant_user_id: req.user.user_id, claim_type: type, ...await toColumns(fields, conn) };
+    if (!cols.color) cols.color = String(report.color || 'Unknown').slice(0, 40);   // NOT NULL column: fall back to the report's color
     const keys = Object.keys(cols);
     const [r] = await conn.query(`INSERT INTO claims (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`, keys.map(k => cols[k]));
     if (files.length) await conn.query('INSERT INTO claim_photos (claim_id, file_path, image_data, mime_type) VALUES ?', [files.map(f => [r.insertId, f.filename, f.buffer, f.mimetype])]);
@@ -246,14 +249,16 @@ exports.decide = wrap(async (req, res) => {
 
     if (decision === 'approve') {
       if (c.report_status !== 'active') throw err(409, 'This report is no longer open.');
-      await conn.query("UPDATE claims SET status = 'approved', decision_reason = ?, decided_at = NOW() WHERE claim_id = ?", [reason, claimId]);
+      await conn.query("UPDATE claims SET status = 'approved', decided_at = NOW() WHERE claim_id = ?", [claimId]);
       await conn.query("UPDATE pet_reports SET status = 'matched' WHERE report_id = ?", [reportId]);
-      const [others] = await conn.query(
-        "UPDATE claims SET status = 'rejected', decision_reason = 'Another claim on this report was approved.', decided_at = NOW() WHERE report_id = ? AND status = 'pending' AND claim_id <> ?", [reportId, claimId]);
+      const [others] = await conn.query("SELECT claim_id FROM claims WHERE report_id = ? AND status = 'pending' AND claim_id <> ? FOR UPDATE", [reportId, claimId]);
+      if (others.length) await conn.query("UPDATE claims SET status = 'rejected', decided_at = NOW() WHERE claim_id IN (?)", [others.map(o => o.claim_id)]);
       await logActivity({ userId: req.user.user_id, action: 'claim_approved', table: 'claims', id: claimId,
-        details: { report_id: reportId, type: c.claim_type, other_claims_rejected: others.affectedRows } }, conn);
+        details: { report_id: reportId, type: c.claim_type, reason, other_claims_rejected: others.length } }, conn);
+      for (const o of others) await logActivity({ userId: req.user.user_id, action: 'claim_rejected', table: 'claims', id: o.claim_id,
+        details: { report_id: reportId, type: c.claim_type, reason: 'Another claim on this report was approved.' } }, conn);
     } else {
-      await conn.query("UPDATE claims SET status = 'rejected', decision_reason = ?, decided_at = NOW() WHERE claim_id = ?", [reason, claimId]);
+      await conn.query("UPDATE claims SET status = 'rejected', decided_at = NOW() WHERE claim_id = ?", [claimId]);
       await logActivity({ userId: req.user.user_id, action: 'claim_rejected', table: 'claims', id: claimId, details: { report_id: reportId, type: c.claim_type, reason } }, conn);
     }
   });

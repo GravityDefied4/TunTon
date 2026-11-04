@@ -14,18 +14,18 @@ async function candidateIds(report, db) {
   if (report.type === 'lost') {
     const [rows] = await db.query(
       `SELECT f.report_id FROM pet_reports f
-        WHERE f.report_type = 'found' AND f.status = 'active' AND f.species_id = ? AND f.user_id <> ?
+        WHERE f.report_type = 'found' AND f.status = 'active' AND f.species = ? AND f.user_id <> ?
           AND f.event_date >= DATE_SUB(?, INTERVAL ? DAY)
           AND ST_Distance_Sphere(f.location, ${POINT}) <= ? * 1000`,
-      [report.species_id, report.user_id, report.event_date, buffer, here, report.search_radius_km]);
+      [report.species, report.user_id, report.event_date, buffer, here, report.search_radius_km]);
     return rows.map(r => r.report_id);
   }
   const [rows] = await db.query(
     `SELECT l.report_id FROM pet_reports l
-      WHERE l.report_type = 'lost' AND l.status = 'active' AND l.species_id = ? AND l.user_id <> ?
+      WHERE l.report_type = 'lost' AND l.status = 'active' AND l.species = ? AND l.user_id <> ?
         AND l.event_date <= DATE_ADD(?, INTERVAL ? DAY)
         AND ST_Distance_Sphere(l.location, ${POINT}) <= l.search_radius_km * 1000`,
-    [report.species_id, report.user_id, report.event_date, buffer, here]);
+    [report.species, report.user_id, report.event_date, buffer, here]);
   return rows.map(r => r.report_id);
 }
 

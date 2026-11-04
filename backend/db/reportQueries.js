@@ -4,15 +4,15 @@
    ST_GeomFromText('POINT(lng lat)', 4326, 'axis-order=long-lat') because MySQL 8 reads
    SRID 4326 coordinates as lat,lng unless told otherwise. */
 const pool = require('./pool');
+const { splitColors, isUnknownBreed, norm } = require('../services/matching');
 
 const FROM = `FROM pet_reports r
-  JOIN species sp ON sp.species_id = r.species_id
-  JOIN breeds br ON br.breed_id = r.breed_id
   LEFT JOIN barangays bg ON bg.barangay_id = r.barangay_id
   LEFT JOIN users ow ON ow.user_id = r.user_id`;   // ow = poster: only first name + picture are exposed (see hydrate)
 
-const COLS = `r.report_id, r.user_id, r.report_type, r.pet_name, r.species_id, sp.name AS species,
-  r.breed_id, br.name AS breed, br.is_unknown AS breed_unknown, r.size, r.sex, r.age_group, r.markings,
+/* species, breed and color are plain text columns of pet_reports (no lookup tables). phone / facebook_profile_link
+   on the report are contact details and are deliberately not selected. */
+const COLS = `r.report_id, r.user_id, r.report_type, r.pet_name, r.species, r.breed, r.color, r.size, r.sex, r.markings,
   r.description, r.event_date, r.lat, r.lng, r.barangay_id, bg.name AS barangay, r.search_radius_km,
   r.status, r.created_at, r.updated_at, ow.full_name AS _owner_full_name, ow.picture_url AS _owner_picture`;
 
@@ -39,26 +39,23 @@ async function nearestBarangayId(lat, lng, db = pool) {
 const ownerFirstName = full => (full || '').trim().split(/\s+/)[0] || '';
 const ownerPictureUrl = p => !p ? '' : /^https?:\/\//i.test(p) ? p : `/uploads/avatars/${encodeURIComponent(p)}`;
 
-/* Turn raw rows into API objects: adds photos and colors with two extra queries total. */
+/* Turn raw rows into API objects: adds photos with one extra query. */
 async function hydrate(rows, viewerId = null, db = pool) {
   if (!rows.length) return [];
   const ids = rows.map(r => r.report_id);
   const [photos] = await db.query(
     'SELECT photo_id, report_id, file_path, is_primary FROM report_photos WHERE report_id IN (?) ORDER BY is_primary DESC, photo_id', [ids]);
-  const [colors] = await db.query(
-    `SELECT rc.report_id, c.color_id, c.name, rc.is_primary FROM report_colors rc
-       JOIN colors c ON c.color_id = rc.color_id WHERE rc.report_id IN (?) ORDER BY rc.is_primary DESC, c.name`, [ids]);
   const by = (list, id) => list.filter(x => x.report_id === id);
   return rows.map(r => {
-    const { report_id, report_type, breed_unknown, _owner_full_name, _owner_picture, ...rest } = r;
+    const { report_id, report_type, _owner_full_name, _owner_picture, ...rest } = r;
     const ph = by(photos, report_id).map(p => ({ photo_id: p.photo_id, url: photoUrl(p.file_path), is_primary: !!p.is_primary }));
     return {
       id: report_id, type: report_type, ...rest,
       owner_name: ownerFirstName(_owner_full_name),
       owner_picture: ownerPictureUrl(_owner_picture),
-      breed_unknown: !!breed_unknown,
+      breed_unknown: isUnknownBreed(r.breed),
       distance_km: r.distance_km === undefined ? undefined : Math.round(r.distance_km * 100) / 100,
-      colors: by(colors, report_id).map(c => ({ color_id: c.color_id, name: c.name, is_primary: !!c.is_primary })),
+      colors: splitColors(r.color).map((name, i) => ({ name, is_primary: i === 0 })),   // derived from the single color text column
       photos: ph,
       primary_photo: ph[0]?.url ?? null,
       is_mine: viewerId != null && String(r.user_id) === String(viewerId)
@@ -66,7 +63,7 @@ async function hydrate(rows, viewerId = null, db = pool) {
   });
 }
 
-/* Generic finder. where/params are caller-built fragments using r., sp., br., bg. aliases.
+/* Generic finder. where/params are caller-built fragments using r., bg. aliases.
    origin {lat,lng} adds distance_km; maxKm filters by it. Removed reports are hidden unless includeRemoved. */
 async function findReports({ where = [], params = [], origin, maxKm, orderBy = 'r.event_date DESC, r.report_id DESC',
   limit = 50, offset = 0, includeRemoved = false, extraCols = '', extraJoins = '', viewerId = null } = {}, db = pool) {
@@ -89,17 +86,16 @@ async function findReportById(id, { viewerId = null, includeRemoved = false } = 
   return items[0] || null;
 }
 
-/* Raw attribute rows the matching engine needs (colors as ids, location, status). */
+/* Raw attribute rows the matching engine needs (text species / breed / color, location, status). */
 async function loadForMatching(reportId, db = pool) {
   const [rows] = await db.query(
-    `SELECT r.report_id, r.user_id, r.report_type AS type, r.species_id, r.breed_id, br.is_unknown AS breed_unknown,
-            r.size, r.sex, r.age_group, r.markings, r.event_date, r.lat, r.lng, r.search_radius_km, r.status
-       FROM pet_reports r JOIN breeds br ON br.breed_id = r.breed_id WHERE r.report_id = ?`, [reportId]);
+    `SELECT r.report_id, r.user_id, r.report_type AS type, r.species, r.breed, r.color,
+            r.size, r.sex, r.markings, r.event_date, r.lat, r.lng, r.search_radius_km, r.status
+       FROM pet_reports r WHERE r.report_id = ?`, [reportId]);
   if (!rows[0]) return null;
-  const [colors] = await db.query('SELECT color_id, is_primary FROM report_colors WHERE report_id = ?', [reportId]);
-  return { ...rows[0], breed_unknown: !!rows[0].breed_unknown,
-    primary_color_id: colors.find(c => c.is_primary)?.color_id ?? null,
-    color_ids: colors.map(c => c.color_id) };
+  const color_names = splitColors(rows[0].color);
+  return { ...rows[0], breed_unknown: isUnknownBreed(rows[0].breed), species: norm(rows[0].species),
+    primary_color: color_names[0] ?? null, color_names };
 }
 
 module.exports = { pointWkt, POINT, DIST_KM, photoUrl, nearestBarangayId, hydrate, findReports, findReportById, loadForMatching };
