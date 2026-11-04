@@ -2,7 +2,15 @@
    Profile page: details form, stats and "My reports".
    ========================================================= */
 
-const myReports = () => read(REPORTS_KEY, []).filter(r => (r.owner || myId) === myId).sort((a, b) => b.created - a.created);
+/* "My reports" come from the database (GET /api/reports/mine), newest first. A resolved report counts as reunited. */
+let _myReports = [];
+const myReports = () => _myReports;
+const loadMyReports = async () => {
+  const res = await authFetch('/reports/mine?limit=100');
+  if (!res.ok) throw new Error('Could not load your reports');
+  const items = ((await res.json()).data?.items || []).filter(r => r.status !== 'removed');
+  _myReports = items.map(toReport).map(r => r.status === 'resolved' ? { ...r, status: 'reunited' } : r).sort((a, b) => b.created - a.created);
+};
 
 const pfForm = $('#profile-form');
 
@@ -342,4 +350,5 @@ function syncProfilePicture(picture) {
 
 
 renderProfile();
+loadMyReports().then(() => { if (!editingProfile) renderProfile(); }).catch(() => { $('#rep-list').innerHTML = '<li class="empty">Could not load your reports. Please try again.</li>'; });
 loadServerProfile();

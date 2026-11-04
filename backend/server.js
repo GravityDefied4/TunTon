@@ -34,6 +34,17 @@ app.use('/api', notFound);
    Pet photos are shown on public report cards, so they are served read-only from /uploads/reports
    (random file names, no directory listing). Proof documents are NOT served here: they are private and
    only delivered by GET /api/claims/:id/proofs/:proofId/file after a permission check. */
+/* Report photos live in the database (report_photos.image_data). Older photos that were saved as files
+   fall through to the static folder below. */
+const pool = require('./db/pool');
+app.get('/uploads/reports/:name', async (req, res, next) => {
+  try {
+    const [rows] = await pool.query('SELECT image_data, mime_type FROM report_photos WHERE file_path = ? AND image_data IS NOT NULL LIMIT 1', [req.params.name]);
+    if (!rows[0]) return next();
+    res.set({ 'Content-Type': rows[0].mime_type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'public, max-age=86400' });
+    res.send(rows[0].image_data);
+  } catch (e) { next(e); }
+});
 app.use('/uploads/reports', express.static(path.join(__dirname, 'uploads', 'reports'),
   { index: false, dotfiles: 'deny', maxAge: '1d', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
 

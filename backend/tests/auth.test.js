@@ -1,6 +1,6 @@
 /* Email + password auth: real routes and controller, with the user store replaced by an in-memory fake (no MySQL needed). */
 process.env.JWT_SECRET = 'x'.repeat(40);
-process.env.ADMIN_EMAILS = 'boss@example.com';
+process.env.ADMIN_EMAILS = 'boss@example.com';   // legacy var: must have no effect any more
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
@@ -47,7 +47,7 @@ test('register creates a user, hashes the password, returns a verifiable JWT', a
   assert.notEqual(rows[0].password_hash, 'hunter2hunter2');
 });
 
-test('register never grants admin, even for an ADMIN_EMAILS address', async () => {
+test('register never grants admin, even if ADMIN_EMAILS is still set (it is ignored)', async () => {
   const r = await post('/register', { name: 'Not The Boss', email: 'boss@example.com', password: 'password123' });
   assert.equal(r.status, 201);
   assert.equal(r.body.data.user.role, 'user');

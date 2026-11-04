@@ -118,8 +118,8 @@ exports.create = wrap(async (req, res) => {
           f.description, f.event_date, rq.pointWkt(f.lat, f.lng), barangayId, f.search_radius_km]);
       await writeColors(conn, r.insertId, f);
       if (files.length) {
-        await conn.query('INSERT INTO report_photos (report_id, file_path, is_primary) VALUES ?',
-          [files.map((file, i) => [r.insertId, file.filename, i === 0])]);
+        await conn.query('INSERT INTO report_photos (report_id, file_path, image_data, mime_type, is_primary) VALUES ?',
+          [files.map((file, i) => [r.insertId, file.filename, file.buffer, file.mimetype, i === 0])]);
       }
       await logActivity({ userId: req.user.user_id, action: 'report_created', table: 'pet_reports', id: r.insertId, details: { type } }, conn);
       return r.insertId;
@@ -244,7 +244,7 @@ exports.update = wrap(async (req, res) => {
         await conn.query('DELETE FROM report_photos WHERE photo_id IN (?) AND report_id = ?', [removeIds, id]);
       }
       if (files.length) {
-        await conn.query('INSERT INTO report_photos (report_id, file_path, is_primary) VALUES ?', [files.map(file => [id, file.filename, false])]);
+        await conn.query('INSERT INTO report_photos (report_id, file_path, image_data, mime_type, is_primary) VALUES ?', [files.map(file => [id, file.filename, file.buffer, file.mimetype, false])]);
       }
       const [left] = await conn.query('SELECT photo_id, is_primary FROM report_photos WHERE report_id = ? ORDER BY photo_id', [id]);
       if (left.length && !left.some(p => p.is_primary)) await conn.query('UPDATE report_photos SET is_primary = TRUE WHERE photo_id = ?', [left[0].photo_id]);
@@ -280,4 +280,39 @@ exports.setStatus = wrap(async (req, res) => {
   });
   await runQuietly(id, req.user.user_id);   // a non-active report keeps no open suggestions
   res.ok({ report: await rq.findReportById(id, { viewerId: req.user.user_id }) }, `Report ${status}.`);
+});
+
+/* DELETE /api/reports/:id  Permanently deletes the report from the database. Owner only.
+   Its colors, photos and match suggestions go with it (ON DELETE CASCADE); claims on those matches and their
+   proofs are deleted first because claims have no cascade. A report with a claim still open or already approved
+   is refused (409): finish or reject the claim first. The photo and proof files are removed from disk afterwards. */
+exports.remove = wrap(async (req, res) => {
+  const id = v.id(req.params.id);
+  const report = await rq.findReportById(id, { includeRemoved: true });
+  ownerOnly(report, req.user);
+
+  const files = { reports: [], proofs: [] };
+  await withTransaction(async conn => {
+    const [claims] = await conn.query(
+      `SELECT c.claim_id, c.status FROM claims c JOIN matches m ON m.match_id = c.match_id
+        WHERE m.lost_report_id = ? OR m.found_report_id = ? FOR UPDATE`, [id, id]);
+    if (claims.some(c => c.status !== 'rejected')) {
+      throw Object.assign(new Error('A claim on this report is open or approved. Finish it before deleting the report.'), { status: 409 });
+    }
+    const [photos] = await conn.query('SELECT file_path FROM report_photos WHERE report_id = ?', [id]);
+    files.reports = photos.map(p => p.file_path);
+    if (claims.length) {
+      const claimIds = claims.map(c => c.claim_id);
+      const [proofs] = await conn.query('SELECT file_path FROM claim_proofs WHERE claim_id IN (?) AND file_path IS NOT NULL', [claimIds]);
+      files.proofs = proofs.map(p => p.file_path);
+      await conn.query('DELETE FROM claims WHERE claim_id IN (?)', [claimIds]);   // claim_proofs cascade
+    }
+    await conn.query('DELETE FROM pet_reports WHERE report_id = ?', [id]);          // colors, photos, matches cascade
+    await logActivity({ userId: req.user.user_id, action: 'report_deleted', table: 'pet_reports', id,
+      details: { type: report.type, status: report.status } }, conn);
+  });
+
+  const unlink = (folder, names) => Promise.all(names.map(n => fs.unlink(path.join(UPLOAD_ROOT, folder, n)).catch(() => {})));
+  await Promise.all([unlink('reports', files.reports), unlink('proofs', files.proofs)]);
+  res.ok({ id }, 'Report deleted.');
 });

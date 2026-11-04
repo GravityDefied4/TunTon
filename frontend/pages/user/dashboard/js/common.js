@@ -30,13 +30,6 @@ const inDagupan = (lat, lng) => {
 };
 const BRGY = ['Bacayao Norte','Bacayao Sur','Barangay I (T. Bugallon)','Barangay II (Nueva)','Barangay IV (Zamora)','Bolosan','Bonuan Binloc','Bonuan Boquig','Bonuan Gueset','Calmay','Carael','Caranglaan','Herrero-Perez','Lasip Chico','Lasip Grande','Lomboy','Lucao','Malued','Mamalingling','Mangin','Mayombo','Pantal','Poblacion Oeste','Pogo Chico','Pogo Grande','Pugaro Suit','Salapingao','Salisay','Tambac','Tapuac','Tebeng'];
 
-/* Sample reports (coordinates are approximate placeholders) */
-const SAMPLES = [
-  { id: 's1', kind: 'lost', ownerName: 'Rosa Villanueva', name: 'White and brown dog', species: 'Dog', breed: 'Mixed breed', color: 'White and brown', size: 'Medium', markings: 'Brown patches on the back and ears, red collar', description: 'Slipped out of the gate on the evening of Oct 6 when the delivery rider left it open. Very friendly with people, but may hide under parked vehicles if scared. Answers to "Browny".', brgy: 'Pantal', date: '2026-10-06', lat: 16.0465, lng: 120.3375, zone: 1000, contact: '0917 123 4567', photo: IMG + 'Pet1.jpg', created: Date.parse('2026-10-06T08:00:00') },
-  { id: 's2', kind: 'lost', ownerName: 'Mark Dizon', name: 'Tilapia cat', species: 'Cat', breed: 'Domestic shorthair', color: 'Grey', size: 'Small', markings: 'Grey coat, lighter belly, no collar', description: 'Went out through a window left open in the afternoon. Very vocal and usually comes when called by name. Indoor cat, so it may be frightened and hiding nearby.', brgy: 'Lucao', date: '2026-10-05', lat: 16.0285, lng: 120.3465, zone: 1000, contact: 'owner.lucao@example.com', photo: IMG + 'Pet3.jpg', created: Date.parse('2026-10-05T08:00:00') },
-  { id: 's3', kind: 'lost', ownerName: 'Liza Fernandez', name: 'Tabby cat', species: 'Cat', breed: '', color: 'Tabby', size: 'Small', markings: 'Orange-brown stripes, white paws, notch on left ear', description: 'Last seen leaving the yard at dusk. Shy with strangers, but will eat if food is left out quietly. Please do not chase it; call the owner instead.', brgy: 'Tapuac', date: '2026-10-03', lat: 16.0525, lng: 120.3305, zone: 500, contact: '0928 555 0199', photo: IMG + 'Pet4.jpg', created: Date.parse('2026-10-03T08:00:00') }
-];
-
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -47,9 +40,12 @@ const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOS
 const ago = d => { const n = Math.round((new Date(today) - new Date(d)) / 864e5); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n + ' days ago'; };
 const niceDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const km = (a, b) => { const r = x => x * Math.PI / 180, dLa = r(b[0] - a[0]), dLo = r(b[1] - a[1]); const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLo / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
-/* Saved reports win over a sample with the same id (this is how a sample lost report gets updated). */
-const mergedReports = () => { const saved = read(REPORTS_KEY, []), ids = new Set(saved.map(r => r.id)); return SAMPLES.filter(s => !ids.has(s.id)).concat(saved); };
-const allReports = () => mergedReports().filter(r => r.status !== 'reunited');
+/* Reports come ONLY from the database (GET /api/reports). There is no sample data and nothing is read
+   from localStorage. The list is loaded once per page into _reportCache (see loadReports below);
+   code that needs it right away must `await reportsReady` first. */
+let _reportCache = [];
+const mergedReports = () => _reportCache;
+const allReports = () => _reportCache.filter(r => r.status !== 'reunited');
 /* A lost report can collect several "found" reports (finds). Each find is
    { id, by, contact, where, brgy, date, lat, lng, markings, photos, at, status }
    where status is 'pending' | 'confirmed' | 'rejected'. Only the owner of the lost report
@@ -276,6 +272,55 @@ const userInfo = id => {
   return { name: own.dname || known.name || '', picture: own.picture || known.picture || '' };
 };
 rememberMe();
+
+/* ---------- Reports from the database ---------- */
+const REPORT_SIZES = { small: 'Small', medium: 'Medium', large: 'Large', extra_large: 'Extra large' };
+const REPORT_ORIGIN = API_BASE.replace(/\/api\/?$/, '');                        // '' when the API is on the same origin
+const reportAsset = u => (u && u.startsWith('/') ? REPORT_ORIGIN + u : u || '');   // photos come back as /uploads/reports/...
+/* One API report -> the object the pages use. Contact details are never sent by the server (they are
+   only shared after a claim is approved), so contact / owner name stay empty. */
+const toReport = row => {
+  const photos = (row.photos || []).map(p => reportAsset(p.url));
+  const colors = (row.colors || []).map(c => c.name);
+  return {
+    id: String(row.id),
+    kind: row.type,
+    owner: row.is_mine ? myId : 'user-' + row.user_id,
+    ownerName: '', ownerPicture: '', contact: '', facebook: '',
+    name: row.pet_name || '',
+    species: row.species,
+    breed: row.breed_unknown ? '' : (row.breed || ''),
+    color: colors.join(' and '),
+    size: REPORT_SIZES[row.size] || '',
+    markings: row.markings || '',
+    description: row.description || '',
+    brgy: row.barangay || '',
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    date: String(row.event_date).slice(0, 10),
+    zone: row.search_radius_km ? row.search_radius_km * 1000 : 0,   // metres
+    photo: photos[0] || reportAsset(row.primary_photo),
+    photos,
+    status: row.status,
+    created: row.created_at ? Date.parse(row.created_at) : 0
+  };
+};
+/* Fetches every active report (the server pages at 100) and replaces the cache. Never falls back to
+   sample data: if the server can't be reached the promise rejects and each page shows its own error. */
+const loadReports = async () => {
+  const items = [];
+  for (let total = Infinity; items.length < total;) {
+    const res = await authFetch(`/reports?limit=100&offset=${items.length}`);
+    if (!res.ok) throw new Error('Could not load reports');
+    const d = (await res.json()).data || {};
+    if (!d.items?.length) break;
+    items.push(...d.items);
+    total = d.total ?? items.length;
+  }
+  return (_reportCache = items.map(toReport));
+};
+let reportsReady = loadReports();
+reportsReady.catch(() => {});   // pages handle the error themselves; this only silences the "unhandled" warning
 
 const applyIdentity = () => {
   rememberMe();

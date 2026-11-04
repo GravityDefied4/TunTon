@@ -332,23 +332,9 @@ document.querySelectorAll('[data-requires-auth]').forEach(btn =>
 
 /* =========================================================
    Reports shown on the home page
-   Reads the same data the dashboard uses (sample reports + the
-   reports saved in this browser). When the backend exists, swap
-   loadReports() for a fetch of GET /api/reports.
+   Only reports that exist in the database are shown (GET /api/reports). There is no sample data.
+   The API needs a login, so a visitor who is not signed in sees a prompt instead of reports.
    ========================================================= */
-const REPORTS_KEY = 'tunton_reports';
-const IMG = 'assets/img/';
-const SAMPLES = [  /* keep in sync with SAMPLES in pages/user/dashboard/js/common.js */
-  { id: 's1', kind: 'lost', name: 'White and brown dog', species: 'Dog', color: 'White and brown', brgy: 'Pantal', date: '2026-10-06', photo: IMG + 'Pet1.jpg' },
-  { id: 's2', kind: 'lost', name: 'Tilapia cat', species: 'Cat', color: 'Grey', brgy: 'Lucao', date: '2026-10-05', photo: IMG + 'Pet3.jpg' },
-  { id: 's3', kind: 'lost', name: 'Tabby cat', species: 'Cat', color: 'Tabby', brgy: 'Tapuac', date: '2026-10-03', photo: IMG + 'Pet4.jpg' }
-];
-/* Sample happy endings, shown only until real "reunited" reports exist */
-const RECOVERED_SAMPLES = [
-  { name: 'Mocha the beagle', brgy: 'Bonuan', date: '2026-10-06', photo: IMG + 'Pet2.jpg', story: 'Found by a neighbor and back home within a day.' },
-  { name: 'Black cat with white paws', brgy: 'Tapuac', date: '2026-10-04', photo: IMG + 'Pet4.jpg', story: 'Matched by color and markings, claimed the same day.' },
-  { name: 'Brown dog with collar', brgy: 'Mayombo', date: '2026-10-01', photo: IMG + 'Pet1.jpg', story: 'Its collar tag helped the finder reach the owner.' }
-];
 const PET_LIMIT = 6;
 let petFilter = 'all';
 
@@ -357,7 +343,29 @@ const niceDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { mo
 const speciesOf = r => (r.species === 'Other' && r.otherSpecies) ? r.otherSpecies : (r.species || '');
 const petTitle = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
 const byNewest = (a, b) => new Date(b.date) - new Date(a.date) || (b.created || 0) - (a.created || 0);
-const loadReports = () => { const saved = read(REPORTS_KEY, []), ids = new Set(saved.map(r => r.id)); return SAMPLES.filter(s => !ids.has(s.id)).concat(saved); };
+/* One API report -> the small object the home page cards use. */
+const REPORT_ORIGIN = API.replace(/\/api\/?$/, '');
+const homeReport = row => ({
+  id: String(row.id), kind: row.type, name: row.pet_name || '', species: row.species,
+  breed: row.breed_unknown ? '' : (row.breed || ''), color: (row.colors || []).map(c => c.name).join(' and '),
+  brgy: row.barangay || '', date: String(row.event_date).slice(0, 10), status: row.status,
+  photo: row.primary_photo ? (row.primary_photo.startsWith('/') ? REPORT_ORIGIN + row.primary_photo : row.primary_photo) : '',
+  created: row.created_at ? Date.parse(row.created_at) : 0
+});
+let homeReports = [], homeRecovered = [], homeState = 'loading';   // 'loading' | 'ready' | 'login' | 'error'
+async function loadReports() {
+  const session = getSession();
+  if (!session) { homeState = 'login'; return; }
+  const get = async q => {
+    const res = await fetch(`${API}/reports?${q}`, { headers: { Authorization: 'Bearer ' + session.token } });
+    if (!res.ok) throw new Error('Could not load reports');
+    return ((await res.json()).data?.items || []).map(homeReport);
+  };
+  try {
+    [homeReports, homeRecovered] = await Promise.all([get('status=active&limit=100'), get('status=resolved&limit=3')]);
+    homeState = 'ready';
+  } catch (err) { console.error(err); homeState = 'error'; }
+}
 /* A lost report that someone has found shows as "found" (same report, not a new one), but only after its owner confirms a find. */
 const stateOf = r => r.kind === 'lost' && Array.isArray(r.finds) && r.finds.some(f => f.status === 'confirmed') ? 'found' : r.kind;
 
@@ -397,20 +405,24 @@ function recoveredCard(r) {
 }
 
 function renderReports() {
-  const all = loadReports();
+  const petsEl = document.getElementById('pets-list'), homeEl = document.getElementById('recovered-list');
+  const note = text => `<p class="pet-empty">${esc(text)}</p>`;
+  if (homeState !== 'ready') {
+    const text = homeState === 'login' ? 'Log in to see the latest lost and found reports.' : homeState === 'error' ? 'Could not load reports. Please try again later.' : 'Loading reports…';
+    petsEl.innerHTML = note(text);
+    homeEl.innerHTML = '';
+    return;
+  }
 
   /* Lost & found pets: active reports, newest first */
-  const active = all.filter(r => r.status !== 'reunited' && (petFilter === 'all' || stateOf(r) === petFilter)).sort(byNewest);
+  const active = homeReports.filter(r => petFilter === 'all' || stateOf(r) === petFilter).sort(byNewest);
   const shown = active.slice(0, PET_LIMIT);
-  document.getElementById('pets-list').innerHTML = shown.length
+  petsEl.innerHTML = shown.length
     ? shown.map(petCard).join('')
-    : `<p class="pet-empty">No ${petFilter === 'all' ? '' : petFilter + ' '}pet reports yet. Be the first to file one.</p>`;
+    : note(`No ${petFilter === 'all' ? '' : petFilter + ' '}pet reports yet. Be the first to file one.`);
 
-  /* Recovered pets: real "reunited" reports, topped up with samples */
-  const home = all.filter(r => r.status === 'reunited').sort(byNewest).slice(0, 3);
-  const fill = RECOVERED_SAMPLES.slice(0, Math.max(0, 3 - home.length));
-  document.getElementById('recovered-list').innerHTML = home.concat(fill).map(recoveredCard).join('');
-
+  /* Recovered pets: resolved reports from the database only */
+  homeEl.innerHTML = homeRecovered.length ? homeRecovered.sort(byNewest).map(recoveredCard).join('') : note('No reunited pets yet.');
 }
 
 /* Full details need an account: ask visitors to log in, then take them to that report. */
@@ -432,7 +444,8 @@ document.getElementById('pets').addEventListener('click', e => { const b = e.tar
 document.getElementById('recovered').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) requireLoginFor(b.dataset.view); });
 document.querySelectorAll('[data-browse-all]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); requireLoginFor(null); }));
 
-renderReports();
+renderReports();   // placeholder text until the database answers
+loadReports().then(renderReports);
 
 renderSession();
 /* The Google script is async: wait for it, then set up the buttons. */

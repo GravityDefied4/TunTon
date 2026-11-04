@@ -43,6 +43,7 @@ Errors keep the same shape (`success: false`, `data: null`, `message` = text saf
 | GET | /reports/:id | `data.report` |
 | PUT | /reports/:id | Owner, active reports only. Send only changed fields (JSON or multipart). Add photos in `photos`, delete with `remove_photo_ids` (`"4,5"`). Type cannot change. Re-runs matching. Returns `{ report, matches }` |
 | PATCH | /reports/:id/status | `{ status: "closed"\|"resolved" }` owner only. `closed` is refused (409) while a claim is in progress |
+| DELETE | /reports/:id | Owner only. **Permanently deletes** the report, its photos (files too), colors and match suggestions. Refused (409) while a claim on it is open or approved. Audit action `report_deleted` |
 
 Statuses: `active`, `matched` (claim approved), `resolved`, `closed`, `removed` (admin).
 
@@ -86,7 +87,7 @@ Claim flow: `pending_proof` -> (proof) `under_review` -> `approved` \| `rejected
 | GET | /admin/stats | `{ users, reports{lost,found,by_status,new_last_7_days}, matches, claims, recovery{lost_total,recovered,rate}, per_barangay[] }` (`rate` is a percent) |
 | GET | /admin/logs | Audit trail, newest first. Filters `user_id`, `action`, `target_table`, `target_id` |
 
-Audit actions written: `profile_updated`, `report_created`, `report_updated`, `report_status_changed`, `report_removed`, `match_created`, `match_dismissed`, `claim_created`, `proof_submitted`, `claim_approved`, `claim_rejected`, `claim_flagged`, `contact_viewed`, `user_suspended`, `user_reactivated`.
+Audit actions written: `profile_updated`, `report_created`, `report_updated`, `report_status_changed`, `report_removed`, `report_deleted`, `match_created`, `match_dismissed`, `claim_created`, `proof_submitted`, `claim_approved`, `claim_rejected`, `claim_flagged`, `contact_viewed`, `user_suspended`, `user_reactivated`.
 
 ## Files
 Pet photos: public read-only at `/uploads/reports/<name>`. Proof files: private (endpoint above). Uploads are checked by declared type **and** file signature, renamed to random names, max 5 MB.

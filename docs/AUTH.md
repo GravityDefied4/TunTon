@@ -12,7 +12,7 @@
 
 ## 2. Run
 ```
-cp .env.example .env     # fill GOOGLE_CLIENT_ID, JWT_SECRET, ADMIN_EMAILS
+cp .env.example .env     # fill GOOGLE_CLIENT_ID, JWT_SECRET
 npm install
 npm start                # http://localhost:3000 serves the site AND the API
 ```
@@ -43,7 +43,12 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 router.get('/reports/mine', requireAuth, ctrl.mine);                 // req.user is set
 router.use('/admin', requireAuth, requireRole('admin'));             // admin only
 ```
-Admins: put their Google emails in `ADMIN_EMAILS`.
+Admins: the role can only be set in the MySQL database. Nothing in `.env`, the API or the frontend can grant or change it:
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'someone@example.com';   -- promote
+UPDATE users SET role = 'user'  WHERE email = 'someone@example.com';   -- demote
+```
+New accounts (email or Google sign-up) are always `user`, and sign-in never changes an existing role. The role is read from the database on every request, so a change applies immediately; the user's old token carries the stale role claim but it is not trusted.
 
 ## 5. For the database team (DONE: userStore.js now uses MySQL and the schema.sql `users` table; user ids are integers)
 _Historical note: `backend/db/userStore.js` used to be a temporary JSON file._ Replace its 4 functions with mysql2 queries; nothing else changes. The plan's `users` table needs these changes for Google login (no passwords):
@@ -63,7 +68,7 @@ CREATE TABLE users (
 );
 ```
 _Update: email + password login is back. `users.password_hash` holds a bcrypt hash (bcryptjs, cost 12); `/auth/register` and `/auth/login` are implemented. `/users/me/password` is not._
-Security notes: password sign-ups are never admin (the email is unverified, so `ADMIN_EMAILS` only applies to Google sign-in). When someone signs in with Google using an email that already has a password account, that account's password is removed, so a person who registered someone else's email first cannot keep access.
+Security notes: password sign-ups are never admin (the email is unverified, so no sign-up path can ever produce an admin). When someone signs in with Google using an email that already has a password account, that account's password is removed, so a person who registered someone else's email first cannot keep access.
 
 ## 6. Notes
 - Reports/profile are still saved in the browser (localStorage) until the reports API exists; only login is real for now.

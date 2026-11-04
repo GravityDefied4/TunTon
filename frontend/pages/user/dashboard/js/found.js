@@ -31,7 +31,10 @@ function applyMatch({ form, host, map }, r, mine) {
 }
 
 if (ctx) {
-  const id = new URLSearchParams(location.search).get('match');
-  const r = id && allReports().find(x => x.id === id && reportState(x) === 'lost' && !isOwner(x));
-  if (r) applyMatch(ctx, r, new URLSearchParams(location.search).get('update') ? myPendingFind(r) : null);
+  /* The lost report named in ?match= comes from the database: wait for it before pre-filling the form. */
+  reportsReady.then(() => {
+    const id = new URLSearchParams(location.search).get('match');
+    const r = id && allReports().find(x => x.id === id && reportState(x) === 'lost' && !isOwner(x));
+    if (r) applyMatch(ctx, r, new URLSearchParams(location.search).get('update') ? myPendingFind(r) : null);
+  }).catch(() => {});
 }

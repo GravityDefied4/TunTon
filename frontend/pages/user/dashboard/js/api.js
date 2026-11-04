@@ -1,77 +1,17 @@
 /* =========================================================
-   Reports data layer (FRONTEND ONLY for now).
+   Reports data layer.
 
-   The pages never read localStorage or call fetch() themselves for
-   reports. They call ReportsAPI, so the backend can be plugged in
-   later by changing this one file.
-
-   When the Node.js + Express + MySQL backend exists:
-     1. Set USE_API = true.
-     2. Build these endpoints (nothing is built yet):
-          GET /api/reports?type=lost|found&species=Dog&q=text
-          GET /api/reports/:id
-     3. Return rows shaped like PLACEHOLDER_ROW below.
+   The pages never call fetch() for reports themselves. They call ReportsAPI,
+   which reads the database through the Express backend:
+     GET /api/reports        (list; the server pages at 100, loadReports() in common.js collects every page)
+     GET /api/reports/:id
+   Reports exist only if they are in the database: there is no sample or local data.
+   toReport() and loadReports() (which turn API rows into page objects) live in common.js,
+   because pages that do not load this file need them too.
    ========================================================= */
 
-const USE_API = false;          // false = show the local placeholder data
-/* API_BASE and authFetch() (which attaches the login token) come from common.js */
-
-/* One report row as MySQL would return it (snake_case column names).
-   Not used while USE_API is false. */
-const PLACEHOLDER_ROW = {
-  id: 1,
-  type: 'lost',                 // 'lost' | 'found'
-  pet_name: 'Tabby cat',
-  species: 'Cat',
-  breed: '',
-  color: 'Tabby',
-  size: 'Small',
-  markings: '',
-  barangay: 'Tapuac',
-  latitude: 16.0525,
-  longitude: 120.3305,
-  photo_url: '/uploads/reports/1.jpg',                          // main photo
-  photo_urls: ['/uploads/reports/1.jpg', '/uploads/reports/1b.jpg'],  // all photos (first = main)
-  date_reported: '2026-10-03',  // last seen / found date
-  contact: '',
-  zone: 1000,                   // lost reports: search radius in metres
-  where_now: '',                // found reports: where the pet is now
-  status: 'active',             // 'active' | 'reunited'  (a lost report shows as found once its owner confirms a find)
-  user_id: 1,
-  owner_name: 'Juan Dela Cruz',  // reporter's display name
-  owner_picture: '/uploads/users/1.jpg',  // reporter's profile picture (optional)
-  created_at: '2026-10-03T08:00:00Z'
-};
-
-/* Converts a database row into the object the pages use. */
-const toReport = row => ({
-  id: String(row.id),
-  kind: row.type,
-  name: row.pet_name || '',
-  species: row.species,
-  otherSpecies: row.other_species || '',
-  breed: row.breed || '',
-  color: row.color || '',
-  size: row.size || '',
-  markings: row.markings || '',
-  description: row.description || '',
-  howFound: row.how_found || '',
-  brgy: row.barangay,
-  lat: Number(row.latitude),
-  lng: Number(row.longitude),
-  photo: row.photo_url,
-  photos: Array.isArray(row.photo_urls) && row.photo_urls.length ? row.photo_urls : [row.photo_url],
-  date: String(row.date_reported).slice(0, 10),
-  contact: row.contact || '',
-  ownerPicture: row.owner_picture || '',   // reporter's profile picture URL
-  ownerName: row.owner_name || '',   // name of the user who filed the report (join users.name in SQL)
-  zone: Number(row.zone) || 0,
-  where: row.where_now || '',
-  status: row.status,
-  created: row.created_at ? Date.parse(row.created_at) : 0
-});
-
-/* Placeholder filtering (the real server would do this in SQL). */
+/* Client-side filtering on top of the database result (the database only has Dog and Cat,
+   so "Other" and free-text search are handled here). */
 const filterLocal = (list, { kind, species, q }) => {
   const needle = (q || '').toLowerCase();
   return list
@@ -82,23 +22,19 @@ const filterLocal = (list, { kind, species, q }) => {
 };
 
 const ReportsAPI = {
-  /* filters: { kind: 'all'|'lost'|'found', species: '', q: '' } */
+  /* filters: { kind: 'all'|'lost'|'found', species: '', q: '' }. Reloads from the database every call. */
   async list(filters = {}) {
-    if (!USE_API) return filterLocal(allReports(), filters);
-    const qs = new URLSearchParams();
-    if (filters.kind && filters.kind !== 'all') qs.set('type', filters.kind);
-    if (filters.species) qs.set('species', filters.species);
-    if (filters.q) qs.set('q', filters.q);
-    const res = await authFetch(`/reports?${qs}`);
-    if (!res.ok) throw new Error('Could not load reports');
-    return (await res.json()).map(toReport);
+    reportsReady = loadReports();
+    reportsReady.catch(() => {});
+    await reportsReady;
+    return filterLocal(allReports(), filters);
   },
 
   async get(id) {
-    if (!USE_API) return mergedReports().find(r => r.id === id) || null;
     const res = await authFetch(`/reports/${encodeURIComponent(id)}`);
-    if (res.status === 404) return null;
+    if (res.status === 404 || res.status === 400) return null;
     if (!res.ok) throw new Error('Could not load the report');
-    return toReport(await res.json());
+    const report = (await res.json()).data?.report;
+    return report ? toReport(report) : null;
   }
 };

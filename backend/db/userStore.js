@@ -43,7 +43,7 @@ module.exports = {
     return rows[0] || null;
   },
 
-  /* Email + password sign-up. Role is always 'user': the email is not verified, so ADMIN_EMAILS must not apply here. */
+  /* Email + password sign-up. Role is always 'user' (admins are set in MySQL only). */
   async createWithPassword({ email, full_name, password_hash }) {
     const f = fit({ email, full_name, picture: null });
     const [r] = await pool.query(
@@ -63,7 +63,8 @@ module.exports = {
     return module.exports.findById(id);
   },
 
-  async create({ google_sub, email, full_name, picture, role }) {
+  /* Role is never written here: new rows take the column default ('user'), existing rows keep whatever the database says. */
+  async create({ google_sub, email, full_name, picture }) {
     const f = fit({ email, full_name, picture });
     /* A seeded account (no google_sub yet) with the same email is claimed instead of duplicated. */
     const existing = await findOne('email = ?', [f.email]);
@@ -71,21 +72,21 @@ module.exports = {
       if (existing.google_sub && existing.google_sub !== google_sub) throw Object.assign(new Error('That email belongs to another account.'), { status: 409 });
       /* Google has verified this email, a password sign-up has not. Drop any password on the row so someone who
          registered a victim's email first cannot keep a way in after the real owner signs in with Google. */
-      await pool.query(`UPDATE users SET google_sub = ?, full_name = ?, picture_url = IF(picture_url IS NOT NULL AND picture_url NOT LIKE 'http%', picture_url, ?), role = ?, password_hash = NULL, last_login_at = NOW() WHERE user_id = ?`,
-        [google_sub, f.full_name, f.picture, role, existing.user_id]);
+      await pool.query(`UPDATE users SET google_sub = ?, full_name = ?, picture_url = IF(picture_url IS NOT NULL AND picture_url NOT LIKE 'http%', picture_url, ?), password_hash = NULL, last_login_at = NOW() WHERE user_id = ?`,
+        [google_sub, f.full_name, f.picture, existing.user_id]);
       return module.exports.findById(existing.user_id);
     }
     const [r] = await pool.query(
-      'INSERT INTO users (google_sub, full_name, email, picture_url, role, last_login_at) VALUES (?, ?, ?, ?, ?, NOW())',
-      [google_sub, f.full_name, f.email, f.picture, role]);
+      'INSERT INTO users (google_sub, full_name, email, picture_url, last_login_at) VALUES (?, ?, ?, ?, NOW())',
+      [google_sub, f.full_name, f.email, f.picture]);
     return module.exports.findById(r.insertId);
   },
 
   /* Refresh profile fields from Google and stamp the login time. */
-  async touchLogin(id, { email, full_name, picture, role }) {
+  async touchLogin(id, { email, full_name, picture }) {
     const f = fit({ email, full_name, picture });
-    await pool.query(`UPDATE users SET email = ?, full_name = ?, picture_url = IF(picture_url IS NOT NULL AND picture_url NOT LIKE 'http%', picture_url, ?), role = ?, last_login_at = NOW() WHERE user_id = ?`,
-      [f.email, f.full_name, f.picture, role, id]);
+    await pool.query(`UPDATE users SET email = ?, full_name = ?, picture_url = IF(picture_url IS NOT NULL AND picture_url NOT LIKE 'http%', picture_url, ?), last_login_at = NOW() WHERE user_id = ?`,
+      [f.email, f.full_name, f.picture, id]);
     return module.exports.findById(id);
   },
 

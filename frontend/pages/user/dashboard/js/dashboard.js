@@ -182,15 +182,24 @@ new ResizeObserver(() => map.invalidateSize()).observe($('#map'));   // sidebar 
 $('#radius').addEventListener('change', () => render(true));
 $('#locate').addEventListener('click', locate);
 
-/* Opened from another page with ?focus=<id>: zoom to that report. Otherwise find the user. */
-const focusId = new URLSearchParams(location.search).get('focus');
-const focused = focusId && allReports().find(r => r.id === focusId);
-if (focused) {
-  $('#radius').value = 'all';
-  $('#status').textContent = 'Showing the report you selected';
-  render(false);
-  map.setView([focused.lat, focused.lng], 16);
-  select(focused.id, false);
-} else {
-  locate();
-}
+/* Opened from another page with ?focus=<id>: zoom to that report. Otherwise find the user.
+   The reports are loaded from the database first; nothing is drawn until they arrive. */
+$('#count').textContent = 'Loading…';
+reportsReady.then(() => {
+  const focusId = new URLSearchParams(location.search).get('focus');
+  const focused = focusId && allReports().find(r => r.id === focusId);
+  if (focused) {
+    $('#radius').value = 'all';
+    $('#status').textContent = 'Showing the report you selected';
+    render(false);
+    map.setView([focused.lat, focused.lng], 16);
+    select(focused.id, false);
+  } else {
+    locate();
+  }
+}).catch(err => {
+  console.error(err);
+  $('#count').textContent = '';
+  $('#status').textContent = 'Could not load reports. Please try again.';
+  sideBody.innerHTML = '<div class="side-empty"><h2>Could not load reports</h2><p>Check your connection and refresh the page.</p></div>';
+});

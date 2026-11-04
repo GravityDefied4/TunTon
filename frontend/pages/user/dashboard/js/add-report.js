@@ -93,7 +93,8 @@ function requestedKind() {
 const fixed = requestedKind();      // claim / match / edit: the type is already decided
 if (fixed) {
   picker.hidden = true;
-  show(fixed);
+  /* claim / match point at a report in the database: wait for it (a failed load still opens the form) */
+  reportsReady.catch(() => {}).then(() => show(fixed));
 } else {
   const t = params.get('type');
   if (t === 'lost' || t === 'found') show(t);

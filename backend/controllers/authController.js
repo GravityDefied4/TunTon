@@ -3,8 +3,8 @@ const bcrypt = require('bcryptjs');
 const users = require('../db/userStore');
 const { verifyGoogleCredential } = require('../services/google');
 
-const adminEmails = () => (process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-const roleFor = email => (adminEmails().includes(email) ? 'admin' : 'user');
+/* Roles are never decided here. Every new account is a 'user'; promoting someone to 'admin' (or demoting) is done
+   directly in the MySQL database only (UPDATE users SET role = 'admin' WHERE email = ...). Not via .env, not via the API. */
 
 /* The database keeps only the file name of an uploaded picture. The browser gets the full path; Google URLs pass through. */
 const pictureUrl = p => (p && !/^(https?:)?\//.test(p) ? '/uploads/avatars/' + p : p || null);
@@ -42,15 +42,14 @@ exports.google = async (req, res, next) => {
 
   try {
     let user = await users.findByGoogleSub(profile.google_sub);
-    const role = roleFor(profile.email);
 
     if (!user && mode === 'login') {
       return res.fail(404, 'No TunTon account found for this Google account. Sign up to continue.', { code: 'NO_ACCOUNT' });
     }
-    if (!user) user = await users.create({ ...profile, role });
+    if (!user) user = await users.create(profile);
     else {
       if (user.status !== 'active') return res.fail(403, 'This account is suspended.');
-      user = await users.touchLogin(user.user_id, { ...profile, role });
+      user = await users.touchLogin(user.user_id, profile);
     }
     res.ok({ token: signToken(user), user: publicUser(user) }, 'Signed in.');
   } catch (e) { next(e); }

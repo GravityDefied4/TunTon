@@ -13,5 +13,6 @@ router.get('/mine', ctrl.mine);   // Own reports (must stay above /:id)
 router.get('/:id', ctrl.getOne);   // Details (contact info hidden)
 router.put('/:id', upload.reportPhotos, ctrl.update);   // Update own report (owner only; may add photos)
 router.patch('/:id/status', ctrl.setStatus);   // Close or resolve (owner only)
+router.delete('/:id', ctrl.remove);   // Permanently delete (owner only; refused while a claim is open or approved)
 
 module.exports = router;
