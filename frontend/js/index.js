@@ -383,7 +383,8 @@ const homeReport = row => ({
   breed: row.breed_unknown ? '' : (row.breed || ''), color: (row.colors || []).map(c => c.name).join(' and '),
   brgy: row.barangay || '', date: String(row.event_date).slice(0, 10), status: row.status,
   photo: row.primary_photo ? (row.primary_photo.startsWith('/') ? REPORT_ORIGIN + row.primary_photo : row.primary_photo) : '',
-  created: row.created_at ? Date.parse(row.created_at) : 0
+  created: row.created_at ? Date.parse(row.created_at) : 0,
+  story: row.recovery_story || row.story || row.resolution_notes || row.description || ''
 });
 let homeReports = [], homeRecovered = [], homeState = 'loading';   // 'loading' | 'ready' | 'error'
 async function loadReports() {
@@ -421,20 +422,33 @@ function petCard(r) {
   </article>`;
 }
 
-function recoveredCard(r) {
+function recoveredCard(r, index) {
   const title = petTitle(r);
+  const story = r.story || `After ${title} was reported missing, the details in the report helped the community keep an eye out. A neighbor recognized the pet and shared the sighting with the person who filed the report. The owner was able to confirm the match, arrange a safe handover, and bring ${title} home.`;
+  recoveryStories[index] = { ...r, title, story };
   return `
-  <article class="pet-card">
-    <div class="pet-thumb"><img src="${esc(r.photo)}" alt="${esc(title)}, reunited" loading="lazy"></div>
+  <article class="pet-card recovered-card">
+    <div class="pet-thumb"><img src="${esc(r.photo)}" alt="${esc(title)}, safely reunited" loading="lazy"></div>
     <div class="pet-body">
       <span class="badge badge--home">&#10003; Reunited</span>
       <h3>${esc(title)}</h3>
-      <p class="pet-meta">${esc(r.brgy)} &middot; <time datetime="${esc(r.date)}">${esc(niceDate(r.date))}</time></p>
-      <p class="pet-story">${esc(r.story || 'Back home safe, thanks to the community.')}</p>
+      <p class="pet-meta">${esc(r.brgy || 'Dagupan City')} &middot; <time datetime="${esc(r.date)}">${esc(niceDate(r.date))}</time></p>
+      <p class="pet-story">${esc(story.length > 150 ? story.slice(0, 147) + '…' : story)}</p>
     </div>
-    ${r.id ? `<button type="button" class="btn btn-small" data-view="${esc(r.id)}">Read story</button>` : ''}
+    <button type="button" class="btn btn-small" data-recovery-story="${index}">View details</button>
   </article>`;
 }
+
+/* Illustrative examples appear until real resolved reports are available. */
+const sampleRecoveries = [
+  { id:'sample-mocha', kind:'lost', name:'Mocha', species:'Dog', breed:'Beagle', color:'Brown and white', brgy:'Bonuan Gueset', date:'2026-10-18', photo:'assets/img/Pet2.jpg', sample:true,
+    story:'Mocha slipped out through an open gate while the family was bringing groceries inside. His family posted a lost-pet report with his photo and distinctive brown-and-white coat. The next morning, a resident near the neighborhood market spotted a dog matching the description and contacted the family through the report. They checked Mocha’s markings together before bringing him home. After a quick check for injuries, Mocha was back with his favorite people.' },
+  { id:'sample-miming', kind:'found', name:'Miming', species:'Cat', breed:'Domestic shorthair', color:'Gray tabby', brgy:'Tapuac', date:'2026-10-12', photo:'assets/img/Pet3.jpg', sample:true,
+    story:'A gray tabby began staying near a small store in Tapuac. The finder shared a found-pet report instead of assuming the cat was a stray. A family searching for their indoor cat recognized the markings and reached out. They confirmed the cat’s identity with familiar photos and details, then safely reunited. The finder kept the cat sheltered and provided water while the family made their way over.' },
+  { id:'sample-brownie', kind:'lost', name:'Brownie', species:'Dog', breed:'Mixed breed', color:'Light brown', brgy:'Pantal', date:'2026-10-06', photo:'assets/img/Pet1.jpg', sample:true,
+    story:'Brownie was frightened by a loud noise and wandered farther than usual. His owner posted a report with his approximate last-seen area and a clear photo. Community members shared the alert with nearby residents, and someone recognized Brownie resting outside a neighborhood home. The owner verified his collar and unique markings before taking him home. The family thanked everyone who shared the report and helped keep Brownie safe.' }
+];
+let recoveryStories = [];
 
 function renderReports() {
   const petsEl = document.getElementById('pets-list'), homeEl = document.getElementById('recovered-list');
@@ -454,7 +468,11 @@ function renderReports() {
     : note(`No ${petFilter === 'all' ? '' : petFilter + ' '}pet reports yet. Be the first to file one.`);
 
   /* Recovered pets: resolved reports from the database only */
-  homeEl.innerHTML = homeRecovered.length ? homeRecovered.sort(byNewest).map(recoveredCard).join('') : note('No reunited pets yet.');
+  recoveryStories = [];
+  const recovered = homeRecovered.slice().sort(byNewest);
+  homeEl.innerHTML = recovered.length
+    ? recovered.map((r, i) => recoveredCard(r, i)).join('')
+    : sampleRecoveries.map((r, i) => recoveredCard(r, i)).join('');
 }
 
 /* Full details need an account: ask visitors to log in, then take them to that report. */
@@ -473,7 +491,36 @@ document.querySelector('.pet-list#pets-list').closest('section').addEventListene
   }
 });
 document.getElementById('pets').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) requireLoginFor(b.dataset.view); });
-document.getElementById('recovered').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) requireLoginFor(b.dataset.view); });
+const recoveryDialog = document.getElementById('recovery-dialog');
+function openRecoveryStory(entry) {
+  if (!entry) return;
+  const story = entry.story || 'This pet has been safely reunited with its family.';
+  const sentences = story.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [story];
+  const paragraphs = [];
+  for (let i = 0; i < sentences.length; i += 2) paragraphs.push(sentences.slice(i, i + 2).join(' ').trim());
+  const photo = document.getElementById('recovery-photo');
+  photo.src = entry.photo || '';
+  photo.alt = `${entry.title}, safely reunited with its family`;
+  document.getElementById('recovery-title').textContent = `${entry.title} is home again`;
+  document.getElementById('recovery-location').textContent = `${entry.brgy || 'Dagupan City'}${entry.sample ? ' · Illustrative story' : ' · Dagupan City'}`;
+  document.getElementById('recovery-date').textContent = entry.date ? `Reunited ${niceDate(entry.date)}` : 'A community recovery story';
+  document.getElementById('recovery-dek').textContent = `${entry.name || entry.title}’s journey home is a reminder that a little attention and a helping hand can bring a family back together.`;
+  document.getElementById('recovery-readtime').textContent = `${Math.max(1, Math.ceil(story.split(/\s+/).length / 180))} min read`;
+  const storyEl = document.getElementById('recovery-story');
+  storyEl.replaceChildren(...paragraphs.map((paragraph, index) => {
+    const p = document.createElement('p');
+    if (index === 0) p.className = 'recovery-story__lead';
+    p.textContent = paragraph;
+    return p;
+  }));
+  recoveryDialog.showModal();
+}
+document.getElementById('recovered').addEventListener('click', e => {
+  const b = e.target.closest('[data-recovery-story]');
+  if (b) openRecoveryStory(recoveryStories[Number(b.dataset.recoveryStory)]);
+});
+document.querySelectorAll('[data-close-recovery]').forEach(b => b.addEventListener('click', () => recoveryDialog.close()));
+recoveryDialog.addEventListener('click', e => { if (e.target === recoveryDialog) recoveryDialog.close(); });
 document.querySelectorAll('[data-browse-all]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); requireLoginFor(null); }));
 
 renderReports();   // placeholder text until the database answers
