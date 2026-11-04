@@ -550,6 +550,7 @@ p {
 
 .two-col.about {
     align-items: center;
+    gap: clamp(2rem, 5vw, 4.5rem);
 }
 
 .section-head {
@@ -610,40 +611,48 @@ p {
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 1rem;
+    gap: .85rem;
 }
 
 .facts li {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.1rem;
     background: var(--surface);
-    border-radius: 20px;
-    border-left: 6px solid var(--leaf);
-    padding: 1.1rem 1.5rem;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--leaf);
+    border-radius: 22px;
+    padding: 1rem 1.25rem;
     box-shadow: var(--shadow);
 }
 
 .facts h3 {
-    margin: 0;
-    color: var(--leaf-text);
-    font-size: 1.1rem;
+    margin: 0 0 .1rem;
+    color: var(--heading);
+    font-size: 1.05rem;
 }
 
 .facts p {
     margin: 0;
     font-weight: 700;
+    color: var(--muted);
 }
 
 .fact-icon {
     flex-shrink: 0;
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     display: grid;
     place-items: center;
-    border-radius: 50%;
-    background: var(--mint);
-    font-size: 1.6rem;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--surface-hover);
+    color: var(--leaf-text);
+}
+
+.fact-icon svg {
+    width: 24px;
+    height: 24px;
 }
 
 /* ---------- How it works ---------- */

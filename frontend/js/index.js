@@ -386,16 +386,13 @@ const homeReport = row => ({
   created: row.created_at ? Date.parse(row.created_at) : 0,
   story: row.recovery_story || row.story || row.resolution_notes || row.description || ''
 });
-let homeReports = [], homeRecovered = [], homeState = 'loading';   // 'loading' | 'ready' | 'error'
+let homeReports = [], homeState = 'loading';   // 'loading' | 'ready' | 'error'
 async function loadReports() {
   /* Public preview endpoint: works for visitors and logged-in users alike (no contact details or exact pins). */
-  const get = async q => {
-    const res = await fetch(`${API}/reports/public?${q}`);
-    if (!res.ok) throw new Error('Could not load reports');
-    return ((await res.json()).data?.items || []).map(homeReport);
-  };
   try {
-    [homeReports, homeRecovered] = await Promise.all([get('status=active&limit=30'), get('status=resolved&limit=3')]);
+    const res = await fetch(`${API}/reports/public?status=active&limit=30`);
+    if (!res.ok) throw new Error('Could not load reports');
+    homeReports = ((await res.json()).data?.items || []).map(homeReport);
     homeState = 'ready';
   } catch (err) { console.error(err); homeState = 'error'; }
 }
@@ -439,7 +436,7 @@ function recoveredCard(r, index) {
   </article>`;
 }
 
-/* Illustrative examples appear until real resolved reports are available. */
+/* Recovered-pet stories are static homepage content, independent of API reports. */
 const sampleRecoveries = [
   { id:'sample-mocha', kind:'lost', name:'Mocha', species:'Dog', breed:'Beagle', color:'Brown and white', brgy:'Bonuan Gueset', date:'2026-10-18', photo:'assets/img/Pet2.jpg', sample:true,
     story:'Mocha slipped out through an open gate while the family was bringing groceries inside. His family posted a lost-pet report with his photo and distinctive brown-and-white coat. The next morning, a resident near the neighborhood market spotted a dog matching the description and contacted the family through the report. They checked Mocha’s markings together before bringing him home. After a quick check for injuries, Mocha was back with his favorite people.' },
@@ -453,10 +450,12 @@ let recoveryStories = [];
 function renderReports() {
   const petsEl = document.getElementById('pets-list'), homeEl = document.getElementById('recovered-list');
   const note = text => `<p class="pet-empty">${esc(text)}</p>`;
+  recoveryStories = [];
+  homeEl.innerHTML = sampleRecoveries.map((r, i) => recoveredCard(r, i)).join('');
+
   if (homeState !== 'ready') {
     const text = homeState === 'error' ? 'Could not load reports. Please try again later.' : 'Loading reports…';
     petsEl.innerHTML = note(text);
-    homeEl.innerHTML = '';
     return;
   }
 
@@ -466,13 +465,6 @@ function renderReports() {
   petsEl.innerHTML = shown.length
     ? shown.map(petCard).join('')
     : note(`No ${petFilter === 'all' ? '' : petFilter + ' '}pet reports yet. Be the first to file one.`);
-
-  /* Recovered pets: resolved reports from the database only */
-  recoveryStories = [];
-  const recovered = homeRecovered.slice().sort(byNewest);
-  homeEl.innerHTML = recovered.length
-    ? recovered.map((r, i) => recoveredCard(r, i)).join('')
-    : sampleRecoveries.map((r, i) => recoveredCard(r, i)).join('');
 }
 
 /* Full details need an account: ask visitors to log in, then take them to that report. */
