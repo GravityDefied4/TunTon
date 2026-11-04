@@ -58,16 +58,16 @@
    deepened so the sidebar, hero and buttons stay on-brand; text greens move to lime. */
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --forest: #0c5a37;
-    --forest-dark: #062b1b;
-    --leaf: #23864a;   /* a touch deeper so white text on leaf-green fills keeps 4.5:1 */
-    --mint: #1a3a2a;
-    --page: #0a1a12;
-    --surface: #112a1d;
-    --surface-tint: #0e2318;
-    --surface-hover: #1b3d2b;
-    --line: #2b5040;
-    --line-soft: #1f3a2c;
+    --forest: #11713f;
+    --forest-dark: #0a4a2b;
+    --leaf: #2a9455;   /* a touch deeper so white text on leaf-green fills keeps 4.5:1 */
+    --mint: #24523a;
+    --page: #12291d;
+    --surface: #1a3d2b;
+    --surface-tint: #163626;
+    --surface-hover: #25523a;
+    --line: #3a6b52;
+    --line-soft: #2c5440;
     --ink: #e6f3e8;
     --muted: #9bb9a8;
     --heading: #8fcf5a;
@@ -82,13 +82,17 @@
     --link: #8ab8ff;
     --link-hover: #b3d0ff;
     --shadow: 0 10px 30px rgba(0, 0, 0, .45);
-    --sk-base: #1b3a29;                      /* a step lighter than --surface so blocks read on cards */
+    --sk-base: #25523a;                      /* a step lighter than --surface so blocks read on cards */
     --sk-shine: rgba(143, 207, 90, .13);     /* soft lime glint instead of a white flash */
     --sk-grid: rgba(143, 207, 90, .07);
 }
 
 :root[data-theme="dark"] ::placeholder { color: var(--muted); opacity: 1; }
-:root[data-theme="dark"] .hero-caption { background: rgba(4, 36, 20, .8); }
+/* Hero photo cards stay white in dark mode (the photos pop on a light frame) */
+:root[data-theme="dark"] .stack-card { background: #ffffff; box-shadow: 0 12px 32px rgba(0, 0, 0, .4); }
+:root[data-theme="dark"] .hero-caption { background: rgba(6, 50, 30, .75); }
+/* Brighter divider line so it reads on the dark page */
+:root[data-theme="dark"] .divider-line { background: linear-gradient(90deg, var(--leaf), var(--logo-green), var(--logo-lime)); height: 4px; }
 
 /* ---------- Base ---------- */
 *,
@@ -899,7 +903,8 @@ p {
 }
 
 .divider {
-    background: var(--mint);
+    background: var(--page);
+    line-height: 0;   /* no stray inline gap around the line */
 }
 
 .divider-line {
@@ -1767,3 +1772,19 @@ p {
 
 .theme-toggle--icon:hover { background: rgba(255, 255, 255, .18); }
 .theme-toggle:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+
+/* Inline validation feedback for login and signup fields */
+#auth-dialog .auth-form .field-error {
+    display: block;
+    margin-top: .12rem;
+    color: var(--danger-text);
+    font-size: .78rem;
+    line-height: 1.35;
+    font-weight: 700;
+}
+#auth-dialog .auth-form input[aria-invalid="true"] {
+    border-color: var(--danger-text);
+}
+#auth-dialog .auth-form input[aria-invalid="true"]:focus {
+    outline-color: var(--danger-text);
+}
