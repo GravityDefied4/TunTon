@@ -148,6 +148,14 @@
   transition: transform .25s var(--side-ease), color .2s var(--side-ease);
 }
 
+/* Settled: the slide is finished, so the active link carries the fill itself (js/sidebar.js adds .is-settled) */
+.side-nav.is-settled .side-indicator { opacity: 0; transition: none; }
+.side-nav.is-settled a[aria-current="page"] {
+  background: var(--side-fill);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+  transition: color .2s var(--side-ease);
+}
+
 .side-nav a[aria-current="page"] svg { color: var(--lime); }
 .side-nav a:hover svg { transform: scale(1.08); }
 

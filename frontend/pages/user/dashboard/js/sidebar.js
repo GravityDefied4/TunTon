@@ -29,10 +29,13 @@ window.sidebarReady = (async function () {
     window.TunTonTheme?.sync();   /* label/aria of the theme button that just arrived */
 
     /* highlight the link for the current page */
-    let here = location.pathname.split('/').pop() || 'dashboard.html';
-    if (here === 'report.html') here = /[?&]match=/.test(location.search) ? 'matching.html' : 'reports.html';   /* details page belongs under All reports */
+    /* Compare pages by name WITHOUT ".html", so clean URLs (/dashboard), trailing slashes and
+       servers that redirect dashboard.html -> /dashboard still find the right tab. */
+    const pageName = p => (String(p).split('/').pop() || 'dashboard').replace(/\.html?$/i, '').toLowerCase();
+    let here = pageName(location.pathname);
+    if (here === 'report') here = /[?&]match=/.test(location.search) ? 'matching' : 'reports';   /* details page belongs under All reports */
     document.querySelectorAll('.side-nav a').forEach(a => {
-      if (a.getAttribute('href') === here) a.setAttribute('aria-current', 'page');
+      if (pageName(new URL(a.getAttribute('href'), location.href).pathname) === here) a.setAttribute('aria-current', 'page');
     });
 
     /* ---------- Tab switching animation ----------
@@ -48,6 +51,12 @@ window.sidebarReady = (async function () {
     ind.setAttribute('aria-hidden', 'true');
     nav.prepend(ind);
     nav.classList.add('has-indicator');
+
+    /* Once the highlight has arrived, the active link paints its own fill (CSS .is-settled) and the
+       sliding element is hidden. The effect then no longer depends on a pixel measurement. */
+    let settleTimer = 0;
+    const unsettle = () => { clearTimeout(settleTimer); nav.classList.remove('is-settled'); };
+    const settle = delay => { clearTimeout(settleTimer); settleTimer = setTimeout(() => nav.classList.add('is-settled'), delay); };
 
     const place = (a, animate) => {
       const y = a.offsetTop, h = a.offsetHeight;
@@ -71,11 +80,30 @@ window.sidebarReady = (async function () {
         ind.style.transform = 'translateY(' + from.y + 'px)';
         void ind.offsetHeight;
         requestAnimationFrame(() => place(active, true));
+        settle(500);   /* slide is .4s */
       } else {
         place(active, false);
+        settle(0);
       }
-      /* the sidebar changing size (minimize, font load) re-measures without animating */
-      if (window.ResizeObserver) new ResizeObserver(() => { const c = current(); if (c) place(c, false); }).observe(nav);
+      /* The highlight is drawn by the .side-indicator (the active link itself is transparent), and it is
+         positioned from a one-time measurement. Anything that later moves the links WITHOUT resizing
+         the nav (web fonts / logo images finishing, minimize toggling the header layout, the scrollbar
+         appearing once the reports load) left it stranded, so the tab looked unselected.
+         Re-measure (no animation) on every such event. */
+      const resync = () => { const c = current(); if (c) place(c, false); };
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(resync);
+        ro.observe(nav);
+        ro.observe(document.getElementById('sidebar'));
+        nav.querySelectorAll('a').forEach(a => ro.observe(a));
+        const head = document.querySelector('.side-head');
+        if (head) ro.observe(head);
+      }
+      window.addEventListener('load', resync);
+      window.addEventListener('resize', resync);
+      document.getElementById('sidebar').addEventListener('transitionend', resync);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(resync);
+      document.documentElement.addEventListener('transitionend', e => { if (e.target.classList && e.target.classList.contains('dash')) resync(); });
     }
 
     /* Clicking a sidebar link: slide the highlight, fade the page out, then go. */
@@ -84,7 +112,7 @@ window.sidebarReady = (async function () {
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
       const href = a.getAttribute('href');
       const tab = nav.querySelector('a[href="' + href + '"]');
-      if (href === location.pathname.split('/').pop()) {
+      if (pageName(new URL(a.href).pathname) === pageName(location.pathname)) {
         e.preventDefault();
         if (href === 'add-report.html' && document.querySelector('.done:not([hidden])')) location.href = href;   /* after filing: open a fresh form */
         return;
@@ -92,7 +120,7 @@ window.sidebarReady = (async function () {
       try { if (ind.dataset.h) sessionStorage.setItem(NAV_KEY, JSON.stringify({ y: +ind.dataset.y, h: +ind.dataset.h, t: Date.now() })); } catch (err) { /* ignore */ }
       if (reduce) return;
       e.preventDefault();
-      if (tab) { current()?.removeAttribute('aria-current'); tab.setAttribute('aria-current', 'page'); place(tab, true); }
+      if (tab) { unsettle(); current()?.removeAttribute('aria-current'); tab.setAttribute('aria-current', 'page'); place(tab, true); }
       root.classList.add('is-leaving');
       setTimeout(() => { location.href = a.href; }, 220);
     });
