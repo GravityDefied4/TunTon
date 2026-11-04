@@ -8,12 +8,13 @@ const pool = require('./pool');
 const FROM = `FROM pet_reports r
   JOIN species sp ON sp.species_id = r.species_id
   JOIN breeds br ON br.breed_id = r.breed_id
-  LEFT JOIN barangays bg ON bg.barangay_id = r.barangay_id`;
+  LEFT JOIN barangays bg ON bg.barangay_id = r.barangay_id
+  LEFT JOIN users ow ON ow.user_id = r.user_id`;   // ow = poster: only first name + picture are exposed (see hydrate)
 
 const COLS = `r.report_id, r.user_id, r.report_type, r.pet_name, r.species_id, sp.name AS species,
   r.breed_id, br.name AS breed, br.is_unknown AS breed_unknown, r.size, r.sex, r.age_group, r.markings,
   r.description, r.event_date, r.lat, r.lng, r.barangay_id, bg.name AS barangay, r.search_radius_km,
-  r.status, r.created_at, r.updated_at`;
+  r.status, r.created_at, r.updated_at, ow.full_name AS _owner_full_name, ow.picture_url AS _owner_picture`;
 
 const POINT = "ST_GeomFromText(?, 4326, 'axis-order=long-lat')";
 const pointWkt = (lat, lng) => `POINT(${Number(lng)} ${Number(lat)})`;   // numbers only: no injection path
@@ -33,6 +34,11 @@ async function nearestBarangayId(lat, lng, db = pool) {
   return rows[0]?.barangay_id ?? null;
 }
 
+/* Who posted a report, shown as "Posted by <first name>". Never the email, phone or full name.
+   picture_url is a Google URL (http...) or the file name of an uploaded avatar (public, served from /uploads/avatars). */
+const ownerFirstName = full => (full || '').trim().split(/\s+/)[0] || '';
+const ownerPictureUrl = p => !p ? '' : /^https?:\/\//i.test(p) ? p : `/uploads/avatars/${encodeURIComponent(p)}`;
+
 /* Turn raw rows into API objects: adds photos and colors with two extra queries total. */
 async function hydrate(rows, viewerId = null, db = pool) {
   if (!rows.length) return [];
@@ -44,10 +50,12 @@ async function hydrate(rows, viewerId = null, db = pool) {
        JOIN colors c ON c.color_id = rc.color_id WHERE rc.report_id IN (?) ORDER BY rc.is_primary DESC, c.name`, [ids]);
   const by = (list, id) => list.filter(x => x.report_id === id);
   return rows.map(r => {
-    const { report_id, report_type, breed_unknown, ...rest } = r;
+    const { report_id, report_type, breed_unknown, _owner_full_name, _owner_picture, ...rest } = r;
     const ph = by(photos, report_id).map(p => ({ photo_id: p.photo_id, url: photoUrl(p.file_path), is_primary: !!p.is_primary }));
     return {
       id: report_id, type: report_type, ...rest,
+      owner_name: ownerFirstName(_owner_full_name),
+      owner_picture: ownerPictureUrl(_owner_picture),
       breed_unknown: !!breed_unknown,
       distance_km: r.distance_km === undefined ? undefined : Math.round(r.distance_km * 100) / 100,
       colors: by(colors, report_id).map(c => ({ color_id: c.color_id, name: c.name, is_primary: !!c.is_primary })),

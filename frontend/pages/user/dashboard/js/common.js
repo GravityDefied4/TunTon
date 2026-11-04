@@ -281,7 +281,7 @@ const REPORT_SIZES = { small: 'Small', medium: 'Medium', large: 'Large', extra_l
 const REPORT_ORIGIN = API_BASE.replace(/\/api\/?$/, '');                        // '' when the API is on the same origin
 const reportAsset = u => (u && u.startsWith('/') ? REPORT_ORIGIN + u : u || '');   // photos come back as /uploads/reports/...
 /* One API report -> the object the pages use. Contact details are never sent by the server (they are
-   only shared after a claim is approved), so contact / owner name stay empty. */
+   only shared after a claim is approved), so contact stays empty. The owner's first name and picture do come from the API (owner_name, owner_picture). */
 const toReport = row => {
   const photos = (row.photos || []).map(p => reportAsset(p.url));
   const colors = (row.colors || []).map(c => c.name);
@@ -289,7 +289,7 @@ const toReport = row => {
     id: String(row.id),
     kind: row.type,
     owner: row.is_mine ? myId : 'user-' + row.user_id,
-    ownerName: '', ownerPicture: '', contact: '', facebook: '',
+    ownerName: row.owner_name || '', ownerPicture: reportAsset(row.owner_picture), contact: '', facebook: '',
     name: row.pet_name || '',
     species: row.species,
     breed: row.breed_unknown ? '' : (row.breed || ''),
