@@ -14,7 +14,8 @@ const EP = {
   restoreReport: id => `/admin/reports/${id}/restore`,
   reportClaims: id => `/admin/reports/${id}/claims`,
   claims: '/admin/claims',
-  logs: '/admin/logs'
+  logs: '/admin/logs',
+  me: '/auth/me' // optional: used to refresh the profile; falls back to the login session if unavailable
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -33,7 +34,7 @@ const session = (() => {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY));
     if (!s?.token) return null;
     const payload = JSON.parse(atob(s.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.exp * 1000 > Date.now() ? { ...s, role: s.role || payload.role } : null;
+    return payload.exp * 1000 > Date.now() ? { ...s, role: s.role || payload.role, payload } : null;
   } catch { return null; }
 })();
 function logout() { localStorage.removeItem(SESSION_KEY); location.replace(HOME); }
@@ -325,8 +326,60 @@ async function loadLogs(reset = true) {
 }
 $('#l-more').addEventListener('click', () => loadLogs(false));
 
+
+/* Sidebar user card, collapse and My profile */
+const profile = (() => {
+  const s = session || {}, u = s.user || s.profile || {}, p = s.payload || {};
+  return {
+    name: pick(u, 'name', 'full_name') || pick(s, 'name', 'full_name') || pick(p, 'name', 'full_name') || '',
+    email: pick(u, 'email') || pick(s, 'email') || pick(p, 'email') || '',
+    role: pick(u, 'role') || s.role || 'admin',
+    status: pick(u, 'status') || pick(s, 'status') || 'active',
+    created_at: pick(u, 'created_at') || pick(s, 'created_at') || '',
+    exp: p.exp ? p.exp * 1000 : 0
+  };
+})();
+function renderSideUser() {
+  const display = profile.name || (profile.email ? profile.email.split('@')[0] : 'Admin');
+  $('#side-name').textContent = display;
+  $('#side-name').title = display;
+  $('#side-avatar').textContent = (display.trim()[0] || 'A').toUpperCase();
+}
+function renderProfile() {
+  const display = profile.name || (profile.email ? profile.email.split('@')[0] : 'Admin');
+  const fields = [['Full name', profile.name || display], ['Email', profile.email], ['Role', label(profile.role)], ['Account status', label(profile.status)], ['Member since', profile.created_at ? date(profile.created_at) : ''], ['Session expires', profile.exp ? datetime(profile.exp) : '']];
+  $('#profile-card').innerHTML = `<div class="a-profile-top"><span class="a-profile-avatar" aria-hidden="true">${esc((display.trim()[0] || 'A').toUpperCase())}</span><div><h2>${esc(display)}</h2><p>${esc(profile.email || 'No email on file')}</p>${badge(profile.role)}</div></div>
+    <dl class="a-detail-list">${fields.filter(([, v]) => v).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+}
+async function loadProfile() {
+  renderProfile();
+  try {
+    const d = await api(EP.me), u = d.user || d.profile || d;
+    Object.assign(profile, {
+      name: pick(u, 'name', 'full_name') || profile.name, email: pick(u, 'email') || profile.email,
+      role: pick(u, 'role') || profile.role, status: pick(u, 'status') || profile.status, created_at: pick(u, 'created_at') || profile.created_at
+    });
+    renderSideUser(); renderProfile();
+  } catch { /* keep session details */ }
+}
+renderSideUser();
+const sideCollapse = $('#side-collapse'), COLLAPSE_KEY = 'tunton_admin_side_collapsed';
+const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
+function setCollapsed(on) {
+  document.body.classList.toggle('side-collapsed', on);
+  sideCollapse.setAttribute('aria-expanded', String(!on));
+  sideCollapse.setAttribute('aria-label', on ? 'Expand sidebar' : 'Collapse sidebar');
+}
+try { setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1'); } catch { }
+sideCollapse.addEventListener('click', () => {
+  if (isMobile()) { $('#admin-sidebar').classList.remove('is-open'); $('#menu-toggle').setAttribute('aria-expanded', 'false'); return; }
+  const on = !document.body.classList.contains('side-collapsed');
+  setCollapsed(on);
+  try { localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0'); } catch { }
+});
+
 /* Navigation, mobile sidebar, and search */
-const tabs = { overview: { title: 'Overview', load: loadStats }, users: { title: 'Users', load: loadUsers }, reports: { title: 'Reports', load: loadReports }, claims: { title: 'Claims', load: loadClaims }, logs: { title: 'Activity logs', load: () => loadLogs(true) } };
+const tabs = { overview: { title: 'Overview', load: loadStats }, users: { title: 'Users', load: loadUsers }, reports: { title: 'Reports', load: loadReports }, claims: { title: 'Claims', load: loadClaims }, logs: { title: 'Activity logs', load: () => loadLogs(true) }, profile: { title: 'My profile', load: loadProfile } };
 function route() {
   const key = location.hash.slice(1), tab = tabs[key] ? key : 'overview';
   document.querySelectorAll('.a-content > section').forEach(s => s.hidden = s.id !== `tab-${tab}`);
@@ -341,6 +394,20 @@ $('#menu-toggle').addEventListener('click', () => {
 });
 [['#u-q', () => { state.users.offset = 0; loadUsers(); }], ['#r-q', () => { state.reports.offset = 0; loadReports(); }], ['#c-q', () => { state.claims.offset = 0; loadClaims(); }], ['#l-q', () => loadLogs(true)], ['#l-action', () => loadLogs(true)]].forEach(([sel, fn]) => $(sel).addEventListener('input', debounce(fn)));
 [['#u-status', () => { state.users.offset = 0; loadUsers(); }], ['#r-type', () => { state.reports.offset = 0; loadReports(); }], ['#r-hidden', () => { state.reports.offset = 0; loadReports(); }], ['#c-status', () => { state.claims.offset = 0; loadClaims(); }], ['#l-from', () => loadLogs(true)], ['#l-to', () => loadLogs(true)]].forEach(([sel, fn]) => $(sel).addEventListener('change', fn));
-$('#logout').addEventListener('click', logout);
+const logoutDialog = $('#logout-dialog');
+const cancelLogout = $('#cancel-logout');
+$('#logout').addEventListener('click', () => {
+  if (logoutDialog?.showModal) {
+    logoutDialog.showModal();
+    cancelLogout?.focus();
+  } else if (window.confirm('Are you sure you want to log out of TunTon?')) {
+    logout();
+  }
+});
+cancelLogout?.addEventListener('click', () => logoutDialog?.close());
+$('#confirm-logout').addEventListener('click', logout);
+logoutDialog?.addEventListener('click', event => {
+  if (event.target === logoutDialog) logoutDialog.close();
+});
 window.addEventListener('hashchange', route);
 if (session) route();
