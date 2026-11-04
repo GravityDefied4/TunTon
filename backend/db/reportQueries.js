@@ -15,7 +15,20 @@ const FROM = `FROM pet_reports r
 const COLS = `r.report_id, r.user_id, r.report_type, r.pet_name, r.species, r.breed, r.color, r.size, r.sex, r.markings,
   r.description, r.event_date, r.lat, r.lng, r.barangay_id, bg.name AS barangay, r.search_radius_km,
   r.status, r.created_at, r.updated_at, r.phone, r.facebook_profile_link,
-  ow.full_name AS _owner_full_name, ow.picture_url AS _owner_picture, ow.email AS _owner_email`;
+  ow.full_name AS _owner_full_name, ow.picture_url AS _owner_picture, ow.email AS _owner_email,
+  (SELECT l.action FROM activity_logs l
+    WHERE l.target_table = 'pet_reports' AND l.target_id = r.report_id
+      AND l.action IN ('report_flagged_fraud', 'report_flagged_ai_generated')
+    ORDER BY l.log_id DESC LIMIT 1) AS review_flag,
+  (SELECT GROUP_CONCAT(DISTINCT l.action ORDER BY l.action SEPARATOR ',') FROM activity_logs l
+    WHERE l.target_table = 'pet_reports' AND l.target_id = r.report_id
+      AND l.action IN ('report_flagged_fraud', 'report_flagged_ai_generated')) AS _flags,
+  (SELECT JSON_UNQUOTE(JSON_EXTRACT(l.details, '$.reason')) FROM activity_logs l
+    WHERE l.target_table = 'pet_reports' AND l.target_id = r.report_id AND l.action = 'report_flagged_fraud'
+    ORDER BY l.log_id DESC LIMIT 1) AS _flag_reason_fraud,
+  (SELECT JSON_UNQUOTE(JSON_EXTRACT(l.details, '$.reason')) FROM activity_logs l
+    WHERE l.target_table = 'pet_reports' AND l.target_id = r.report_id AND l.action = 'report_flagged_ai_generated'
+    ORDER BY l.log_id DESC LIMIT 1) AS _flag_reason_ai`;   // admin moderation flags: a report can carry both (see adminController.flagReport)
 
 const POINT = "ST_GeomFromText(?, 4326, 'axis-order=long-lat')";
 const pointWkt = (lat, lng) => `POINT(${Number(lng)} ${Number(lat)})`;   // numbers only: no injection path
@@ -48,7 +61,8 @@ async function hydrate(rows, viewerId = null, db = pool) {
     'SELECT photo_id, report_id, file_path, is_primary FROM report_photos WHERE report_id IN (?) ORDER BY is_primary DESC, photo_id', [ids]);
   const by = (list, id) => list.filter(x => x.report_id === id);
   return rows.map(r => {
-    const { report_id, report_type, _owner_full_name, _owner_picture, _owner_email, ...rest } = r;
+    const { report_id, report_type, _owner_full_name, _owner_picture, _owner_email, _flags, _flag_reason_fraud, _flag_reason_ai, ...rest } = r;
+    const mine = viewerId != null && String(r.user_id) === String(viewerId);
     const ph = by(photos, report_id).map(p => ({ photo_id: p.photo_id, url: photoUrl(p.file_path), is_primary: !!p.is_primary }));
     return {
       id: report_id, type: report_type, ...rest,
@@ -60,7 +74,11 @@ async function hydrate(rows, viewerId = null, db = pool) {
       colors: splitColors(r.color).map((name, i) => ({ name, is_primary: i === 0 })),   // derived from the single color text column
       photos: ph,
       primary_photo: ph[0]?.url ?? null,
-      is_mine: viewerId != null && String(r.user_id) === String(viewerId)
+      is_mine: mine,
+      /* Admin flag: everyone sees that a report is flagged; only the poster also sees the admin's reason. */
+      review_flag: r.review_flag || null,                       // latest flag (kept for older callers)
+      review_flags: _flags ? String(_flags).split(',') : [],    // every flag on the report, e.g. both fraud and AI-generated
+      flag_reasons: mine ? { report_flagged_fraud: _flag_reason_fraud || '', report_flagged_ai_generated: _flag_reason_ai || '' } : {}
     };
   });
 }

@@ -34,11 +34,14 @@ const session = (() => {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY));
     if (!s?.token) return null;
     const payload = JSON.parse(atob(s.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.exp * 1000 > Date.now() ? { ...s, role: s.role || payload.role, payload } : null;
+    /* The role comes from the signed token, not from the editable copy in localStorage. */
+    return payload.exp * 1000 > Date.now() ? { ...s, role: payload.role, payload } : null;
   } catch { return null; }
 })();
 function logout() { localStorage.removeItem(SESSION_KEY); location.replace(HOME); }
-if (!session || (session.role && session.role !== 'admin')) logout();
+const USER_DASHBOARD = '../user/user.html';
+if (!session) logout();
+else if (session.role !== 'admin') location.replace(USER_DASHBOARD);   // regular users only use the user dashboard
 
 async function api(path, { method = 'GET', query = {}, body } = {}) {
   const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v !== null && v !== undefined));

@@ -83,11 +83,7 @@ exports.reports = wrap(async (req, res) => {
     orderBy: 'r.created_at DESC, r.report_id DESC',
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
     extraCols: `u.full_name AS reporter_name, u.email AS reporter_email,
-      (SELECT COUNT(*) FROM claims c WHERE c.report_id = r.report_id) AS claims_count,
-      (SELECT l.action FROM activity_logs l
-        WHERE l.target_table = 'pet_reports' AND l.target_id = r.report_id
-          AND l.action IN ('report_flagged_fraud', 'report_flagged_ai_generated')
-        ORDER BY l.log_id DESC LIMIT 1) AS review_flag`
+      (SELECT COUNT(*) FROM claims c WHERE c.report_id = r.report_id) AS claims_count`   // review_flag now comes from the shared report query
   });
   res.ok(out);
 });
@@ -99,11 +95,7 @@ exports.reportDetail = wrap(async (req, res) => {
     where: ['r.report_id = ?'], params: [id], limit: 1, offset: 0,
     includeRemoved: true, viewerId: req.user.user_id,
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
-    extraCols: `u.full_name AS reporter_name, u.email AS reporter_email,
-      (SELECT l.action FROM activity_logs l
-        WHERE l.target_table = 'pet_reports' AND l.target_id = r.report_id
-          AND l.action IN ('report_flagged_fraud', 'report_flagged_ai_generated')
-        ORDER BY l.log_id DESC LIMIT 1) AS review_flag`
+    extraCols: 'u.full_name AS reporter_name, u.email AS reporter_email'
   });
   const candidates = out.items || out.rows || out.reports || out.data?.items || out.data?.rows || [];
   const resultRows = Array.isArray(candidates) ? candidates : [];
@@ -121,6 +113,10 @@ exports.flagReport = wrap(async (req, res) => {
   const [[report]] = await pool.query('SELECT report_id FROM pet_reports WHERE report_id = ?', [id]);
   if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
   const action = type === 'fraud' ? 'report_flagged_fraud' : 'report_flagged_ai_generated';
+  /* A report can carry both flags, but each type only once. */
+  const [[dupe]] = await pool.query(
+    "SELECT 1 AS found FROM activity_logs WHERE target_table = 'pet_reports' AND target_id = ? AND action = ? LIMIT 1", [id, action]);
+  if (dupe) throw Object.assign(new Error(`This report is already flagged as ${type === 'fraud' ? 'fraud' : 'AI-generated'}.`), { status: 409 });
   await logActivity({ userId: req.user.user_id, action, table: 'pet_reports', id, details: { reason } });
   res.ok({ id, review_flag: action }, 'Report flag recorded.');
 });

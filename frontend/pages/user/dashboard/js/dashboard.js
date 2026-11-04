@@ -98,6 +98,7 @@ function detailHTML(r) {
     ${pics.length > 1 ? `<div class="side-thumbs">${pics.map((p, i) => `<button type="button" data-pic="${esc(p)}" aria-label="Photo ${i + 1}"><img src="${esc(p)}" alt=""></button>`).join('')}</div>` : ''}
     <span class="badge ${lost ? 'badge--lost' : 'badge--home'}">${lost ? 'Lost pet' : r.kind === 'lost' ? 'Pet found' : 'Found pet'}</span>
     <h2 class="side-name">${esc(titleOf(r))}</h2>
+    ${flagChipHTML(r)}
     <p class="d-sub">${esc([speciesOf(r), r.breed, r.color].filter(Boolean).join(' · '))}</p>
     ${contactCardHTML(r, r.kind === 'lost' ? 'Owner' : 'Finder')}
     <ul class="pet-info">

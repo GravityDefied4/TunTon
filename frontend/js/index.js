@@ -6,6 +6,9 @@
 const API = window.TUNTON?.API_BASE ?? '/api';
 const SESSION_KEY = 'tunton_session';
 const DASHBOARD = './pages/user/user.html';
+const ADMIN_DASHBOARD = './pages/admin/dashboard.html';
+/* Admins only ever land on the admin dashboard, everyone else on the user dashboard. */
+const dashboardFor = role => (role === 'admin' ? ADMIN_DASHBOARD : DASHBOARD);
 const REPORT_PAGE = './pages/user/dashboard/report.html?id=';
 
 /* ---------- Mobile menu ---------- */
@@ -143,6 +146,8 @@ function renderSession() {
   authIn.hidden = !user;
   if (user) {
     document.getElementById('user-name').textContent = user.given_name || user.name || user.email;
+    const dashLink = authIn.querySelector('a[href*="user.html"]');   // the Dashboard button
+    if (dashLink) dashLink.href = dashboardFor(user.role);
     const avatar = document.getElementById('user-avatar');
     avatar.hidden = !user.picture;   // accounts made with an email have no picture
     avatar.src = user.picture || '';
@@ -155,7 +160,8 @@ function finishLogin(body) {
   const { token, user } = body.data;
   /* `sub` is TunTon's own user id (the dashboard uses it to tell whose reports are whose). */
   localStorage.setItem(SESSION_KEY, JSON.stringify({ token, sub: user.id, ...user }));
-  location.replace(pendingReport ? REPORT_PAGE + encodeURIComponent(pendingReport) : DASHBOARD);
+  /* Admins never open user pages (not even a report link they clicked before logging in). */
+  location.replace(user.role === 'admin' ? ADMIN_DASHBOARD : pendingReport ? REPORT_PAGE + encodeURIComponent(pendingReport) : DASHBOARD);
 }
 
 /* POST to an auth endpoint. Returns the response body when it worked, otherwise shows the error and returns null. */

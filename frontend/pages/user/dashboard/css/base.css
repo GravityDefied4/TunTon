@@ -98,3 +98,36 @@ main {
   background: var(--forest);
   background-clip: padding-box;
 }
+/* Admin moderation flag (shown on cards, the map panel, the report page and the profile list) */
+.flag-chip {
+  display: inline-block;
+  margin: 0 0 .35rem;
+  padding: .15em .7em;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-sm);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.flag-banner {
+  display: grid;
+  gap: .2rem;
+  margin: .5rem 0;
+  padding: .7rem .9rem;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-sm);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  font-size: .9rem;
+}
+
+.flag-banner b { font-weight: 800; }
+
+.flag-reason {
+  display: block;
+  font-weight: 600;
+  color: var(--danger-text);
+}

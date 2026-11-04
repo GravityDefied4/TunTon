@@ -181,6 +181,7 @@ function show(r) {
         </div>` : ''}
       </div>
       <h1>${esc(title)}</h1>
+      ${flagBannerHTML(r)}
       <p class="d-sub">${esc([speciesOf(r), r.breed, r.color].filter(Boolean).join(' · '))}</p>
       ${contactCardHTML(r, lost ? 'Owner' : 'Finder')}
       <ul class="pet-info">

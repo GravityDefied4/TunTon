@@ -45,6 +45,7 @@ function card(r) {
     </div>
     <div class="pet-body">
       <h3>${esc(title)}</h3>
+      ${flagChipHTML(r)}
       <ul class="pet-info">
         <li>${ICON.pin}<span>${verb} in ${esc(r.brgy)}${here ? ' &middot; ' + esc(awayText(here, r)) : ''}</span></li>
         <li>${ICON.calendar}<span>${verb} <time datetime="${esc(r.date)}">${esc(niceDate(r.date))}</time> &middot; ${esc(ago(r.date))}</span></li>

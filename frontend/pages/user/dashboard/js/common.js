@@ -235,6 +235,14 @@ const readSession = () => {
 const sess = readSession();
 if (REQUIRE_LOGIN && !sess) logout();
 
+/* Admins only use the admin dashboard: any user page they open sends them straight there.
+   The role is read from the signed token (not from the editable copy in localStorage). */
+const ADMIN_DASHBOARD = '../../admin/dashboard.html';
+const tokenRole = () => {
+  try { return JSON.parse(atob(sess.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role; } catch { return null; }
+};
+if (sess && tokenRole() === 'admin') location.replace(ADMIN_DASHBOARD);
+
 /* fetch() that attaches the JWT and logs out on 401 (token expired, revoked or account suspended). */
 const API_BASE = window.TUNTON?.API_BASE ?? '/api';
 const authFetch = async (path, opts = {}) => {
@@ -303,9 +311,20 @@ const toReport = row => {
     photos,
     photoIds: (row.photos || []).map(p => p.photo_id),   // needed to remove photos when editing
     status: row.status,
+    flags: row.review_flags || [],          // admin flags: report_flagged_fraud and/or report_flagged_ai_generated
+    flagReasons: row.flag_reasons || {},    // the admin's reason per flag, only sent to the poster
     created: row.created_at ? Date.parse(row.created_at) : 0
   };
 };
+/* Admin flag shown to users: a short label, a chip for cards and a banner for the report page. */
+const FLAG_LABELS = { report_flagged_fraud: 'Flagged as fraud', report_flagged_ai_generated: 'Flagged as AI-generated' };
+const flagsOf = r => ((r && r.flags) || []).filter(f => FLAG_LABELS[f]);   // a report can carry both flags
+const flagChipHTML = r => flagsOf(r).map(f => `<span class="flag-chip" title="An admin flagged this report for review">${esc(FLAG_LABELS[f])}</span>`).join(' ');
+const flagReasonsHTML = r => !isOwner(r) ? '' : flagsOf(r).filter(f => r.flagReasons && r.flagReasons[f])
+  .map(f => `<span class="flag-reason">${esc(FLAG_LABELS[f])}: ${esc(r.flagReasons[f])}</span>`).join('');
+const flagBannerHTML = r => !flagsOf(r).length ? '' : `<div class="flag-banner" role="status"><b>${flagsOf(r).map(f => esc(FLAG_LABELS[f])).join(' and ')}</b>
+  <span>${isOwner(r) ? 'An admin flagged your report for review.' : 'An admin flagged this report for review. Be careful before sharing personal details.'}</span>
+  ${flagReasonsHTML(r)}</div>`;
 /* ---------- Claims from the database ----------
    Claims live on the server (/api/claims, /api/reports/:id/claims), never in the browser, so the other
    person sees them. The pages still talk about "finds" (a response to a LOST report, claim_type found_it)
