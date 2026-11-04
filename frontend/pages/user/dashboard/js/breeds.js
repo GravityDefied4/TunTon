@@ -47,3 +47,8 @@ const OTHER_BREEDS = {
   'pig': ['Native (Baboy damo)', 'Mini pig', 'Duroc', 'Landrace', 'Unknown'],
   'goat': ['Native', 'Boer', 'Anglo-Nubian', 'Saanen', 'Unknown']
 };
+
+const COLOR_SUGGESTIONS = [
+  'Amber', 'Beige', 'Black', 'Blue', 'Brown', 'Chocolate', 'Cream', 'Golden', 'Gray', 'Green', 'Grey', 'Ginger',
+  'Orange', 'Pink', 'Purple', 'Red', 'Silver', 'Tabby', 'Tan', 'White', 'Yellow'
+];
