@@ -61,7 +61,32 @@ const COLORS_BY_SPECIES = {
   Cat: ['Black', 'Brown', 'Calico', 'Chocolate', 'Cream', 'Ginger', 'Gray', 'Orange', 'Silver', 'Tabby', 'Tortoiseshell', 'Tuxedo', 'White']
 };
 
-/* The colors that make sense for the chosen species (the wide list until one is chosen, or for "Other"). */
-function colorsFor(species) {
-  return COLORS_BY_SPECIES[species] || COLOR_SUGGESTIONS;
+/* Species-specific coat/feather/scale colors. These are suggestions, not a claim that
+   every animal of that species can have every listed color. Keep names aligned with the
+   shared colors lookup so reports can be saved and matched consistently. */
+const COLORS_BY_OTHER_SPECIES = {
+  rabbit: ['Black', 'Brown', 'Chocolate', 'Cream', 'Fawn', 'Golden', 'Gray', 'Orange', 'Silver', 'Tan', 'White'],
+  hamster: ['Black', 'Brown', 'Cream', 'Golden', 'Gray', 'Orange', 'White'],
+  'guinea pig': ['Black', 'Brown', 'Cream', 'Golden', 'Gray', 'Orange', 'Red', 'White'],
+  bird: ['Black', 'Blue', 'Brown', 'Gray', 'Green', 'Orange', 'Red', 'White', 'Yellow'],
+  parrot: ['Black', 'Blue', 'Green', 'Gray', 'Orange', 'Red', 'White', 'Yellow'],
+  lovebird: ['Blue', 'Green', 'Orange', 'Red', 'White', 'Yellow'],
+  cockatiel: ['Gray', 'Yellow', 'White', 'Orange', 'Cream'],
+  chicken: ['Black', 'Brown', 'Gray', 'Orange', 'Red', 'White', 'Yellow'],
+  duck: ['Black', 'Brown', 'Gray', 'Green', 'White', 'Yellow'],
+  turtle: ['Black', 'Brown', 'Gray', 'Green', 'Orange', 'Yellow'],
+  tortoise: ['Black', 'Brown', 'Cream', 'Gray', 'Tan', 'Yellow'],
+  lizard: ['Black', 'Brown', 'Gray', 'Green', 'Orange', 'Red', 'Tan', 'Yellow'],
+  snake: ['Black', 'Brown', 'Cream', 'Gray', 'Green', 'Orange', 'Red', 'White', 'Yellow'],
+  ferret: ['Black', 'Brown', 'Chocolate', 'Cream', 'Gray', 'Silver', 'White'],
+  pig: ['Black', 'Brown', 'Gray', 'Pink', 'Red', 'White'],
+  goat: ['Black', 'Brown', 'Cream', 'Gray', 'Red', 'Tan', 'White']
+};
+
+/* The broad list is used before an animal is specified, and as a fallback for an
+   unlisted animal entered under Other. */
+function colorsFor(species, otherSpecies = '') {
+  if (COLORS_BY_SPECIES[species]) return COLORS_BY_SPECIES[species];
+  const animal = String(species === 'Other' ? otherSpecies : species || '').trim().toLowerCase();
+  return COLORS_BY_OTHER_SPECIES[animal] || COLOR_SUGGESTIONS;
 }

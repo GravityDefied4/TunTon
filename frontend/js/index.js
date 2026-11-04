@@ -332,8 +332,8 @@ document.querySelectorAll('[data-requires-auth]').forEach(btn =>
 
 /* =========================================================
    Reports shown on the home page
-   Only reports that exist in the database are shown (GET /api/reports). There is no sample data.
-   The API needs a login, so a visitor who is not signed in sees a prompt instead of reports.
+   Only reports that exist in the database are shown (GET /api/reports/public, no login needed). There is no sample data.
+   Visitors see a safe preview; full details still need an account.
    ========================================================= */
 const PET_LIMIT = 6;
 let petFilter = 'all';
@@ -352,17 +352,16 @@ const homeReport = row => ({
   photo: row.primary_photo ? (row.primary_photo.startsWith('/') ? REPORT_ORIGIN + row.primary_photo : row.primary_photo) : '',
   created: row.created_at ? Date.parse(row.created_at) : 0
 });
-let homeReports = [], homeRecovered = [], homeState = 'loading';   // 'loading' | 'ready' | 'login' | 'error'
+let homeReports = [], homeRecovered = [], homeState = 'loading';   // 'loading' | 'ready' | 'error'
 async function loadReports() {
-  const session = getSession();
-  if (!session) { homeState = 'login'; return; }
+  /* Public preview endpoint: works for visitors and logged-in users alike (no contact details or exact pins). */
   const get = async q => {
-    const res = await fetch(`${API}/reports?${q}`, { headers: { Authorization: 'Bearer ' + session.token } });
+    const res = await fetch(`${API}/reports/public?${q}`);
     if (!res.ok) throw new Error('Could not load reports');
     return ((await res.json()).data?.items || []).map(homeReport);
   };
   try {
-    [homeReports, homeRecovered] = await Promise.all([get('status=active&limit=100'), get('status=resolved&limit=3')]);
+    [homeReports, homeRecovered] = await Promise.all([get('status=active&limit=30'), get('status=resolved&limit=3')]);
     homeState = 'ready';
   } catch (err) { console.error(err); homeState = 'error'; }
 }
@@ -408,7 +407,7 @@ function renderReports() {
   const petsEl = document.getElementById('pets-list'), homeEl = document.getElementById('recovered-list');
   const note = text => `<p class="pet-empty">${esc(text)}</p>`;
   if (homeState !== 'ready') {
-    const text = homeState === 'login' ? 'Log in to see the latest lost and found reports.' : homeState === 'error' ? 'Could not load reports. Please try again later.' : 'Loading reports…';
+    const text = homeState === 'error' ? 'Could not load reports. Please try again later.' : 'Loading reports…';
     petsEl.innerHTML = note(text);
     homeEl.innerHTML = '';
     return;

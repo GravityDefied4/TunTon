@@ -1,10 +1,18 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const ctrl = require('../controllers/reportsController');
 const claims = require('../controllers/claimsController');
 const { requireAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
+
+/* Public home-page preview: the only report endpoint that needs no login. It returns a trimmed projection
+   (no owner id, exact pin, markings or description) and is rate limited per IP. Must stay above requireAuth. */
+const previewLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false,
+  message: { success: false, data: null, message: 'Too many requests. Try again shortly.' } });
+router.get('/public', previewLimiter, ctrl.publicPreview);
+
 router.use(requireAuth);
 
 router.get('/lookups', ctrl.lookups);   // Species, breeds, colors, barangays, limits (must stay above /:id)

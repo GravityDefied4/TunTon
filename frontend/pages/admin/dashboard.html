@@ -3,71 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin | TunTon</title>
+  <meta name="theme-color" content="#0a4f2e">
+  <title>Admin Dashboard | TunTon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/style.css">
   <link rel="stylesheet" href="admin.css">
   <link rel="icon" type="image/png" href="../../assets/logo/tunton-paw.png">
   <script src="../../js/theme.js"></script>
 </head>
 <body class="adm">
-<aside class="a-side">
-  <img src="../../assets/logo/tunton-white.png" alt="TunTon" class="a-logo">
-  <p class="a-role">Admin</p>
-  <nav class="a-nav" aria-label="Admin sections">
-    <a href="#overview" data-tab="overview">Overview</a>
-    <a href="#users" data-tab="users">Users</a>
-    <a href="#reports" data-tab="reports">Reports</a>
-    <a href="#logs" data-tab="logs">Activity logs</a>
-  </nav>
-  <button type="button" class="a-out" id="logout">Log out</button>
-</aside>
-
-<main class="a-main">
-  <p class="a-error" id="error" role="alert" hidden></p>
-
-  <section id="tab-overview" hidden>
-    <h1>Overview</h1>
-    <div id="stats" class="a-stats" aria-live="polite"></div>
-  </section>
-
-  <section id="tab-users" hidden>
-    <h1>Users</h1>
-    <div class="a-bar">
-      <input type="search" id="u-q" placeholder="Search name or email" aria-label="Search users">
-      <select id="u-status" aria-label="Account status"><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
+  <aside class="a-side" id="admin-sidebar">
+    <a class="a-brand" href="#overview" aria-label="TunTon admin home">
+      <img src="../../assets/logo/tunton-white.png" alt="TunTon">
+      <span>ADMIN PORTAL</span>
+    </a>
+    <div class="a-nav-label">WORKSPACE</div>
+    <nav class="a-nav" aria-label="Admin sections">
+      <a href="#overview" data-tab="overview"><span class="a-nav-icon">⌂</span>Overview</a>
+      <a href="#users" data-tab="users"><span class="a-nav-icon">♙</span>Users</a>
+      <a href="#reports" data-tab="reports"><span class="a-nav-icon">▤</span>Reports</a>
+      <a href="#claims" data-tab="claims"><span class="a-nav-icon">✓</span>Claims</a>
+      <a href="#logs" data-tab="logs"><span class="a-nav-icon">◷</span>Activity logs</a>
+    </nav>
+    <div class="a-side-bottom">
+      <button type="button" class="a-theme" data-theme-toggle><span aria-hidden="true">◐</span><span data-theme-label>Dark mode</span></button>
+      <button type="button" class="a-out" id="logout"><span aria-hidden="true">↪</span> Log out</button>
+      <small> TunTon · Admin tools</small>
     </div>
-    <div class="a-wrap"><table class="a-table"><thead><tr><th>User</th><th>Status</th><th>Joined</th><th class="r">Account</th></tr></thead><tbody id="u-rows"></tbody></table></div>
-  </section>
+  </aside>
 
-  <section id="tab-reports" hidden>
-    <h1>Reports</h1>
-    <div class="a-bar">
-      <input type="search" id="r-q" placeholder="Search pet, reporter name or email" aria-label="Search reports">
-      <select id="r-type" aria-label="Report type"><option value="">Lost and found</option><option value="lost">Lost</option><option value="found">Found</option></select>
-      <select id="r-hidden" aria-label="Visibility"><option value="">Shown and hidden</option><option value="false">Shown</option><option value="true">Hidden</option></select>
+  <main class="a-main">
+    <header class="a-topbar">
+      <button class="a-menu-toggle" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+      <div><span class="a-eyebrow">TUNTON / ADMIN</span><strong id="page-name">Overview</strong></div>
+      <div class="a-top-meta"><span class="a-live-dot"></span> Management console</div>
+    </header>
+
+    <div class="a-content">
+      <p class="a-error" id="error" role="alert" hidden></p>
+
+      <section id="tab-overview" hidden>
+        <div class="a-page-heading"><div><span class="a-eyebrow">AT A GLANCE</span><h1>Overview</h1><p>Monitor the TunTon community and lost pet activity.</p></div><button class="a-btn" id="refresh-stats" type="button">↻ Refresh</button></div>
+        <div id="stats" class="a-stats" aria-live="polite"><div class="a-loading">Loading dashboard…</div></div>
+      </section>
+
+      <section id="tab-users" hidden>
+        <div class="a-page-heading"><div><span class="a-eyebrow">COMMUNITY</span><h1>Users</h1><p>Search accounts and manage access to TunTon.</p></div><span class="a-total" id="u-total">— users</span></div>
+        <div class="a-toolbar"><label class="a-search"><span>⌕</span><input type="search" id="u-q" placeholder="Search by name or email" aria-label="Search users"></label><select id="u-status" aria-label="Account status"><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
+        <div class="a-panel"><div class="a-table-scroll"><table class="a-table"><thead><tr><th>USER</th><th>ROLE</th><th>STATUS</th><th>JOINED</th><th class="r">ACTION</th></tr></thead><tbody id="u-rows"><tr><td colspan="5" class="a-empty">Loading users…</td></tr></tbody></table></div></div>
+        <div class="a-pagination"><span id="u-page-info"></span><div><button class="a-btn" id="u-prev" disabled>Previous</button><button class="a-btn" id="u-next" disabled>Next</button></div></div>
+      </section>
+
+      <section id="tab-reports" hidden>
+        <div class="a-page-heading"><div><span class="a-eyebrow">LOST & FOUND</span><h1>Reports</h1><p>Review pet reports and the people who submitted them.</p></div><span class="a-total" id="r-total">— reports</span></div>
+        <div class="a-toolbar"><label class="a-search"><span>⌕</span><input type="search" id="r-q" placeholder="Search pet, reporter or email" aria-label="Search reports"></label><select id="r-type" aria-label="Report type"><option value="">All report types</option><option value="lost">Lost</option><option value="found">Found</option></select><select id="r-hidden" aria-label="Report visibility"><option value="">All reports</option><option value="false">Visible</option><option value="true">Hidden</option></select></div>
+        <div class="a-panel"><div class="a-table-scroll"><table class="a-table"><thead><tr><th>REPORT</th><th>REPORTER</th><th>STATUS</th><th>DATE</th><th class="r">ACTIONS</th></tr></thead><tbody id="r-rows"><tr><td colspan="5" class="a-empty">Loading reports…</td></tr></tbody></table></div></div>
+        <div class="a-pagination"><span id="r-page-info"></span><div><button class="a-btn" id="r-prev" disabled>Previous</button><button class="a-btn" id="r-next" disabled>Next</button></div></div>
+      </section>
+
+      <section id="tab-claims" hidden>
+        <div class="a-page-heading"><div><span class="a-eyebrow">CLAIM REVIEW</span><h1>Claims</h1><p>Review claimant details and the reports connected by a match.</p></div><span class="a-total" id="c-total">— claims</span></div>
+        <div class="a-toolbar"><label class="a-search"><span>⌕</span><input type="search" id="c-q" placeholder="Search claimant or pet name" aria-label="Search claims"></label><select id="c-status" aria-label="Claim status"><option value="all">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+        <div class="a-panel"><div class="a-table-scroll"><table class="a-table"><thead><tr><th>CLAIMANT</th><th>RELATED REPORTS</th><th>STATUS</th><th>SUBMITTED</th><th class="r">DETAILS</th></tr></thead><tbody id="c-rows"><tr><td colspan="5" class="a-empty">Loading claims…</td></tr></tbody></table></div></div>
+        <div class="a-pagination"><span id="c-page-info"></span><div><button class="a-btn" id="c-prev" disabled>Previous</button><button class="a-btn" id="c-next" disabled>Next</button></div></div>
+      </section>
+
+      <section id="tab-logs" hidden>
+        <div class="a-page-heading"><div><span class="a-eyebrow">AUDIT TRAIL</span><h1>Activity logs</h1><p>Track administrative actions and changes across the platform.</p></div><span class="a-total" id="l-total">Activity history</span></div>
+        <div class="a-toolbar a-toolbar-logs"><label class="a-search"><span>⌕</span><input type="search" id="l-q" placeholder="Search admin, action or details" aria-label="Search logs"></label><input type="text" id="l-action" placeholder="Filter action (optional)" aria-label="Filter action"><label class="a-date">From<input type="date" id="l-from"></label><label class="a-date">To<input type="date" id="l-to"></label></div>
+        <div class="a-panel"><div class="a-table-scroll"><table class="a-table"><thead><tr><th>DATE & TIME</th><th>ADMIN</th><th>ACTION</th><th>DETAILS</th></tr></thead><tbody id="l-rows"><tr><td colspan="4" class="a-empty">Loading activity…</td></tr></tbody></table></div></div>
+        <div class="a-pagination"><span id="l-page-info"></span><button type="button" class="a-btn" id="l-more" hidden>Load more</button></div>
+      </section>
     </div>
-    <div class="a-wrap"><table class="a-table"><thead><tr><th>Report</th><th>Reporter</th><th>Date</th><th class="r">Actions</th></tr></thead><tbody id="r-rows"></tbody></table></div>
-  </section>
+  </main>
 
-  <section id="tab-logs" hidden>
-    <h1>Activity logs</h1>
-    <div class="a-bar">
-      <input type="search" id="l-q" placeholder="Search details or admin" aria-label="Search logs">
-      <input type="text" id="l-action" list="l-actions" placeholder="Action, e.g. report.hide" aria-label="Action"><datalist id="l-actions"><option value="user.suspend"><option value="user.activate"><option value="report.hide"><option value="report.restore"></datalist>
-      <label>From <input type="date" id="l-from"></label>
-      <label>To <input type="date" id="l-to"></label>
-    </div>
-    <div class="a-wrap"><table class="a-table"><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead><tbody id="l-rows"></tbody></table></div>
-    <button type="button" class="a-btn" id="l-more" hidden>Load more</button>
-  </section>
-</main>
+  <dialog id="dlg" class="a-dlg"><div class="a-dlg-head"><div><span class="a-eyebrow">TUNTON ADMIN</span><h2 id="dlg-title"></h2></div><button type="button" class="a-icon-btn" id="dlg-x" aria-label="Close dialog">×</button></div><div id="dlg-body" class="a-dlg-body"></div><div class="a-dlg-act"><button type="button" class="a-btn" id="dlg-no">Close</button><button type="button" class="a-btn a-btn--go" id="dlg-yes" hidden></button></div></dialog>
 
-<dialog id="dlg" class="a-dlg"><h2 id="dlg-title"></h2><div id="dlg-body"></div><div class="a-dlg-act"><button type="button" class="a-btn" id="dlg-no">Close</button><button type="button" class="a-btn a-btn--go" id="dlg-yes" hidden></button></div></dialog>
-
-<script src="../../js/config.js"></script>
-<script src="admin.js"></script>
+  <script src="../../js/config.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>

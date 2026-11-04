@@ -177,6 +177,24 @@ exports.list = wrap(async (req, res) => {
   res.ok(out);
 });
 
+/* GET /api/reports/public?status=active|resolved&limit=  No login. Feeds the home page preview.
+   Only fields safe for anonymous visitors are returned: no owner id, exact coordinates, markings
+   (used for claim verification) or free-text description. */
+exports.publicPreview = wrap(async (req, res) => {
+  const status = v.oneOf(req.query.status || 'active', ['active', 'resolved'], 'status');
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 30);
+  const out = await rq.findReports({ where: ['r.status = ?'], params: [status], limit, offset: 0,
+    orderBy: 'r.event_date DESC, r.report_id DESC' });
+  res.ok({
+    total: out.total,
+    items: out.items.map(r => ({
+      id: r.id, type: r.type, pet_name: r.pet_name, species: r.species, breed: r.breed, breed_unknown: r.breed_unknown,
+      colors: r.colors.map(c => ({ name: c.name })), barangay: r.barangay, event_date: r.event_date,
+      status: r.status, created_at: r.created_at, primary_photo: r.primary_photo
+    }))
+  });
+});
+
 /* GET /api/reports/mine  Own reports (must stay above /:id) */
 exports.mine = wrap(async (req, res) => {
   const { where, params } = filtersFrom({ ...req.query, status: req.query.status || 'all' }, { allowAnyStatus: true });
