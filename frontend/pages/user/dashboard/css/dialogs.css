@@ -15,57 +15,45 @@
 
 /* Custom report action confirmation and feedback dialog */
 .report-action-dialog {
-  width: min( min( calc(100% - 2rem), 440px), 440px );
-  max-width: calc(100% - 2rem);
+  width: min(calc(100vw - 2rem), 380px);
+  margin: auto;
   padding: 0;
-  border: 1px solid var(--border, rgba(70, 110, 85, .2));
-  border-radius: 20px;
-  color: var(--text, #183b2b);
-  background: var(--surface, #fff);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow), 0 24px 60px rgba(0, 0, 0, .2);
 }
-.report-action-dialog::backdrop {
-  background: rgba(8, 24, 16, .58);
-  backdrop-filter: blur(4px);
-}
-.report-action-dialog__content { padding: 1.6rem; }
+.report-action-dialog::backdrop { background: rgba(8, 24, 16, .5); backdrop-filter: blur(3px); }
+.report-action-dialog[open] { animation: logout-pop .18s ease-out; }
+.report-action-dialog[open]::backdrop { animation: logout-fade .18s ease-out; }
+.report-action-dialog__content { display: grid; justify-items: center; gap: .3rem; padding: 1.7rem 1.6rem 1.45rem; text-align: center; }
 .report-action-dialog__icon {
-  display: grid; place-items: center; width: 48px; height: 48px;
-  margin-bottom: 1rem; border-radius: 15px;
-  color: var(--forest, #176b43); background: rgba(35, 145, 86, .12);
+  display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: .6rem;
+  border-radius: 50%; color: var(--danger-text); background: var(--danger-bg);
 }
 .report-action-dialog__icon svg {
-  width: 25px; height: 25px; fill: none; stroke: currentColor;
-  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
-.report-action-dialog__title {
-  margin: 0 0 .5rem; color: var(--text, #183b2b);
-  font: 700 1.3rem var(--font-display, inherit);
-}
-.report-action-dialog__message {
-  margin: 0; color: var(--muted, #63766a); line-height: 1.6;
-}
-.report-action-dialog__actions {
-  display: flex; justify-content: flex-end; gap: .7rem; margin-top: 1.5rem;
-}
+.report-action-dialog__title { margin: 0; color: var(--ink); font: 600 1.2rem/1.3 var(--font-display); }
+.report-action-dialog__message { margin: 0; color: var(--muted); font-size: .92rem; font-weight: 600; line-height: 1.5; }
+.report-action-dialog__actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; width: 100%; margin-top: 1.1rem; }
 .report-action-dialog__actions button {
-  min-height: 42px; padding: .65rem 1rem; border-radius: 11px;
-  font: 700 .95rem var(--font-body, inherit); cursor: pointer;
+  min-height: 42px; padding: .5rem .8rem; border-radius: 999px; font: 700 .92rem var(--font-body, inherit); cursor: pointer; transition: background .15s, border-color .15s;
 }
 .report-action-dialog__cancel {
-  border: 1px solid var(--border, #d6e2d9);
-  color: var(--text, #183b2b); background: transparent;
+  border: 1.5px solid var(--line); color: var(--heading); background: var(--surface);
 }
-.report-action-dialog__cancel:hover { background: rgba(30, 90, 55, .07); }
+.report-action-dialog__cancel:hover { background: var(--surface-hover); }
 .report-action-dialog__confirm {
-  border: 1px solid var(--forest, #176b43);
-  color: #fff; background: var(--forest, #176b43);
+  border: 1.5px solid #c0392b; color: #fff; background: #c0392b;
 }
-.report-action-dialog__confirm.is-danger { border-color: #c9363e; background: #c9363e; }
-.report-action-dialog__confirm:hover { filter: brightness(.92); }
-.report-action-dialog button:focus-visible { outline: 3px solid #9be7b7; outline-offset: 2px; }
+.report-action-dialog__confirm.is-danger { border-color: #c0392b; background: #c0392b; }
+.report-action-dialog__confirm:hover { border-color: #a52f23; background: #a52f23; }
+.report-action-dialog button:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
 .report-action-dialog button[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .report-action-dialog[open], .report-action-dialog[open]::backdrop { animation: none; } }
 @media (max-width: 420px) {
-  .report-action-dialog__actions { flex-direction: column-reverse; }
-  .report-action-dialog__actions button { width: 100%; }
+  .report-action-dialog { width: min(calc(100vw - 1.25rem), 360px); }
+  .report-action-dialog__actions { grid-template-columns: 1fr; }
 }

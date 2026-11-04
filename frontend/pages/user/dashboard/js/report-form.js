@@ -124,6 +124,8 @@ function fillForm(k, host) {
   form.elements.date.defaultValue = form.elements.date.value = form.elements.date.max = today;
   form.elements.contact.defaultValue = form.elements.contact.value = prof().phone || sess?.email || '';
   form.querySelector('#' + k + '-otherspecies-list').innerHTML = OTHER_ANIMALS.map(a => `<option value="${a}"></option>`).join('');
+  const targetColorList = form.querySelector('#' + k + '-color-list');
+  if (targetColorList) targetColorList.innerHTML = COLOR_SUGGESTIONS.map(color => `<option value="${esc(color)}"></option>`).join('');
 }
 
 /* Full-size preview of one uploaded photo (the dialog is created on first use). */
@@ -144,6 +146,116 @@ function previewPhoto(name, src) {
 }
 
 /* Turns each .pills box into a tag input: type a word, press space (or Enter / comma) and it becomes a pill. */
+/* ---------- Inline field errors ----------
+   setFieldError(el, true, 'message')  -> red border on the field + message right under it
+   setFieldError(el, false)            -> clears both
+   `el` can be any control inside the field (input, select, textarea, radio, pills input, file input, .pick map). */
+const FIELD_BOX = '.pills, .chips, .drop, .pick';   // wrapper that gets the red border when the control is not the visible box itself
+
+function getFieldAnchor(el) {
+  return el.closest(FIELD_BOX) || el.closest('fieldset') || el;
+}
+
+function getFieldErrorNode(el, create = true) {
+  if (!el) return null;
+  const anchor = getFieldAnchor(el);
+  const parent = anchor.parentElement;
+  if (!parent) return null;
+  const key = el.id || el.name || anchor.dataset?.pills || anchor.dataset?.field || 'field';
+  let msg = [...parent.querySelectorAll(':scope > .field-error')].find(n => n.dataset.field === key);
+  if (!msg && create) {
+    msg = document.createElement('p');
+    msg.className = 'field-error';
+    msg.id = 'err-' + key + '-' + Math.random().toString(36).slice(2, 7);
+    msg.dataset.field = key;
+    msg.setAttribute('role', 'alert');
+    msg.hidden = true;
+    parent.insertBefore(msg, anchor.nextElementSibling || null);   // directly under the field
+  }
+  return msg;
+}
+
+function setFieldError(el, invalid, message) {
+  if (!el) return;
+  const box = el.closest(FIELD_BOX);
+  const fieldset = el.closest('fieldset');
+  const control = box ? (box.matches('.pills') ? el.closest('.pills').querySelector('.pills-input') : el) : el;
+
+  if (box) box.classList.toggle('is-invalid', invalid);
+  if (fieldset && !box?.matches('.pills, .drop, .pick')) fieldset.classList.toggle('is-invalid', invalid);
+  if (el.matches('input:not([type=radio]), select, textarea')) el.classList.toggle('is-invalid', invalid && !box?.matches('.pills'));
+  if (control && control.setAttribute) control.setAttribute('aria-invalid', invalid ? 'true' : 'false');
+
+  const msg = getFieldErrorNode(el, invalid);
+  if (!msg) return;
+  if (invalid && message) {
+    msg.textContent = message;
+    msg.hidden = false;
+    control?.setAttribute?.('aria-describedby', msg.id);
+  } else {
+    msg.textContent = '';
+    msg.hidden = true;
+    control?.removeAttribute?.('aria-describedby');
+  }
+}
+
+/* Moves the user to the field that needs fixing: scroll it into view, then focus it when it can be focused. */
+function focusField(el) {
+  if (!el) return;
+  (getFieldAnchor(el)).scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+}
+
+function clearFormErrors(form) {
+  form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+  form.querySelectorAll('[aria-invalid="true"]').forEach(el => el.setAttribute('aria-invalid', 'false'));
+  form.querySelectorAll('[aria-describedby^="err-"]').forEach(el => el.removeAttribute('aria-describedby'));
+  form.querySelectorAll('.field-error').forEach(msg => { msg.textContent = ''; msg.hidden = true; });
+}
+
+/* Friendly, specific wording for required fields (falls back to the label for anything not listed). */
+const REQUIRED_MESSAGES = {
+  brgy: 'Please select a barangay.',
+  date: 'Please choose a date.',
+  contact: 'Please enter a phone number or email so people can reach you.',
+  description: 'Please describe your pet so others can recognize it.',
+  howfound: 'Please tell us how you found the pet.',
+  otherSpecies: 'Please tell us what kind of animal it is.'
+};
+
+function normalizeOptionValue(value) {
+  return String(value || '').replace(/&/g, ' and ').replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function allowedPillValues(kind) {
+  if (kind === 'color') return new Set(COLOR_SUGGESTIONS.map(normalizeOptionValue));
+  if (kind === 'breed') {
+    const values = Object.values(BREEDS).flat().concat(Object.values(OTHER_BREEDS).flat());
+    return new Set(values.map(normalizeOptionValue));
+  }
+  return new Set();
+}
+
+function isValidPillValue(kind, value) {
+  const text = normalizeOptionValue(value);
+  if (!text) return false;
+  return allowedPillValues(kind).has(text);
+}
+
+function splitPillValues(raw, kind) {
+  if (!raw) return [];
+  const split = kind === 'breed' ? /[,;]+|\s+and\s+/i : /[,;]+|\s+and\s+|\s+/;
+  return String(raw)
+    .split(split)
+    .map(v => v.trim())
+    .filter(Boolean)
+    .filter(v => !/^(and|&)$/.test(v.toLowerCase()));
+}
+
+function parsePillValues(raw, kind) {
+  return splitPillValues(raw, kind).filter(v => isValidPillValue(kind, v));
+}
+
 function setupPills(form) {
   const MAX = 8;
   form.querySelectorAll('.pills').forEach(box => {
@@ -155,13 +267,21 @@ function setupPills(form) {
       hidden.value = list.join(', ');
     };
     const add = raw => {
-      const t = raw.trim().replace(/^[,;]+|[,;]+$/g, '');
-      if (t && list.length < MAX && !list.some(x => x.toLowerCase() === t.toLowerCase())) list.push(t);
+      const typed = String(raw || '').trim().replace(/^[,;]+|[,;]+$/g, '');
+      if (!typed) return;
+      const vals = parsePillValues(typed, box.dataset.pills);
+      /* remember words that were not on the suggestion list, so validation can name them in its error message */
+      box.dataset.rejected = splitPillValues(typed, box.dataset.pills).filter(v => !isValidPillValue(box.dataset.pills, v)).join(' ');
+      if (!vals.length) return;
+      vals.forEach(v => {
+        if (list.length < MAX && !list.some(x => normalizeOptionValue(x) === normalizeOptionValue(v))) list.push(v);
+      });
     };
     const commit = () => { add(input.value); input.value = ''; draw(); };
     const sep = box.dataset.sep === 'comma' ? /[,;]/ : /[\s,;]/;
     const sepEnd = new RegExp(sep.source + '$'), sepSplit = new RegExp(sep.source + '+');
     input.addEventListener('input', e => {
+      box.dataset.rejected = '';
       /* picked from the suggestion list: make it a pill right away */
       if (box.dataset.sep === 'comma' && (e.inputType === 'insertReplacementText' || (!e.inputType && input.value))) { commit(); return; }
       if (!sep.test(input.value)) return;                      // no separator yet: keep typing
@@ -182,10 +302,17 @@ function setupPills(form) {
     box.pills = {
       commit,
       clear() { list = []; input.value = ''; draw(); },
-      set(str) {   // "White and brown" -> white, brown (breed keeps spaces: "Shih Tzu")
+      set(str) {   // "White and brown" -> White, Brown (breed keeps spaces: "Shih Tzu")
         list = []; input.value = '';
-        const parts = (/[,;]/.test(str) || box.dataset.sep === 'comma') ? str.split(/[,;]+/) : str.split(/\s+/);
-        parts.filter(w => !/^(and|&)$/i.test(w.trim())).forEach(add); draw();
+        const split = box.dataset.pills === 'breed' ? /[,;]+|\s+and\s+/i : /[,;]+|\s+and\s+|\s+/;
+        const tokens = typeof str === 'string' ? str.split(split) : [];
+        tokens.filter(Boolean).forEach(v => {
+          const values = parsePillValues(v, box.dataset.pills);
+          values.forEach(value => {
+            if (!list.some(x => normalizeOptionValue(x) === normalizeOptionValue(value))) list.push(value);
+          });
+        });
+        draw();
       }
     };
   });
@@ -193,7 +320,9 @@ function setupPills(form) {
 
 function setupForm(k, host) {
   const form = host.querySelector('form'), err = host.querySelector('.err');
-  const m = L.map(host.querySelector('.pick')).setView(DAGUPAN, 15);
+  const pickEl = host.querySelector('.pick');
+  pickEl.dataset.field = 'location';
+  const m = L.map(pickEl).setView(DAGUPAN, 15);
   tiles(m);
   lockToDagupan(m);
   setupPills(form);
@@ -203,6 +332,7 @@ function setupForm(k, host) {
   const otherBox = form.querySelector('.other-species'), otherInput = form.elements.otherSpecies;
   const breedBox = form.querySelector('.pills[data-pills="breed"]'), breedInput = breedBox.querySelector('.pills-input');
   const breedList = form.querySelector('#' + k + '-breed-list');
+  const sexBox = form.querySelector('.sex-choice');
   const species = () => form.querySelector('input[name="species"]:checked')?.value || '';
   const fillBreeds = () => {
     const sp = species();
@@ -265,11 +395,11 @@ function setupForm(k, host) {
   };
   const OUTSIDE = 'TunTon only covers Dagupan City. Please choose a spot on land inside the city.';
   const put = (ll, pan) => {
-    if (!inDagupan(ll.lat, ll.lng)) { err.textContent = OUTSIDE; return; }
-    if (err.textContent === OUTSIDE) err.textContent = '';
+    if (!inDagupan(ll.lat, ll.lng)) { setFieldError(pickEl, true, OUTSIDE); return; }
+    setFieldError(pickEl, false);
     if (!pin) { pin = L.marker(ll, { draggable: true, icon: pinIcon(k) }).addTo(m); pin.on('drag', draw);
       /* A pin dragged out of the city snaps back to its last valid spot. */
-      pin.on('dragend', () => { const at = pin.getLatLng(); if (inDagupan(at.lat, at.lng)) lastOk = at; else { pin.setLatLng(lastOk); draw(); err.textContent = OUTSIDE; } }); }
+      pin.on('dragend', () => { const at = pin.getLatLng(); if (inDagupan(at.lat, at.lng)) lastOk = at; else { pin.setLatLng(lastOk); draw(); setFieldError(pickEl, true, OUTSIDE); } }); }
     else pin.setLatLng(ll);
     lastOk = pin.getLatLng(); draw(); if (pan) m.setView(ll, 16);
   };
@@ -278,7 +408,7 @@ function setupForm(k, host) {
   zone?.addEventListener('change', () => pin && draw());
   host.querySelector('.locate-pin').addEventListener('click', () => {
     if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(p => put(L.latLng(p.coords.latitude, p.coords.longitude), true), () => { err.textContent = 'Could not get your location. Tap the map instead.'; });
+    navigator.geolocation.getCurrentPosition(p => put(L.latLng(p.coords.latitude, p.coords.longitude), true), () => { setFieldError(pickEl, true, 'Could not get your location. Tap the map instead.'); });
   });
 
   /* Photos: several allowed, listed by file name. Click a name to preview it. */
@@ -317,21 +447,21 @@ function setupForm(k, host) {
     img.src = url;
   });
   input.addEventListener('change', async () => {
-    err.textContent = '';
+    setFieldError(input, false);
     const picked = [...input.files].filter(f => f.type.startsWith('image/'));
     input.value = '';   // so the same file can be picked again later
     for (const f of picked) {
-      if (photos.length >= photoLimit()) { err.textContent = `You can add up to ${photoLimit()} photos.`; break; }
+      if (photos.length >= photoLimit()) { setFieldError(input, true, `You can add up to ${photoLimit()} photos.`); break; }
       if (photos.some(p => p.name === f.name && p.size === f.size)) continue;
       try { photos.push({ name: f.name, size: f.size, data: await shrink(f) }); }
-      catch { err.textContent = `Could not read "${f.name}". Try a JPG or PNG.`; }
+      catch { setFieldError(input, true, `Could not read "${f.name}". Try a JPG or PNG.`); }
     }
     drawFiles();
   });
   fileList.addEventListener('click', e => {
     const b = e.target.closest('button[data-i]'); if (!b) return;
     const i = +b.dataset.i;
-    if (b.classList.contains('file-remove')) { photos.splice(i, 1); err.textContent = ''; drawFiles(); }
+    if (b.classList.contains('file-remove')) { photos.splice(i, 1); setFieldError(input, false); drawFiles(); }
     else previewPhoto(photos[i].name, photos[i].data);
   });
 
@@ -352,7 +482,7 @@ function setupForm(k, host) {
     if (radio) radio.checked = true;
     syncSpecies();
     if (r.species === 'Other') otherInput.value = r.otherSpecies || '';
-    set('name', r.name); set('size', r.size); set('markings', r.markings);
+    set('name', r.name); set('size', r.size); set('sex', r.sex); set('markings', r.markings);
     set('description', r.description); set('howfound', r.howFound); set('where', r.where);
     set('brgy', r.brgy); set('date', r.date); set('zone', r.zone || ''); set('contact', r.contact); set('facebook', r.facebook || '');
     if ('breed' in r) breedBox.pills.set(r.breed || '');
@@ -385,6 +515,17 @@ function setupForm(k, host) {
 
 
   /* ---------- Step-by-step wizard (like Google Forms): one step at a time, Back / Next, progress bar ---------- */
+  /* An error goes away as soon as the user fixes that field */
+  const liveClear = e => {
+    const t = e.target;
+    if (!t.closest || !(t.matches('input, select, textarea'))) return;
+    const box = t.closest(FIELD_BOX), fs = t.closest('fieldset');
+    const flagged = t.classList.contains('is-invalid') || box?.classList.contains('is-invalid') || fs?.classList.contains('is-invalid');
+    if (flagged) setFieldError(t, false);
+  };
+  form.addEventListener('input', liveClear);
+  form.addEventListener('change', liveClear);
+
   const steps = [...form.querySelectorAll('.step')];
   const btnBack = form.querySelector('.wiz-back'), btnNext = form.querySelector('.wiz-next'), btnSubmit = form.querySelector('.wiz-submit');
   const stepNames = steps.map(s => s.querySelector('h2').textContent);
@@ -397,29 +538,67 @@ function setupForm(k, host) {
   let cur = 0;
 
   const labelOf = el => (el.id && form.querySelector(`label[for="${el.id}"]`)?.textContent.trim()) || 'this field';
+  const validatePillGroup = (kind, label) => {
+    const hidden = form.elements[kind];
+    const input = form.querySelector(`.pills[data-pills="${kind}"] .pills-input`);
+    const raw = [hidden?.value || '', input?.value || ''].filter(Boolean).join(', ');
+    if (!raw.trim()) return null;
+    const invalid = splitPillValues(raw, kind).filter(v => !isValidPillValue(kind, v));
+    if (invalid.length) {
+      const msg = `“${invalid.join(', ')}” is not a recognized ${label}. Pick one from the suggestions list.`;
+      setFieldError(input, true, msg);
+      return { msg, el: input };
+    }
+    return null;
+  };
 
   /* Returns { msg, el } for the first problem in step i, or null when the step is complete. */
   const stepError = i => {
     const s = steps[i];
-    s.querySelectorAll('.pills').forEach(b => b.pills.commit());
-    if (s.contains(form.elements.photo) && !photos.length) return { msg: 'Please add at least one photo of the pet.', el: s.querySelector('.drop input') };
+    /* remember what was typed: commit() drops words that are not on the suggestion list */
+    const typed = {};
+    s.querySelectorAll('.pills').forEach(b => { typed[b.dataset.pills] = b.querySelector('.pills-input').value.trim() || b.dataset.rejected || ''; b.pills.commit(); });
+    clearFormErrors(form);
+    const unrecognized = (kind, label) => {
+      const el = s.querySelector(`.pills[data-pills="${kind}"] .pills-input`);
+      el.value = typed[kind];                                   // put the word back so the user can see and fix it
+      const msg = `“${typed[kind]}” is not a recognized ${label}. Pick one from the suggestions list.`;
+      setFieldError(el, true, msg);
+      return { msg, el };
+    };
+    if (s.contains(form.elements.photo) && !photos.length) {
+      const el = s.querySelector('.drop input');
+      setFieldError(el, true, 'Please add at least one photo of the pet.');
+      return { msg: 'Please add at least one photo of the pet.', el };
+    }
     if (s.querySelector('input[name="species"]')) {
-      if (!species()) return { msg: 'Please choose a species.', el: s.querySelector('input[name="species"]') };
-      if (species() === 'Other' && !otherInput.value.trim()) return { msg: 'Please tell us what kind of animal it is.', el: otherInput };
-      if (!form.elements.color.value) return { msg: 'Please add the main color (type a color and press the space bar).', el: s.querySelector('.pills[data-pills="color"] input') };
-      if (!form.querySelector('input[name="size"]:checked')) return { msg: 'Please choose a size.', el: s.querySelector('input[name="size"]') };
+      const speciesInput = s.querySelector('input[name="species"]');
+      if (!species()) { setFieldError(speciesInput, true, 'Please choose a species.'); return { msg: 'Please choose a species.', el: speciesInput }; }
+      if (species() === 'Other' && !otherInput.value.trim()) { setFieldError(otherInput, true, REQUIRED_MESSAGES.otherSpecies); return { msg: REQUIRED_MESSAGES.otherSpecies, el: otherInput }; }
+      if (!form.elements.color.value && typed.color) return unrecognized('color', 'color');
+      if (!form.elements.color.value) { const el = s.querySelector('.pills[data-pills="color"] input'); const msg = 'Please add the main color. Type one (e.g. brown) and press the space bar.'; setFieldError(el, true, msg); return { msg, el }; }
+      const colorIssue = validatePillGroup('color', 'color');
+      if (colorIssue) return colorIssue;
+      if (!form.elements.breed.value && typed.breed) return unrecognized('breed', 'breed');
+      if (form.elements.breed && form.elements.breed.value) {
+        const breedIssue = validatePillGroup('breed', 'breed');
+        if (breedIssue) return breedIssue;
+      }
+      if (!form.querySelector('input[name="size"]:checked')) { const el = s.querySelector('input[name="size"]'); setFieldError(el, true, 'Please choose a size.'); return { msg: 'Please choose a size.', el }; }
+      if (!form.querySelector('input[name="sex"]:checked')) { const el = s.querySelector('input[name="sex"]'); setFieldError(el, true, 'Please choose the pet’s sex.'); return { msg: 'Please choose the pet’s sex.', el }; }
     }
     for (const el of s.querySelectorAll('input:not([type=radio]):not([type=hidden]):not([type=file]):not(.pills-input), select, textarea')) {
       if (el.disabled) continue;
-      if (el.required && !el.value.trim()) return { msg: `Please fill in “${labelOf(el)}”.`, el };
-      if (!el.checkValidity()) return { msg: el.validationMessage || `Please check “${labelOf(el)}”.`, el };
+      if (el.required && !el.value.trim()) { const msg = REQUIRED_MESSAGES[el.name] || `Please fill in “${labelOf(el)}”.`; setFieldError(el, true, msg); return { msg, el }; }
+      if (!el.checkValidity()) { const msg = el.validationMessage || `Please check “${labelOf(el)}”.`; setFieldError(el, true, msg); return { msg, el }; }
     }
-    if (s.contains(form.elements.lat) && !pin) return { msg: 'Please drop a pin on the map.', el: null };
+    if (s.contains(form.elements.lat) && !pin) { const el = pickEl, msg = 'Please tap the map to drop a pin on the spot.'; setFieldError(el, true, msg); return { msg, el }; }
     return null;
   };
 
-  const show = (i, { scroll = true } = {}) => {
+  const show = (i, { scroll = true, keepErrors = false } = {}) => {
     cur = Math.max(0, Math.min(steps.length - 1, i));
+    if (!keepErrors) clearFormErrors(form);
     steps.forEach((s, n) => { s.hidden = n !== cur; });
     btnBack.hidden = cur === 0;
     btnNext.hidden = cur === steps.length - 1;
@@ -443,7 +622,7 @@ function setupForm(k, host) {
   const goTo = n => {
     for (let i = cur; i < n; i++) {
       const bad = stepError(i);
-      if (bad) { show(i); err.textContent = bad.msg; bad.el?.focus(); return false; }
+      if (bad) { show(i, { scroll: false, keepErrors: true }); focusField(bad.el); return false; }
     }
     show(n);
     return true;
@@ -462,7 +641,7 @@ function setupForm(k, host) {
     /* Last step: check every step once more and jump back to the first one that is incomplete */
     for (let i = 0; i < steps.length; i++) {
       const bad = stepError(i);
-      if (bad) { show(i); err.textContent = bad.msg; bad.el?.focus(); return; }
+      if (bad) { show(i, { scroll: false, keepErrors: true }); focusField(bad.el); return; }
     }
     const f = new FormData(form);
     const matchId = form.dataset.matchFor || '';
@@ -484,6 +663,7 @@ function setupForm(k, host) {
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(matchId);
       host.querySelector('.done .actions a').textContent = 'View the report';
       host.querySelector('.see-matches').hidden = true;   /* a response to someone else's report has nothing to match */
+      document.querySelector('.type-pick').hidden = true; document.querySelector('.type-lead').hidden = true;
       form.hidden = true; host.querySelector('.done').hidden = false;
       host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
       window.scrollTo(0, 0);
@@ -509,6 +689,7 @@ function setupForm(k, host) {
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(claimId);
       host.querySelector('.done .actions a').textContent = 'View the report';
       host.querySelector('.see-matches').hidden = true;   /* a response to someone else's report has nothing to match */
+      document.querySelector('.type-pick').hidden = true; document.querySelector('.type-lead').hidden = true;
       form.hidden = true; host.querySelector('.done').hidden = false;
       host.querySelector('.match-banner')?.remove(); delete form.dataset.claimFor;
       window.scrollTo(0, 0);
@@ -533,7 +714,13 @@ function setupForm(k, host) {
     host.querySelector('.done p').textContent = editing ? 'Your changes have been saved.' : k === 'lost' ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.';
     host.querySelector('.done .actions a').href = editing ? 'report.html?id=' + encodeURIComponent(editing.id) : 'dashboard.html';
     host.querySelector('.done .actions a').textContent = editing ? 'View report' : 'View on map';
-    { const go = host.querySelector('.see-matches'); go.href = 'matching.html?report=' + encodeURIComponent(savedId); go.hidden = false; }
+    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, ownerName: shownName(), status: 'active', matchFor: form.dataset.matchFor || '' };
+    try {
+      if (editing) saveReport({ ...editing, ...r, id: editing.id, owner: editing.owner, ownerName: editing.ownerName, created: editing.created, status: editing.status, finds: editing.finds, claims: editing.claims, found: editing.found, matchFor: editing.matchFor });
+      else localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r)));
+    }
+    catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
+    { const go = host.querySelector('.see-matches'); go.href = 'matching.html?report=' + encodeURIComponent(editing ? editing.id : r.id); go.hidden = false; }
     form.hidden = true; host.querySelector('.done').hidden = false;
     host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
     window.scrollTo(0, 0);

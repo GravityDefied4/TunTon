@@ -65,7 +65,11 @@ function startForm(k) {
 
   /* Once a report is filed, the chooser is no use: hide it. */
   ctx.form.addEventListener('submit', () => setTimeout(() => {
-    if (!ctx.host.querySelector('.done').hidden) picker.hidden = true;
+    const done = ctx.host.querySelector('.done');
+    if (!done.hidden) {
+      picker.hidden = true;
+      lead.hidden = true;
+    }
   }));
 }
 

@@ -250,7 +250,7 @@ function showReportDialog({ title, message, confirmText = 'Continue', danger = f
       dialog.innerHTML = `
         <div class="report-action-dialog__content">
           <div class="report-action-dialog__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 10v6M14 10v6"/></svg>
           </div>
           <h2 class="report-action-dialog__title"></h2>
           <p class="report-action-dialog__message"></p>
@@ -295,22 +295,13 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
         dialog.className = 'd-delete-dialog';
         dialog.innerHTML = `<div class="d-delete-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 10v6M14 10v6"/></svg></div><h2>Remove this report?</h2><p>This report will be permanently removed. This action cannot be undone.</p><div class="d-delete-actions"><button type="button" class="d-delete-cancel">Cancel</button><button type="button" class="d-delete-confirm">Remove report</button></div>`;
         document.body.appendChild(dialog);
-        dialog.addEventListener('click', async ev => {
+        dialog.addEventListener('click', ev => {
           if (ev.target === dialog || ev.target.closest('.d-delete-cancel')) { dialog.close(); return; }
-          const confirmBtn = ev.target.closest('.d-delete-confirm');
-          if (!confirmBtn) return;
-          /* Permanently deletes the report from the database (DELETE /api/reports/:id). */
-          const text = dialog.querySelector('p'), label = confirmBtn.textContent;
-          confirmBtn.disabled = true; confirmBtn.textContent = 'Removing…';
-          try {
-            const res = await authFetch('/reports/' + encodeURIComponent(current.id), { method: 'DELETE' });
-            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Could not remove the report. Please try again.');
-            dialog.close();
-            location.href = 'profile.html';
-          } catch (err) {
-            text.textContent = err.message === 'Failed to fetch' ? 'Could not reach the server. Please try again.' : err.message;
-            confirmBtn.disabled = false; confirmBtn.textContent = label;
-          }
+          if (!ev.target.closest('.d-delete-confirm')) return;
+          const all = read(REPORTS_KEY, []);
+          localStorage.setItem(REPORTS_KEY, JSON.stringify(all.filter(x => !(x.id === current?.id && x.owner === myId))));
+          dialog.close();
+          location.href = 'profile.html';
         });
       }
       dialog.showModal();

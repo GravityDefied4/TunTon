@@ -469,7 +469,7 @@
   line-height: 1.4;
   max-width: none;
 }
-.field-error::before { content: "\26A0\FE0E"; margin-right: .4em; }
+.field-error::before { content: "\26A0\FE0E"; flex: none; }
 .field-error[hidden] { display: none; }
 
 /* Cancel: thick red outline, transparent fill. The 3rd pixel is an inset ring so the button keeps the same size as Save. */

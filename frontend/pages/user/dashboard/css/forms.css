@@ -46,6 +46,53 @@ fieldset {
   border-color: var(--leaf);
 }
 
+/* ---------- Validation errors: red border on the field + message right under it ---------- */
+.form input.is-invalid,
+.form select.is-invalid,
+.form textarea.is-invalid,
+.form .pills.is-invalid,
+.form .drop.is-invalid,
+.form .pick.is-invalid,
+.form fieldset.is-invalid .chips span {
+  border-color: var(--danger-text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-text) 18%, transparent);
+}
+
+.form .drop.is-invalid {
+  background: var(--danger-bg);
+}
+
+/* keep the field red while it is focused, instead of turning green */
+.form input.is-invalid:focus,
+.form select.is-invalid:focus,
+.form textarea.is-invalid:focus,
+.form .pills.is-invalid:focus-within {
+  border-color: var(--danger-text);
+  outline-color: var(--danger-text);
+}
+
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: .4em;
+  margin: .45rem 0 0;
+  color: var(--danger-text);
+  font-size: .88rem;
+  font-weight: 700;
+  line-height: 1.4;
+  animation: field-error-in .18s ease-out;
+}
+.field-error[hidden] { display: none; }
+
+@keyframes field-error-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-error { animation: none; }
+}
+
 /* Tag input: words typed in the lost and found forms become pills (see setupPills in report-form.js) */
 .pills {
   display: flex;

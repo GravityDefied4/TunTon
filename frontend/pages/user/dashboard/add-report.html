@@ -100,9 +100,10 @@
 </div>
           <div>
 <label for="lost-color">Main color</label>
-<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="lost-color" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="lost-color" list="lost-color-list" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<datalist id="lost-color-list"></datalist>
 <input name="color" type="hidden"/>
-<p class="hint">Press the space bar after each word to turn it into a tag.</p>
+<p class="hint">Press the space bar after each word to turn it into a tag, or choose a common color from the dropdown.</p>
 </div>
           <fieldset>
 <legend>Size</legend>
@@ -110,6 +111,14 @@
 <label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
 <label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
 <label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
+</div>
+</fieldset>
+          <fieldset>
+<legend>Sex</legend>
+<div class="chips sex-choice">
+<label><input name="sex" required="" type="radio" value="male"/><span>Male</span></label>
+<label><input name="sex" required="" type="radio" value="female"/><span>Female</span></label>
+<label><input name="sex" required="" type="radio" value="unknown"/><span>Unknown</span></label>
 </div>
 </fieldset>
             </div>
@@ -252,9 +261,10 @@
 </div>
           <div>
 <label for="found-color">Main color</label>
-<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="found-color" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="found-color" list="found-color-list" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<datalist id="found-color-list"></datalist>
 <input name="color" type="hidden"/>
-<p class="hint">Press the space bar after each word to turn it into a tag.</p>
+<p class="hint">Press the space bar after each word to turn it into a tag, or choose a common color from the dropdown.</p>
 </div>
           <fieldset>
 <legend>Size</legend>
@@ -262,6 +272,14 @@
 <label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
 <label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
 <label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
+</div>
+</fieldset>
+          <fieldset>
+<legend>Sex</legend>
+<div class="chips sex-choice">
+<label><input name="sex" required="" type="radio" value="male"/><span>Male</span></label>
+<label><input name="sex" required="" type="radio" value="female"/><span>Female</span></label>
+<label><input name="sex" required="" type="radio" value="unknown"/><span>Unknown</span></label>
 </div>
 </fieldset>
             </div>

@@ -59,9 +59,10 @@
         </div>
         <div>
           <label for="lost-color">Main color</label>
-          <div class="pills" data-pills="color"><input type="text" class="pills-input" id="lost-color" autocomplete="off" maxlength="40" placeholder="e.g. brown, then space" aria-required="true"></div>
+          <div class="pills" data-pills="color"><input type="text" class="pills-input" id="lost-color" autocomplete="off" maxlength="40" list="lost-color-list" placeholder="e.g. brown, then space" aria-required="true"></div>
+          <datalist id="lost-color-list"></datalist>
           <input type="hidden" name="color">
-          <p class="hint">Press the space bar after each word to turn it into a tag.</p>
+          <p class="hint">Press the space bar after each word to turn it into a tag, or choose a common color from the dropdown.</p>
         </div>
 
           <fieldset>
@@ -70,6 +71,15 @@
             <label><input type="radio" name="size" value="Small" required><span>Small</span></label>
             <label><input type="radio" name="size" value="Medium" required><span>Medium</span></label>
             <label><input type="radio" name="size" value="Large" required><span>Large</span></label>
+          </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Sex</legend>
+            <div class="chips sex-choice">
+            <label><input type="radio" name="sex" value="male" required><span>Male</span></label>
+            <label><input type="radio" name="sex" value="female" required><span>Female</span></label>
+            <label><input type="radio" name="sex" value="unknown" required><span>Unknown</span></label>
           </div>
           </fieldset>
 
