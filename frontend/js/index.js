@@ -188,19 +188,52 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const loginForm = document.getElementById('login-form');
 const signupForm = document.getElementById('signup-form');
 
+[loginForm, signupForm].forEach(form => {
+  form.addEventListener('input', event => {
+    if (event.target.matches('input')) clearFieldError(event.target);
+  });
+});
+
 /* Returns the first problem found (and marks that field), or '' when the form is fine. */
+function clearFieldError(input) {
+  if (!input) return;
+  input.removeAttribute('aria-invalid');
+  const field = input.closest('.field');
+  const error = field?.querySelector('.field-error');
+  if (error) error.textContent = '';
+}
+
+function showFieldError(input, message) {
+  if (!input) return;
+  const field = input.closest('.field');
+  if (!field) return;
+  let error = field.querySelector('.field-error');
+  if (!error) {
+    error = document.createElement('small');
+    error.className = 'field-error';
+    error.setAttribute('role', 'alert');
+    field.appendChild(error);
+  }
+  error.textContent = message;
+  input.setAttribute('aria-invalid', 'true');
+}
+
 function validate(form, rules) {
-  form.querySelectorAll('input').forEach(i => i.removeAttribute('aria-invalid'));
+  form.querySelectorAll('input').forEach(clearFieldError);
   for (const [name, bad] of rules) {
     const input = form.elements[name], msg = bad(input.value.trim(), input.value);
-    if (msg) { input.setAttribute('aria-invalid', 'true'); input.focus(); return msg; }
+    if (msg) {
+      showFieldError(input, msg);
+      input.focus();
+      return msg;
+    }
   }
   return '';
 }
 
 async function submitForm(form, path, rules, payload, busy) {
   const problem = validate(form, rules);
-  if (problem) return showMessage(problem, true);
+  if (problem) { showMessage(''); return; }
   const btn = form.querySelector('.auth-submit'), label = btn.textContent;
   btn.disabled = true; btn.textContent = busy; showMessage('');
   const body = await postAuth(path, payload());
@@ -211,8 +244,8 @@ async function submitForm(form, path, rules, payload, busy) {
 loginForm.addEventListener('submit', e => {
   e.preventDefault();
   submitForm(loginForm, 'login', [
-    ['email', v => !v ? 'Please enter your email address.' : !EMAIL_RE.test(v) ? 'That email address does not look right.' : ''],
-    ['password', (v, raw) => !raw ? 'Please enter your password.' : '']
+    ['email', v => !v ? 'Enter your email address.' : !EMAIL_RE.test(v) ? 'Enter a valid email address.' : ''],
+    ['password', (v, raw) => !raw ? 'Enter your password.' : '']
   ], () => ({ email: loginForm.elements.email.value.trim().toLowerCase(), password: loginForm.elements.password.value }), 'Logging in...');
 });
 
@@ -220,10 +253,10 @@ signupForm.addEventListener('submit', e => {
   e.preventDefault();
   const f = signupForm.elements;
   submitForm(signupForm, 'register', [
-    ['name', v => v.length < 2 ? 'Please enter your full name.' : ''],
-    ['email', v => !v ? 'Please enter your email address.' : !EMAIL_RE.test(v) ? 'That email address does not look right.' : ''],
-    ['password', (v, raw) => raw.length < 8 ? 'Your password needs at least 8 characters.' : ''],
-    ['confirm', (v, raw) => raw !== f.password.value ? 'The two passwords do not match.' : '']
+    ['name', v => v.length < 2 ? 'Enter your name.' : ''],
+    ['email', v => !v ? 'Enter your email address.' : !EMAIL_RE.test(v) ? 'Enter a valid email address.' : ''],
+    ['password', (v, raw) => raw.length < 8 ? 'Use at least 8 characters.' : ''],
+    ['confirm', (v, raw) => raw !== f.password.value ? 'Passwords do not match.' : '']
   ], () => ({ name: f.name.value.trim(), email: f.email.value.trim().toLowerCase(), password: f.password.value }), 'Creating account...');
 });
 
