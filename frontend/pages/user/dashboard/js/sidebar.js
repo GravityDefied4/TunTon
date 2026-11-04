@@ -24,6 +24,8 @@ window.sidebarReady = (async function () {
 
     mount.replaceWith(sb, scrim);
     main.prepend(top);
+    const logoutDlg = doc.querySelector('#logout-dialog');   /* the logout confirmation lives in sidebar.html too */
+    if (logoutDlg) document.body.append(logoutDlg);
     window.TunTonTheme?.sync();   /* label/aria of the theme button that just arrived */
 
     /* highlight the link for the current page */

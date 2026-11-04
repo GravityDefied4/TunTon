@@ -331,28 +331,32 @@
 }
 
 
-/* Accessible logout confirmation dialog, shared by dashboard pages. */
+/* Logout confirmation: a small centered dialog that follows the light / dark theme. */
 .logout-dialog {
-  width: min(92vw, 420px);
-  max-width: calc(100vw - 2rem);
+  width: min(calc(100vw - 2rem), 320px);
+  margin: auto;
   padding: 0;
-  border: 1px solid rgba(130, 190, 155, .28);
-  border-radius: 20px;
-  color: var(--text, #f4fff7);
-  background: var(--panel, #123b2a);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow), 0 24px 60px rgba(0, 0, 0, .2);
 }
-.logout-dialog::backdrop { background: rgba(2, 15, 10, .68); backdrop-filter: blur(3px); }
-.logout-dialog__content { padding: 1.5rem; }
-.logout-dialog__icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 1rem; border-radius: 14px; color: #ffdddd; background: rgba(201, 47, 54, .2); }
-.logout-dialog__icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.logout-dialog h2 { margin: 0 0 .5rem; color: inherit; font: 700 1.25rem var(--font-display, inherit); }
-.logout-dialog p { margin: 0; color: var(--muted, #b6d3c4); line-height: 1.55; }
-.logout-dialog__actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.5rem; }
-.logout-dialog__actions button { min-height: 42px; padding: .65rem 1rem; border-radius: 12px; font: 700 .95rem var(--font-body, inherit); cursor: pointer; }
-.logout-dialog__cancel { border: 1px solid rgba(180, 215, 195, .35); color: var(--text, #f4fff7); background: transparent; }
-.logout-dialog__cancel:hover { background: rgba(255, 255, 255, .09); }
-.logout-dialog__confirm { border: 1px solid #c92f36; color: #fff; background: #c92f36; }
-.logout-dialog__confirm:hover { border-color: #a92229; background: #a92229; }
-.logout-dialog button:focus-visible { outline: 3px solid #9be7b7; outline-offset: 2px; }
-@media (max-width: 420px) { .logout-dialog__actions { flex-direction: column-reverse; } .logout-dialog__actions button { width: 100%; } }
+.logout-dialog::backdrop { background: rgba(8, 24, 16, .5); backdrop-filter: blur(3px); }
+.logout-dialog[open] { animation: logout-pop .18s ease-out; }
+.logout-dialog[open]::backdrop { animation: logout-fade .18s ease-out; }
+@keyframes logout-pop { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+@keyframes logout-fade { from { opacity: 0; } }
+.logout-dialog__content { display: grid; justify-items: center; gap: .3rem; padding: 1.5rem 1.4rem 1.3rem; text-align: center; }
+.logout-dialog__icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: .55rem; border-radius: 50%; color: var(--danger-text); background: var(--danger-bg); }
+.logout-dialog__icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.logout-dialog h2 { margin: 0; color: var(--ink); font: 600 1.2rem/1.3 var(--font-display); }
+.logout-dialog p { margin: 0; color: var(--muted); font-size: .92rem; font-weight: 600; line-height: 1.5; }
+.logout-dialog__actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; width: 100%; margin-top: 1.05rem; }
+.logout-dialog__actions button { min-height: 42px; padding: .5rem .8rem; border-radius: 999px; font: 700 .92rem var(--font-body, inherit); cursor: pointer; transition: background .15s, border-color .15s; }
+.logout-dialog__cancel { border: 1.5px solid var(--line); color: var(--heading); background: var(--surface); }
+.logout-dialog__cancel:hover { background: var(--surface-hover); }
+.logout-dialog__confirm { border: 1.5px solid #c0392b; color: #fff; background: #c0392b; }
+.logout-dialog__confirm:hover { border-color: #a52f23; background: #a52f23; }
+.logout-dialog button:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .logout-dialog[open], .logout-dialog[open]::backdrop { animation: none; } }
