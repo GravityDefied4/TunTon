@@ -88,7 +88,9 @@ test('labels and threshold', () => {
   assert.equal(m.labelFor(79.99), 'Likely');
   assert.equal(m.labelFor(65), 'Likely');
   assert.equal(m.labelFor(50), 'Possible');
-  assert.equal(m.labelFor(49.9), null);
-  assert.equal(m.CONFIG.threshold, 50);
+  assert.equal(m.labelFor(49.9), 'Weak');
+  assert.equal(m.labelFor(10), 'Weak');
+  assert.equal(m.labelFor(9.99), null);
+  assert.equal(m.CONFIG.threshold, 10);
   assert.equal(Object.values(m.CONFIG.weights).reduce((a, b) => a + b, 0), 100);
 });

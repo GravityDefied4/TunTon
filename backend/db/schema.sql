@@ -97,7 +97,7 @@ CREATE TABLE matches (
     lost_report_id   INT UNSIGNED NOT NULL,
     found_report_id  INT UNSIGNED NOT NULL,
     score            DECIMAL(5,2) NOT NULL,
-    label            VARCHAR(8) GENERATED ALWAYS AS (CASE WHEN score >= 80 THEN 'Strong' WHEN score >= 65 THEN 'Likely' ELSE 'Possible' END) VIRTUAL,
+    label            VARCHAR(8) GENERATED ALWAYS AS (CASE WHEN score >= 80 THEN 'Strong' WHEN score >= 65 THEN 'Likely' WHEN score >= 50 THEN 'Possible' ELSE 'Weak' END) VIRTUAL,
     status           ENUM('suggested','dismissed','claim_pending','confirmed') NOT NULL DEFAULT 'suggested',
     created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

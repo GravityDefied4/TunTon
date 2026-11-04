@@ -11,8 +11,8 @@ const { distanceKm } = require('./geofence');
 
 /* All tunable numbers live here so the group can adjust and explain them. */
 const CONFIG = {
-  threshold: 50,                                   // store a match at or above this score
-  labels: [{ min: 80, label: 'Strong' }, { min: 65, label: 'Likely' }, { min: 50, label: 'Possible' }],
+  threshold: 10,                                   // store a match at or above this score (weak matches are still shown)
+  labels: [{ min: 80, label: 'Strong' }, { min: 65, label: 'Likely' }, { min: 50, label: 'Possible' }, { min: 10, label: 'Weak' }],
   weights: { breed: 20, color: 20, markings: 20, size: 10, sex: 5, distance: 20, recency: 5 },   // age_group was dropped from the schema; its 5 points went to markings
   dateBufferDays: 2,                               // found date may be this many days before lost date
   recencyFullDays: 3,                              // full recency points within this many days

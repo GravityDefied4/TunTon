@@ -39,13 +39,14 @@ function matchCard(m, rank, me, top) {
 
 /* ---------- Page logic ---------- */
 const ms = $('#ms'), trigger = $('#ms-trigger'), panel = $('#ms-panel'), pctEl = $('#pct-chips'), headEl = $('#match-head'), controls = $('#match-controls');
-/* Bands match the status colours: green 80-100, yellow 60-79, orange 40-59, red 0-39 */
+/* Bands match the status colours: green 80-100, yellow 60-79, orange 40-59, red 10-39.
+   Anything below MIN_PERCENT (10%, set in match.js) is not listed at all. */
 const BANDS = [
-  { key: 'all', label: 'All', lo: 0, hi: 100 },
+  { key: 'all', label: 'All', lo: MIN_PERCENT, hi: 100 },
   { key: 'high', label: '80%\u2013100%', lo: 80, hi: 100 },
   { key: 'mid', label: '60%\u201379%', lo: 60, hi: 79 },
   { key: 'fair', label: '40%\u201359%', lo: 40, hi: 59 },
-  { key: 'low', label: '0%\u201339%', lo: 0, hi: 39 }
+  { key: 'low', label: MIN_PERCENT + '%\u201339%', lo: MIN_PERCENT, hi: 39 }
 ];
 let mine = [];              // my active reports (newest first)
 let pool = [];              // everyone else's reports
@@ -103,7 +104,7 @@ function draw() {
   if (shown.length) { listEl.innerHTML = shown.map((m, i) => matchCard(m, i + 1, me, i === 0)).join(''); return; }
   listEl.innerHTML = `<p class="rempty">${all.length
     ? `No ${want} reports are between ${band.lo}% and ${band.hi}%. Choose &ldquo;All&rdquo; to see every ${want} report that could match.`
-    : `No ${want} reports of a ${esc(speciesOf(me).toLowerCase() || 'similar')} have been filed yet. We will list them here as soon as they are.`}</p>`;
+    : `No ${want} reports of a ${esc(speciesOf(me).toLowerCase() || 'similar')} are at least ${MIN_PERCENT}% similar yet. We will list them here as soon as one is.`}</p>`;
 }
 
 function choose(id) {

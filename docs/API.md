@@ -59,7 +59,7 @@ Statuses: `active`, `matched` (a claim was approved), `resolved`, `closed`, `rem
 |---|---|---|
 | POST | /matching/run/:reportId | Owner or admin. Recomputes matches. `data: { created, updated, removed, matches[] }` |
 
-Runs automatically after a report is created, edited, closed or removed. Hard filters: opposite type, same species, both active, found pin inside the lost report's radius, found date not earlier than lost date minus 2 days, never the same user. Score 0 to 100 (weights in `backend/services/matching.js` `CONFIG`); stored at 50+. Labels: 80+ Strong, 65 to 79 Likely, 50 to 64 Possible. Re-running updates scores and never duplicates; dismissed matches stay dismissed; suggestions that stop qualifying are removed.
+Runs automatically after a report is created, edited, closed or removed. Hard filters: opposite type, same species, both active, found pin inside the lost report's radius, found date not earlier than lost date minus 2 days, never the same user. Score 0 to 100 (weights in `backend/services/matching.js` `CONFIG`); stored at 10+. Labels: 80+ Strong, 65 to 79 Likely, 50 to 64 Possible, 10 to 49 Weak. Re-running updates scores and never duplicates; dismissed matches stay dismissed; suggestions that stop qualifying are removed.
 
 ## P5 Matches
 | Method | Endpoint | Notes |

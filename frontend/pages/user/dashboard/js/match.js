@@ -3,15 +3,20 @@
 
    How the percentage works
    Every attribute has a weight. Each one scores from 0 to 1 and the
-   result is   (sum of weight x score) / (sum of weights that could be compared).
-   An attribute that is blank on either report (or "Unknown") is skipped,
-   so missing information does not lower the score unfairly.
-   A different species is never a match, so those reports are left out.
+   result is   (sum of weight x score) / (weights compared + half the weights that could not be compared).
+   An attribute that is blank on either report (or "Unknown") is not scored, but it counts
+   half against the percentage, so a report with little information cannot reach 100%.
+   A different species is never a match, so those reports are left out. Species is a filter,
+   not a score, so every same-species report does not start with free points.
+   Reports below MIN_PERCENT are not listed.
    ========================================================= */
 
-const WEIGHTS = { species: 25, color: 25, breed: 20, size: 15, markings: 10, location: 5 };
+const WEIGHTS = { color: 30, breed: 25, size: 15, markings: 15, location: 15 };   // adds up to 100
+const MIN_PERCENT = 10;        // lowest overall percentage that is still listed as a match
+const MISSING_WEIGHT = .5;     // share of an unknown attribute's weight that counts against the percentage
+const DEFAULT_RADIUS_KM = 5;   // search radius used when a lost report has none
 /* Labels shown to the person, in display order */
-const LABELS = { species: 'Species', color: 'Color', breed: 'Breed', size: 'Size', markings: 'Markings', location: 'Location' };
+const LABELS = { color: 'Color', breed: 'Breed', size: 'Size', markings: 'Markings', location: 'Location' };
 
 /* ---------- Text helpers ---------- */
 const STOP = new Set(['and', 'with', 'the', 'a', 'an', 'of', 'on', 'in', 'to', 'is', 'has', 'have', 'no', 'its', 'it', 'her', 'his', 'near', 'left', 'right']);
@@ -23,49 +28,70 @@ const dice = (a, b) => { const A = new Set(a), B = new Set(b); if (!A.size || !B
 /* Common colour words that mean the same thing */
 const SYN = { grey: 'gray', brownish: 'brown', tan: 'brown', cream: 'white', golden: 'yellow', orange: 'ginger', ginger: 'ginger', tabby: 'tabby', black: 'black', white: 'white' };
 const colorWords = s => words(s).map(w => SYN[w] || w);
+const clamp01 = n => Math.min(Math.max(n, 0), 1);
+const hasPin = r => isFinite(r.lat) && isFinite(r.lng) && !(r.lat === 0 && r.lng === 0);
+const sameSpecies = (a, b) => speciesOf(a).trim().toLowerCase() === speciesOf(b).trim().toLowerCase();
+/* Breeds: "Aspin", "Puspin", "Mixed breed" and "Domestic shorthair" all mean "no particular breed" */
+const isGeneric = s => /^(mixed|mix|mixed breed|crossbreed|cross breed|mongrel|native|street|aspin|puspin|domestic|domestic (short|long|medium) ?hair)$/.test(norm(s));
+const BREED_FILLER = new Set(['mix', 'mixed', 'breed', 'cross', 'crossbreed', 'dog', 'cat']);
+const breedWords = s => words(s).filter(w => !BREED_FILLER.has(w));
+/* Markings: ignore plurals and filler, so "white spots" and "a white spot" agree */
+const stem = w => w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w;
+const MARK_FILLER = new Set(['some', 'small', 'big', 'little', 'part', 'like', 'also', 'around', 'there', 'for', 'are', 'was', 'pet', 'dog', 'cat', 'color', 'colour', 'body']);
+const markWords = s => [...new Set(words(s).map(stem).filter(w => w.length >= 3 && !MARK_FILLER.has(w)))];
+const SIZE_ORDER = ['small', 'medium', 'large', 'extra large'];
+const sizeIndex = s => SIZE_ORDER.indexOf(String(s || '').toLowerCase().replace(/[_-]+/g, ' ').trim());
 
 /* ---------- One attribute at a time. Each returns { score 0..1 | null, mine, theirs } ---------- */
 const COMPARE = {
-  species: (a, b) => ({ score: speciesOf(a).toLowerCase() === speciesOf(b).toLowerCase() ? 1 : 0, mine: speciesOf(a), theirs: speciesOf(b) }),
   color: (a, b) => ({ score: blank(a.color) || blank(b.color) ? null : dice(colorWords(a.color), colorWords(b.color)), mine: a.color, theirs: b.color }),
   breed: (a, b) => {
-    if (blank(a.breed) || blank(b.breed)) return { score: null, mine: a.breed, theirs: b.breed };
-    const x = norm(a.breed), y = norm(b.breed);
-    if (x === y) return { score: 1, mine: a.breed, theirs: b.breed };
-    /* "Mixed breed" next to a named breed: we can't tell, so give a small partial score */
-    if (/mixed|aspin|puspin|domestic/.test(x + ' ' + y) && !(/mixed|aspin|puspin|domestic/.test(x) && /mixed|aspin|puspin|domestic/.test(y))) return { score: .3, mine: a.breed, theirs: b.breed };
-    return { score: dice(words(a.breed), words(b.breed)) ?? 0, mine: a.breed, theirs: b.breed };
+    const out = s => ({ score: s, mine: a.breed, theirs: b.breed });
+    if (blank(a.breed) || blank(b.breed)) return out(null);
+    if (norm(a.breed) === norm(b.breed)) return out(1);
+    const ga = isGeneric(a.breed), gb = isGeneric(b.breed);
+    if (ga && gb) return out(.8);          // e.g. Aspin and Mixed breed: both "no particular breed"
+    if (ga || gb) return out(.3);          // one is a named breed, we can't tell: small partial score
+    const x = breedWords(a.breed), y = breedWords(b.breed);
+    if (x.length && x.join(' ') === y.join(' ')) return out(1);   // "Shih Tzu" and "Shih Tzu mix"
+    return out(Math.min(.5, dice(x, y) ?? 0));                     // different breeds never score above half
   },
   size: (a, b) => {
-    if (!a.size || !b.size) return { score: null, mine: a.size, theirs: b.size };
-    const order = ['small', 'medium', 'large'], d = Math.abs(order.indexOf(a.size.toLowerCase()) - order.indexOf(b.size.toLowerCase()));
+    const i = sizeIndex(a.size), j = sizeIndex(b.size);
+    if (i < 0 || j < 0) return { score: null, mine: a.size, theirs: b.size };
+    const d = Math.abs(i - j);
     return { score: d === 0 ? 1 : d === 1 ? .5 : 0, mine: a.size, theirs: b.size };
   },
   markings: (a, b) => {
-    const x = words(a.markings), y = words(b.markings);
-    return { score: dice(x, y), mine: a.markings, theirs: b.markings };
+    const x = markWords(a.markings), y = markWords(b.markings);
+    if (!x.length || !y.length) return { score: null, mine: a.markings, theirs: b.markings };
+    const hit = x.filter(w => y.includes(w)).length;
+    /* average of "how much of the shorter text is covered" and "how similar the two texts are" */
+    return { score: (hit / Math.min(x.length, y.length) + 2 * hit / (x.length + y.length)) / 2, mine: a.markings, theirs: b.markings };
   },
   location: (a, b) => {
-    if (!isFinite(a.lat) || !isFinite(b.lat)) return { score: null, mine: a.brgy, theirs: b.brgy };
+    if (!hasPin(a) || !hasPin(b)) return { score: null, mine: a.brgy, theirs: b.brgy };
     const d = km([a.lat, a.lng], [b.lat, b.lng]);
-    /* same barangay or inside the lost report's search zone counts fully; it fades out by 3 km */
-    const zone = (a.kind === 'lost' ? a.zone : b.zone) / 1000 || 0;
-    const score = (a.brgy && a.brgy === b.brgy) || d <= zone ? 1 : Math.max(0, 1 - d / 3);
+    /* full points at the same spot, fading to 0 at the edge of the lost report's search radius */
+    const zone = (a.kind === 'lost' ? a.zone : b.zone) / 1000;
+    let score = clamp01(1 - d / (zone > 0 ? zone : DEFAULT_RADIUS_KM));
+    if (a.brgy && a.brgy === b.brgy) score = Math.max(score, .5);   // same barangay is always at least half
     return { score, mine: a.brgy, theirs: b.brgy, dist: d };
   }
 };
 
 /* Compare my report with one candidate. Returns null when the species differ. */
 function scoreReport(mine, other) {
-  const parts = {}; let earned = 0, possible = 0;
+  if (!sameSpecies(mine, other)) return null;          // a dog is never a match for a cat
+  const parts = {}; let earned = 0, possible = 0, missing = 0;
   for (const key of Object.keys(WEIGHTS)) {
     const res = COMPARE[key](mine, other);
     parts[key] = res;
-    if (res.score === null || res.score === undefined) continue;
+    if (res.score === null || res.score === undefined) { missing += WEIGHTS[key]; continue; }
     earned += WEIGHTS[key] * res.score; possible += WEIGHTS[key];
   }
-  if (parts.species.score === 0) return null;          // a dog is never a match for a cat
-  return { report: other, parts, percent: possible ? Math.round(earned / possible * 100) : 0 };
+  const basis = possible + missing * MISSING_WEIGHT;
+  return { report: other, parts, earned, possible, missing, percent: basis ? Math.round(earned / basis * 100) : 0 };
 }
 
 
@@ -99,7 +125,7 @@ const Insight = (() => {
   const TOTAL = Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
   const GENERIC = /mixed|aspin|puspin|domestic/;
   const KEYS = Object.keys(WEIGHTS);
-  const RARITY_KEYS = ['color', 'breed', 'size', 'markings'];   // species is the same for every candidate, so it cannot be rare
+  const RARITY_KEYS = ['color', 'breed', 'size', 'markings'];
   const clean = v => (v && String(v).trim()) || '';
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   const join = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : (a[0] || '');
@@ -108,14 +134,14 @@ const Insight = (() => {
   const zoneLabel = z => z >= 1000 ? (z / 1000) + ' km' : z + ' m';
   /* Text of 3 letters or fewer (for example "dde") tells us almost nothing, even when both reports have it */
   const thin = s => !blank(s) && String(s).replace(/[^a-z]/gi, '').length <= 3;
-  const empty = (r, k) => k === 'size' ? !r.size : k === 'location' ? !isFinite(r.lat) : blank(r[k]);
+  const empty = (r, k) => k === 'size' ? sizeIndex(r.size) < 0 : k === 'location' ? !hasPin(r) : blank(r[k]);
 
   /* Every report that could match mine, best first (the same rules the Matching tab uses) */
   function candidates(me, pool) {
     const want = me.kind === 'lost' ? 'found' : 'lost';
     return (pool || [])
       .filter(r => r.kind === want && !isOwner(r) && !(want === 'lost' ? reportState(r) === 'found' : !!confirmedClaim(r)))
-      .map(r => scoreReport(me, r)).filter(Boolean)
+      .map(r => scoreReport(me, r)).filter(c => c && c.percent >= MIN_PERCENT)
       .sort((a, b) => b.percent - a.percent || (b.report.created || 0) - (a.report.created || 0));
   }
 
@@ -125,8 +151,7 @@ const Insight = (() => {
     const compared = comparedKeys(m), skipped = KEYS.filter(k => !compared.includes(k));
     const hit = matchKeys(m);
     const thinMarks = compared.includes('markings') && (thin(me.markings) || thin(other.markings));
-    const earned = KEYS.reduce((s, k) => s + (parts[k].score == null ? 0 : WEIGHTS[k] * parts[k].score), 0);
-    const possible = compared.reduce((s, k) => s + WEIGHTS[k], 0);
+    const earned = m.earned, possible = m.possible;
 
     /* Rarity of each matching trait among the other candidates */
     const rarity = {};
@@ -150,7 +175,7 @@ const Insight = (() => {
     const reliable = compared.filter(k => !(k === 'markings' && thinMarks));
     const coverage = Math.round(reliable.reduce((s, k) => s + WEIGHTS[k], 0) / TOTAL * 100);
     let lvl = coverage >= 85 ? 2 : coverage >= 60 ? 1 : 0;
-    if (others.length >= 3 && commonKeys.length && commonKeys.length >= hit.filter(k => k !== 'species').length) lvl = Math.max(0, lvl - 1);
+    if (others.length >= 3 && commonKeys.length && commonKeys.length >= hit.length) lvl = Math.max(0, lvl - 1);
     const conf = [
       { main: 'Low', tone: 'warn' }, { main: 'Medium', tone: 'ok' }, { main: 'High', tone: 'good' }
     ][lvl];
@@ -189,13 +214,13 @@ function attrRow(key, res, thin) {
   const st = status(res.score), clean = v => (v && String(v).trim()) || '\u2014';
   const hint = key === 'location' && res.dist > .05 ? `${distText(res.dist)} apart` : key === 'markings' && thin ? 'Very short, counts for little' : '';
   const why = { yes: 'Same or very close', part: 'Some overlap', no: 'Does not match', na: 'Not enough information' }[st];
-  const w = WEIGHTS[key], pts = res.score == null ? null : w * res.score;
+  const w = WEIGHTS[key], pts = res.score == null ? null : w * res.score, pct = res.score == null ? null : Math.round(res.score * 100);
   return `<tr class="m-row m-row--${st}">
     <th scope="row">${LABELS[key]}</th>
     <td data-label="Your report">${esc(clean(res.mine))}</td>
     <td data-label="This report">${esc(clean(res.theirs))}${hint ? `<small>${esc(hint)}</small>` : ''}</td>
-    <td class="m-pts" data-label="Points">${pts === null ? '<span class="m-pts-num m-pts-num--na">\u2014</span>'
-      : `<span class="m-pts-num">${fmtPts(pts)}<small>/${w}</small></span>`}</td>
+    <td class="m-pts" data-label="Match">${pts === null ? '<span class="m-pts-num m-pts-num--na">\u2014</span>'
+      : `<span class="m-pts-num">${pct}%<small>${fmtPts(pts)}/${w} pts</small></span>`}</td>
     <td class="m-result"><span class="m-badge m-badge--${st}" title="${why}">${STATUS_ICON[st]}${STATUS_TEXT[st]}</span></td>
   </tr>`;
 }
@@ -229,9 +254,9 @@ function matchPanelHTML(m, mine, pool) {
     <h3 class="mw-h">Score breakdown</h3>
     <table class="m-table">
       <caption class="sr-only">How this report compares with yours, attribute by attribute</caption>
-      <thead><tr><th scope="col">Attribute</th><th scope="col">Your report</th><th scope="col">This report</th><th scope="col">Points</th><th scope="col">Result</th></tr></thead>
+      <thead><tr><th scope="col">Attribute</th><th scope="col">Your report</th><th scope="col">This report</th><th scope="col">Match</th><th scope="col">Result</th></tr></thead>
       <tbody>${Object.keys(WEIGHTS).map(k => attrRow(k, m.parts[k], a.thinMarks)).join('')}</tbody>
     </table>
-    <p class="hint m-why-foot">${fmtPts(a.earned)} of ${a.possible} points &middot; ${hit.length} of ${compared.length} attributes match.${a.skipped.length ? ' Blank on a report, so skipped: ' + a.skipped.map(k => LABELS[k].toLowerCase()).join(', ') + '.' : ''} Species and color count the most.</p>
+    <p class="hint m-why-foot">${p}% overall: ${fmtPts(a.earned)} of ${a.possible} compared points &middot; ${hit.length} of ${compared.length} attributes match.${a.skipped.length ? ' Blank on a report, so not scored (counts half against the percentage): ' + a.skipped.map(k => LABELS[k].toLowerCase()).join(', ') + '.' : ''} Only reports of the same species are compared. Color and breed count the most.</p>
   </section>`;
 }
