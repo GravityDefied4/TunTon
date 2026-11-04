@@ -13,10 +13,24 @@ window.sidebarReady = (async function () {
   if (!mount || !main) { console.error('sidebar.js: add <div id="app-nav"></div> inside .dash'); return false; }
 
   try {
-    const res = await fetch('sidebar.html');
-    if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
-    /* drop any <script> a dev server (e.g. Live Server) injected into the file */
-    const html = (await res.text()).replace(/<script[\s\S]*?(<\/script>|$)/gi, '');
+    /* The menu markup is cached for the browser tab. Every tab click is a full page load, and waiting
+       for fetch() each time is what made the sidebar vanish for a moment. With a cached copy this
+       function reaches the mount below WITHOUT awaiting anything, so the sidebar is on the page
+       before the first paint. The copy is refreshed in the background (edits to sidebar.html show
+       up from the next page on). */
+    const CACHE = 'tunton_sidebar_html';
+    const fetchMenu = async () => {
+      const res = await fetch('sidebar.html');
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      /* drop any <script> a dev server (e.g. Live Server) injected into the file */
+      const txt = (await res.text()).replace(/<script[\s\S]*?(<\/script>|$)/gi, '');
+      try { sessionStorage.setItem(CACHE, txt); } catch (e) { /* storage unavailable */ }
+      return txt;
+    };
+    let html = null;
+    try { html = sessionStorage.getItem(CACHE); } catch (e) { /* storage unavailable */ }
+    if (html == null) html = await fetchMenu();   /* first page of the visit only */
+    else fetchMenu().catch(() => {});             /* refresh for the next page */
     const doc = new DOMParser().parseFromString(html, 'text/html');
 
     const sb = doc.querySelector('#sidebar'), scrim = doc.querySelector('#scrim'), top = doc.querySelector('.dash-top');
@@ -111,7 +125,6 @@ window.sidebarReady = (async function () {
       const a = e.target.closest('a[href]');
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
       const href = a.getAttribute('href');
-      const tab = nav.querySelector('a[href="' + href + '"]');
       if (pageName(new URL(a.href).pathname) === pageName(location.pathname)) {
         e.preventDefault();
         if (href === 'add-report.html' && document.querySelector('.done:not([hidden])')) location.href = href;   /* after filing: open a fresh form */
@@ -120,7 +133,9 @@ window.sidebarReady = (async function () {
       try { if (ind.dataset.h) sessionStorage.setItem(NAV_KEY, JSON.stringify({ y: +ind.dataset.y, h: +ind.dataset.h, t: Date.now() })); } catch (err) { /* ignore */ }
       if (reduce) return;
       e.preventDefault();
-      if (tab) { unsettle(); current()?.removeAttribute('aria-current'); tab.setAttribute('aria-current', 'page'); place(tab, true); }
+      /* The highlight stays on the current tab while the page fades out. Its position was saved above, and the
+         NEXT page starts the highlight there and slides it to the new tab. Sliding here as well would be cut
+         off by the navigation and then played again, which looked like two animations. */
       root.classList.add('is-leaving');
       setTimeout(() => { location.href = a.href; }, 220);
     });

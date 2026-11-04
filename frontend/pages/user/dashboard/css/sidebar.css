@@ -368,3 +368,14 @@
 .logout-dialog__confirm:hover { border-color: #a52f23; background: #a52f23; }
 .logout-dialog button:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .logout-dialog[open], .logout-dialog[open]::backdrop { animation: none; } }
+
+/* Placeholder shown in the sidebar column until js/sidebar.js swaps in the real sidebar (first visit only),
+   so the column never flashes empty and the page does not jump. */
+#app-nav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: linear-gradient(180deg, var(--forest-dark), var(--forest));
+}
+
+@media (max-width: 1000px) { #app-nav { display: none; } }
