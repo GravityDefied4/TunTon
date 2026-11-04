@@ -20,6 +20,17 @@ const SELECT = `SELECT m.match_id, m.lost_report_id, m.found_report_id, m.score,
 const VISIBLE = `lr.status <> 'removed' AND fr.status <> 'removed'
   AND NOT (m.status = 'suggested' AND (lr.status <> 'active' OR fr.status <> 'active'))`;
 
+function toMatchable(r) {
+  if (!r) return null;
+  return {
+    ...r,
+    report_id: r.id,
+    event_date: String(r.event_date).slice(0, 10),
+    primary_color_id: r.colors?.find(c => c.is_primary)?.color_id ?? r.colors?.[0]?.color_id ?? null,
+    color_ids: (r.colors || []).map(c => c.color_id)
+  };
+}
+
 /* Raw rows -> API items with both reports attached (one extra query for all of them). */
 async function shape(rows, user) {
   const ids = [...new Set(rows.flatMap(r => [r.lost_report_id, r.found_report_id]))];
@@ -27,12 +38,24 @@ async function shape(rows, user) {
     ? await rq.findReports({ where: ['r.report_id IN (?)'], params: [ids], limit: ids.length, includeRemoved: true, viewerId: user.user_id })
     : { items: [] };
   const byId = new Map(items.map(r => [r.id, r]));
-  return rows.map(r => ({
-    id: r.match_id, score: r.score, label: r.label, status: r.status,
-    my_role: r.lost_user_id === user.user_id ? 'owner' : r.found_user_id === user.user_id ? 'finder' : null,
-    created_at: r.created_at, updated_at: r.updated_at,
-    lost: byId.get(r.lost_report_id), found: byId.get(r.found_report_id)
-  }));
+  return rows.map(r => {
+    const lostRep = byId.get(r.lost_report_id);
+    const foundRep = byId.get(r.found_report_id);
+    let breakdown = null;
+    if (lostRep && foundRep) {
+      try {
+        const scored = scoreMatch(toMatchable(lostRep), toMatchable(foundRep));
+        breakdown = scored.breakdown;
+      } catch (e) { /* ignore */ }
+    }
+    return {
+      id: r.match_id, score: Number(r.score), label: r.label, status: r.status,
+      my_role: r.lost_user_id === user.user_id ? 'owner' : r.found_user_id === user.user_id ? 'finder' : null,
+      created_at: r.created_at, updated_at: r.updated_at,
+      lost: lostRep, found: foundRep,
+      breakdown
+    };
+  });
 }
 
 const involved = (m, user) => m.lost_user_id === user.user_id || m.found_user_id === user.user_id;
@@ -49,7 +72,7 @@ exports.run = wrap(async (req, res) => {
 });
 
 /* GET /api/matches/mine  Matches for my reports. Optional: status (default: all except dismissed, or "all"),
-   as=owner|finder, min_score, limit, offset. */
+   as=owner|finder, report_id, min_score, max_score, limit, offset. */
 exports.mine = wrap(async (req, res) => {
   const { limit, offset } = v.paging(req.query);
   const where = ['(lr.user_id = ? OR fr.user_id = ?)', VISIBLE], params = [req.user.user_id, req.user.user_id];
@@ -60,10 +83,20 @@ exports.mine = wrap(async (req, res) => {
     v.oneOf(req.query.as, ['owner', 'finder'], 'as');
     where.push(req.query.as === 'owner' ? 'lr.user_id = ?' : 'fr.user_id = ?'); params.push(req.user.user_id);
   }
+  if (req.query.report_id) {
+    const repId = v.id(req.query.report_id, 'report id');
+    where.push('(lr.report_id = ? OR fr.report_id = ?)');
+    params.push(repId, repId);
+  }
   if (req.query.min_score !== undefined) {
     const n = Number(req.query.min_score);
     if (!Number.isFinite(n) || n < 0 || n > 100) throw v.bad('min_score must be 0 to 100.');
     where.push('m.score >= ?'); params.push(n);
+  }
+  if (req.query.max_score !== undefined) {
+    const n = Number(req.query.max_score);
+    if (!Number.isFinite(n) || n < 0 || n > 100) throw v.bad('max_score must be 0 to 100.');
+    where.push('m.score <= ?'); params.push(n);
   }
   const whereSql = `WHERE ${where.join(' AND ')}`;
   const [rows] = await pool.query(`${SELECT} ${whereSql} ORDER BY m.score DESC, m.match_id DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
@@ -81,8 +114,11 @@ exports.getOne = wrap(async (req, res) => {
   const [match] = await shape([m], req.user);
   if (!isAdmin && (match.lost?.status === 'removed' || match.found?.status === 'removed')) throw notFound();
 
-  const [lost, found] = await Promise.all([rq.loadForMatching(m.lost_report_id), rq.loadForMatching(m.found_report_id)]);
-  const { breakdown } = scoreMatch(lost, found);
+  let breakdown = match.breakdown;
+  if (!breakdown) {
+    const [lost, found] = await Promise.all([rq.loadForMatching(m.lost_report_id), rq.loadForMatching(m.found_report_id)]);
+    breakdown = scoreMatch(lost, found).breakdown;
+  }
   res.ok({ match: { ...match, breakdown } });
 });
 

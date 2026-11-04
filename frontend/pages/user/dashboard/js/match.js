@@ -78,14 +78,29 @@ const STATUS_ICON = {
   no: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   na: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/></svg>'
 };
-/* status colour: green 80+, yellow 60-79, orange 40-59, red below 40 */
-const tier = p => p >= 80 ? 'high' : p >= 60 ? 'mid' : p >= 40 ? 'fair' : 'low';
-const verdict = p => p >= 90 ? 'Excellent match' : p >= 75 ? 'Strong match' : p >= 60 ? 'Good match' : p >= 40 ? 'Possible match' : 'Weak match';
+/* status colour: green 80+, yellow 65-79, orange 50-64, red below 50 */
+const tier = p => p >= 80 ? 'high' : p >= 65 ? 'mid' : p >= 50 ? 'fair' : 'low';
+const verdict = p => p >= 80 ? 'Strong match' : p >= 65 ? 'Likely match' : p >= 50 ? 'Possible match' : 'Weak match';
 const matchKeys = m => Object.keys(WEIGHTS).filter(k => status(m.parts[k].score) === 'yes');
 const comparedKeys = m => Object.keys(WEIGHTS).filter(k => m.parts[k].score !== null && m.parts[k].score !== undefined);
 
+/* Extract matching attribute chips from the backend breakdown */
+function matchKeysFromBreakdown(bd) {
+  if (!bd) return [];
+  const hits = [];
+  if (bd.breed >= 10) hits.push('Breed');
+  if (bd.color >= 12) hits.push('Color');
+  if (bd.markings > 0) hits.push('Markings');
+  if (bd.size >= 10) hits.push('Size');
+  if (bd.sex === 5) hits.push('Sex');
+  if (bd.ageGroup === 5) hits.push('Age');
+  if (bd.distance >= 10) hits.push('Location');
+  if (bd.recency >= 3) hits.push('Recent');
+  return hits;
+}
+
 /* The page that shows the full report plus the reasons it matches */
-const matchHref = (other, mine) => 'report.html?id=' + encodeURIComponent(other.id) + '&match=' + encodeURIComponent(mine.id) + '#match';
+const matchHref = (other, mine, matchId) => 'report.html?id=' + encodeURIComponent(other.id) + '&match=' + encodeURIComponent(mine.id) + (matchId ? '&match_id=' + encodeURIComponent(matchId) : '') + '#match';
 
 /* =========================================================
    Deeper analysis. Nothing here changes the percentage: it explains it.
