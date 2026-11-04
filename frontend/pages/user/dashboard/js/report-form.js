@@ -7,10 +7,19 @@
 /* Species, breeds, colors and barangays come from the database (GET /api/reports/lookups); the form's
    free-text answers are matched to them. Anything that has no match is kept in the description so it is not lost. */
 let _lookups = null;
+let _databaseColorNames = null;
+const reportColorsFor = (species, otherSpecies = '') => {
+  const speciesColors = colorsFor(species, otherSpecies);
+  if (!_databaseColorNames) return speciesColors;
+  const allowed = new Set(_databaseColorNames.map(normalizeOptionValue));
+  return speciesColors.filter(color => allowed.has(normalizeOptionValue(color)));
+};
 const getLookups = () => _lookups || (_lookups = (async () => {
   const res = await authFetch('/reports/lookups');
   if (!res.ok) throw new Error('Could not reach the server. Please try again.');
-  return (await res.json()).data;
+  const data = (await res.json()).data;
+  _databaseColorNames = (data.colors || []).map(color => color.name);
+  return data;
 })().catch(e => { _lookups = null; throw e; }));
 
 const COLOR_ALIASES = { grey: 'gray' };
@@ -125,7 +134,7 @@ function fillForm(k, host) {
   form.elements.contact.defaultValue = form.elements.contact.value = prof().phone || sess?.email || '';
   form.querySelector('#' + k + '-otherspecies-list').innerHTML = OTHER_ANIMALS.map(a => `<option value="${a}"></option>`).join('');
   const targetColorList = form.querySelector('#' + k + '-color-list');
-  if (targetColorList) targetColorList.innerHTML = colorsFor('').map(color => `<option value="${esc(color)}"></option>`).join('');
+  if (targetColorList) targetColorList.innerHTML = reportColorsFor('').map(color => `<option value="${esc(color)}"></option>`).join('');
 }
 
 /* Full-size preview of one uploaded photo (the dialog is created on first use). */
@@ -229,7 +238,7 @@ function normalizeOptionValue(value) {
 }
 
 function allowedPillValues(kind, species) {
-  if (kind === 'color') return new Set(colorsFor(species).concat('Grey').map(normalizeOptionValue));   // "Grey" is accepted as another spelling of Gray
+  if (kind === 'color') return new Set(reportColorsFor(species).concat('Grey').map(normalizeOptionValue));   // "Grey" is accepted as another spelling of Gray
   if (kind === 'breed') {
     const values = Object.values(BREEDS).flat().concat(Object.values(OTHER_BREEDS).flat());
     return new Set(values.map(normalizeOptionValue));
@@ -261,7 +270,11 @@ function setupPills(form) {
   const MAX = 8;
   form.querySelectorAll('.pills').forEach(box => {
     const input = box.querySelector('.pills-input'), hidden = form.elements[box.dataset.pills];
-    const speciesNow = () => form.querySelector('input[name="species"]:checked')?.value || '';   // colors depend on the species
+    const speciesNow = () => {
+      const selected = form.querySelector('input[name="species"]:checked')?.value || '';
+      // For Other, validate against the actual animal type (Rabbit, Bird, etc.), not one generic list.
+      return selected === 'Other' ? (form.elements.otherSpecies?.value.trim() || 'Other') : selected;
+    };
     let list = [];
     const draw = () => {
       box.querySelectorAll('.pill').forEach(p => p.remove());
@@ -351,18 +364,46 @@ function setupForm(k, host) {
     breedInput.placeholder = !sp ? 'Choose a species first' : other ? 'Breed or variety, then Enter' : 'e.g. ' + (sp === 'Dog' ? 'Shih Tzu' : 'Persian') + ', then Enter';
     fillBreeds();
     const colorList = form.querySelector('#' + k + '-color-list');
-    if (colorList) colorList.innerHTML = colorsFor(sp).map(c => `<option value="${esc(c)}"></option>`).join('');
+    if (colorList) colorList.innerHTML = reportColorsFor(sp, otherInput.value).map(c => `<option value="${esc(c)}"></option>`).join('');
   };
   form.syncSpecies = syncSpecies;
+  const clearSpeciesDependentFields = () => {
+    breedBox.pills.clear();
+    const colorBox = form.querySelector('.pills[data-pills="color"]');
+    colorBox?.pills.clear();
+    if (colorBox) colorBox.dataset.rejected = '';
+    setFieldError(breedBox.querySelector('.pills-input'), false);
+    if (colorBox) setFieldError(colorBox.querySelector('.pills-input'), false);
+  };
   form.querySelectorAll('input[name="species"]').forEach(r => r.addEventListener('change', () => {
-    breedBox.pills.clear();                  // a breed from the old species no longer applies
+    clearSpeciesDependentFields(); // changing Dog/Cat/Other invalidates the previous breed and colors
     syncSpecies();
-    form.querySelector('.pills[data-pills="color"]').pills.refilter();   // nor a color that species does not have
     if (species() === 'Other') otherInput.focus();
+    lastOtherSpecies = normalizeOptionValue(otherInput.value);
   }));
-  otherInput.addEventListener('input', fillBreeds);
+  let lastOtherSpecies = normalizeOptionValue(otherInput.value);
+  const refreshOtherAnimalOptions = () => {
+    fillBreeds();
+    const colorList = form.querySelector('#' + k + '-color-list');
+    if (colorList) colorList.innerHTML = reportColorsFor('Other', otherInput.value).map(c => `<option value="${esc(c)}"></option>`).join('');
+    form.querySelector('.pills[data-pills="color"]')?.pills.refilter();
+  };
+  otherInput.addEventListener('input', refreshOtherAnimalOptions);
+  otherInput.addEventListener('change', () => {
+    const nextOtherSpecies = normalizeOptionValue(otherInput.value);
+    if (species() === 'Other' && nextOtherSpecies !== lastOtherSpecies) {
+      clearSpeciesDependentFields(); // e.g. Rabbit -> Bird: reset details tied to the old animal type
+    }
+    lastOtherSpecies = nextOtherSpecies;
+    refreshOtherAnimalOptions();
+  });
   form.addEventListener('reset', () => setTimeout(syncSpecies));
   syncSpecies();
+  getLookups().then(() => {
+    const colorList = form.querySelector('#' + k + '-color-list');
+    if (colorList) colorList.innerHTML = reportColorsFor(species(), otherInput.value).map(color => `<option value="${esc(color)}"></option>`).join('');
+    form.querySelector('.pills[data-pills="color"]')?.pills.refilter();
+  }).catch(() => { /* Submission will show a connection error if lookups remain unavailable. */ });
 
   // A user who recognizes a found-pet report can send their lost-pet details to THAT found report (add-report.html?claim=<id>).
   // This never creates a lost report of its own: the details are added to the found report for its finder to confirm.
@@ -379,6 +420,7 @@ function setupForm(k, host) {
         if (speciesRadio) speciesRadio.checked = true;
         syncSpecies();
         if (foundReport.species === 'Other') otherInput.value = foundReport.otherSpecies || '';
+        refreshOtherAnimalOptions();
         form.elements.name.value = foundReport.name || '';
         form.elements.size.value = foundReport.size || '';
         breedBox.pills.set(foundReport.breed || '');
@@ -719,7 +761,18 @@ function setupForm(k, host) {
       const submitBtn = btnSubmit, label = submitBtn.textContent;
       submitBtn.disabled = true; submitBtn.textContent = 'Saving…';
       try { savedId = String((await createReport(k, f, photos)).id); }
-      catch (ex) { err.textContent = ex.message; return; }
+      catch (ex) {
+        const colorStepError = /^Please use one of these colors:/i.test(ex.message || '');
+        if (colorStepError) {
+          const colorInput = form.querySelector('.step-about .pills[data-pills="color"] .pills-input');
+          setFieldError(colorInput, true, ex.message);
+          show(1, { scroll: false, keepErrors: true });
+          focusField(colorInput);
+        } else {
+          err.textContent = ex.message || 'Could not save the report. Please try again.';
+        }
+        return;
+      }
       finally { submitBtn.disabled = false; submitBtn.textContent = label; }
     }
     host.querySelector('.done h2').textContent = editing ? 'Report updated' : 'Report filed';
