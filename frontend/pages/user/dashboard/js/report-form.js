@@ -220,6 +220,7 @@ const REQUIRED_MESSAGES = {
   contact: 'Please enter a phone number or email so people can reach you.',
   description: 'Please describe your pet so others can recognize it.',
   howfound: 'Please tell us how you found the pet.',
+  name: 'Please enter your pet’s name.',
   otherSpecies: 'Please tell us what kind of animal it is.'
 };
 
@@ -532,7 +533,7 @@ function setupForm(k, host) {
   const progress = document.createElement('nav');
   progress.className = 'wizard-progress';
   progress.setAttribute('aria-label', 'Form progress');
-  progress.innerHTML = `<div class="wp-bar" aria-hidden="true"><span></span></div><ol class="wp-dots">${steps.map((_, i) =>
+  progress.innerHTML = `<ol class="wp-dots">${steps.map((_, i) =>
     `<li><button type="button" class="wp-dot" data-i="${i}" aria-label="Go to step ${i + 1}: ${esc(stepNames[i])}"><b>${i + 1}</b><span>${esc(stepNames[i])}</span></button></li>`).join('')}</ol>`;
   form.insertBefore(progress, form.firstChild);
   let cur = 0;
@@ -575,6 +576,7 @@ function setupForm(k, host) {
       const speciesInput = s.querySelector('input[name="species"]');
       if (!species()) { setFieldError(speciesInput, true, 'Please choose a species.'); return { msg: 'Please choose a species.', el: speciesInput }; }
       if (species() === 'Other' && !otherInput.value.trim()) { setFieldError(otherInput, true, REQUIRED_MESSAGES.otherSpecies); return { msg: REQUIRED_MESSAGES.otherSpecies, el: otherInput }; }
+      if (form.elements.name?.required && !form.elements.name.value.trim()) { setFieldError(form.elements.name, true, REQUIRED_MESSAGES.name); return { msg: REQUIRED_MESSAGES.name, el: form.elements.name }; }
       if (!form.elements.color.value && typed.color) return unrecognized('color', 'color');
       if (!form.elements.color.value) { const el = s.querySelector('.pills[data-pills="color"] input'); const msg = 'Please add the main color. Type one (e.g. brown) and press the space bar.'; setFieldError(el, true, msg); return { msg, el }; }
       const colorIssue = validatePillGroup('color', 'color');
@@ -603,7 +605,8 @@ function setupForm(k, host) {
     btnBack.hidden = cur === 0;
     btnNext.hidden = cur === steps.length - 1;
     btnSubmit.hidden = cur !== steps.length - 1;
-    progress.querySelector('.wp-bar span').style.width = ((cur + 1) / steps.length * 100) + '%';
+    /* the line leading into a step fills once the step before it is done */
+    progress.querySelectorAll('.wp-dots li').forEach((li, n) => li.classList.toggle('is-linked', n > 0 && n <= cur));
     progress.querySelectorAll('.wp-dot').forEach((d, n) => {
       d.classList.toggle('is-current', n === cur);
       d.classList.toggle('is-done', n < cur);
@@ -721,6 +724,7 @@ function setupForm(k, host) {
     }
     catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
     { const go = host.querySelector('.see-matches'); go.href = 'matching.html?report=' + encodeURIComponent(editing ? editing.id : r.id); go.hidden = false; }
+    document.querySelector('.type-pick').hidden = true; document.querySelector('.type-lead').hidden = true;
     form.hidden = true; host.querySelector('.done').hidden = false;
     host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;
     window.scrollTo(0, 0);

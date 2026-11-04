@@ -577,41 +577,55 @@ main.is-choosing .type-card b {
   margin-bottom: .25rem;
 }
 
-.wp-bar {
-  height: 8px;
-  border-radius: 999px;
-  background: #e3ece0;
-  overflow: hidden;
-}
-
-.wp-bar span {
-  display: block;
-  height: 100%;
-  width: 20%;
-  border-radius: 999px;
-  background: var(--grad-bright);
-  transition: width .3s ease;
-}
-
+/* Stepper: numbered circles joined by a line. The line between two circles fills in once the earlier step is done. */
 .wp-dots {
   display: flex;
-  justify-content: space-between;
-  gap: .5rem;
-  margin: .85rem 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .wp-dots li {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
 }
 
+/* grey track from the middle of the previous circle to the middle of this one */
+.wp-dots li + li::before,
+.wp-dots li + li::after {
+  content: "";
+  position: absolute;
+  top: calc(.95rem - 2px);          /* vertical middle of the circles (1.9rem tall) */
+  left: -50%;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.wp-dots li + li::before {
+  background: #e3ece0;
+}
+
+/* green fill, grows left to right when the previous step is complete */
+.wp-dots li + li::after {
+  background: var(--grad-bright);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .35s ease;
+}
+
+.wp-dots li.is-linked::after {
+  transform: scaleX(1);
+}
+
 .wp-dot {
+  position: relative;
+  z-index: 1;                       /* circles sit on top of the lines */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .3rem;
+  gap: .4rem;
   width: 100%;
   padding: 0;
   border: 0;
@@ -634,20 +648,31 @@ main.is-choosing .type-card b {
   background: var(--white);
   font-family: var(--font-display);
   font-size: .95rem;
-  transition: background .2s ease, color .2s ease, border-color .2s ease;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 
 .wp-dot span {
   max-width: 100%;
+  padding-inline: .25rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .wp-dot.is-done b {
-  background: var(--mint);
+  background: var(--leaf);
   border-color: var(--leaf);
-  color: var(--forest);
+  color: var(--white);
+  font-size: 0;                     /* hide the number, show a check mark instead */
+}
+
+.wp-dot.is-done b::before {
+  content: "";
+  width: .95rem;
+  height: .95rem;
+  background: currentColor;         /* drawn as a shape so it is truly centered (a text glyph sits off-center) */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .wp-dot.is-current {
@@ -740,7 +765,7 @@ main.is-choosing .type-card b {
   border-bottom-color: var(--line);
 }
 
-:root[data-theme="dark"] .wp-bar {
+:root[data-theme="dark"] .wp-dots li + li::before {
   background: var(--line-soft);
 }
 
@@ -750,9 +775,9 @@ main.is-choosing .type-card b {
 }
 
 :root[data-theme="dark"] .wp-dot.is-done b {
-  background: var(--mint);
-  border-color: var(--leaf-text);
-  color: var(--heading);
+  background: var(--leaf);
+  border-color: var(--leaf);
+  color: var(--white);
 }
 
 :root[data-theme="dark"] .wp-dot.is-current {
@@ -765,4 +790,37 @@ main.is-choosing .type-card b {
 
 :root[data-theme="dark"] .step-eyebrow {
   color: var(--leaf-text);
+}
+
+/* ---------- Green gradient shapes ----------
+   A gradient starts at the padding box by default and repeats into a transparent border, which draws a ring or
+   strip around circles, chips and buttons. Start it at the outer edge and never repeat it, so it fills the shape
+   exactly. These come last so they win over the `background:` shorthands above. */
+.chips input:checked+span,
+.wp-dot.is-current b,
+.step-num,
+.pill,
+.form .drop .upload-action,
+.file-main {
+  background-origin: border-box;
+  background-repeat: no-repeat;
+  background-clip: border-box;
+}
+
+/* Centered content: the number or label sits exactly in the middle of its circle / pill */
+.step-num,
+.wp-dot b {
+  line-height: 1;
+}
+
+.chips span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Buttons that sit side by side get the same height, so their labels line up */
+.wizard-nav .btn,
+.done .actions .btn {
+  min-height: 3rem;
 }

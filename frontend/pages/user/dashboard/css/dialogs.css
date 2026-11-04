@@ -57,3 +57,66 @@
   .report-action-dialog { width: min(calc(100vw - 1.25rem), 360px); }
   .report-action-dialog__actions { grid-template-columns: 1fr; }
 }
+
+/* ---------- Remove report dialog (was unstyled) ---------- */
+.d-delete-dialog {
+  width: min(calc(100vw - 2rem), 480px);
+  margin: auto;
+  padding: 2.4rem 2.2rem 2rem;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow), 0 28px 70px rgba(0, 0, 0, .25);
+  text-align: center;
+}
+.d-delete-dialog::backdrop { background: rgba(8, 24, 16, .5); backdrop-filter: blur(3px); }
+.d-delete-dialog[open] { animation: logout-pop .18s ease-out; }
+.d-delete-dialog[open]::backdrop { animation: logout-fade .18s ease-out; }
+.d-delete-icon {
+  display: grid; place-items: center; width: 76px; height: 76px; margin: 0 auto 1.1rem;
+  border-radius: 50%; color: var(--danger-text); background: var(--danger-bg);
+}
+.d-delete-icon svg {
+  width: 36px; height: 36px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.d-delete-dialog h2 { margin: 0 0 .5rem; color: var(--ink); font: 600 1.55rem/1.25 var(--font-display); }
+.d-delete-dialog p { margin: 0; color: var(--muted); font-size: 1rem; font-weight: 600; line-height: 1.55; }
+.d-delete-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1.7rem; }
+.d-delete-actions button {
+  min-height: 52px; padding: .6rem 1rem; border-radius: 999px; font: 700 1rem var(--font-body, inherit);
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.d-delete-cancel { border: 1.5px solid var(--line); color: var(--heading); background: var(--surface); }
+.d-delete-cancel:hover { background: var(--surface-hover); }
+.d-delete-confirm { border: 1.5px solid #c0392b; color: #fff; background: #c0392b; }
+.d-delete-confirm:hover { border-color: #a52f23; background: #a52f23; }
+.d-delete-dialog button:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .d-delete-dialog[open], .d-delete-dialog[open]::backdrop { animation: none; } }
+@media (max-width: 420px) {
+  .d-delete-dialog { padding: 1.8rem 1.4rem 1.5rem; }
+  .d-delete-actions { grid-template-columns: 1fr; }
+}
+
+/* ---------- Bigger Log out and report confirmation dialogs ---------- */
+.logout-dialog,
+.report-action-dialog { width: min(calc(100vw - 2rem), 480px); border-radius: 26px; }
+.logout-dialog__content,
+.report-action-dialog__content { gap: .45rem; padding: 2.4rem 2.2rem 2rem; }
+.logout-dialog__icon,
+.report-action-dialog__icon { width: 76px; height: 76px; margin-bottom: .9rem; }
+.logout-dialog__icon svg,
+.report-action-dialog__icon svg { width: 36px; height: 36px; }
+.logout-dialog h2,
+.report-action-dialog__title { font-size: 1.55rem; line-height: 1.25; }
+.logout-dialog p,
+.report-action-dialog__message { font-size: 1rem; }
+.logout-dialog__actions,
+.report-action-dialog__actions { gap: .8rem; margin-top: 1.5rem; }
+.logout-dialog__actions button,
+.report-action-dialog__actions button { min-height: 52px; font-size: 1rem; }
+@media (max-width: 420px) {
+  .logout-dialog__content,
+  .report-action-dialog__content { padding: 1.8rem 1.4rem 1.5rem; }
+  .logout-dialog__actions { grid-template-columns: 1fr; }
+}

@@ -1,8 +1,16 @@
 /* Attribute matching page.
    Note: the theme's --radius-sm is 999px (pill), so boxes use fixed radii below. */
 .match-list { display: grid; gap: 1rem; }
-.m-empty { text-align: center; }
-.m-empty .btn { margin-top: .5rem; }
+/* Empty state ("No report to match yet"): one centered column, so the heading, text and button line up */
+.m-empty {
+  display: flex; flex-direction: column; align-items: center;
+  max-width: 44rem; margin-inline: auto;
+  padding-block: clamp(1.5rem, 4vw, 2.5rem);
+  text-align: center;
+}
+.m-empty h2 { margin: 0 0 .75rem; font-size: clamp(1.6rem, 4vw, 2.2rem); text-wrap: balance; }
+.m-empty p { max-width: 52ch; margin: 0 auto 1.25rem; line-height: 1.6; text-wrap: balance; }
+.m-empty .btn { margin-top: .25rem; }
 
 /* Shared: score block, colour tone */
 :root { --m-mid: #d9a400; --m-fair: #e8741a; --m-low: #d93636; }
