@@ -35,6 +35,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* Species shown to people: for "Other" pets this is the animal the user typed (e.g. Rabbit). */
 const speciesOf = r => (r.species === 'Other' && r.otherSpecies) ? r.otherSpecies : (r.species || '');
+const petSexLabel = sex => ({ male: 'Male', female: 'Female', unknown: 'Unknown' }[String(sex || '').toLowerCase()] || '');
 const read = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
 const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
 const ago = d => { const n = Math.round((new Date(today) - new Date(d)) / 864e5); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n + ' days ago'; };
@@ -300,6 +301,7 @@ const toReport = row => {
     breed: row.breed_unknown ? '' : (row.breed || ''),
     color: colors.join(' and '),
     size: REPORT_SIZES[row.size] || '',
+    sex: row.sex || 'unknown',
     markings: row.markings || '',
     description: row.description || '',
     brgy: row.barangay || '',

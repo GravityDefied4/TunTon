@@ -121,13 +121,12 @@ function show(r) {
   const pics = r.photos && r.photos.length ? r.photos : [r.photo];
   document.title = title + ' | TunTon';
 
-  /* description text: lost = how it went missing; found = how it was found. Old reports fall back to markings. */
-  const desc = lost ? (r.description || r.markings || '') : (r.howFound || r.markings || '');
-  const markingsUsed = !(lost ? r.description : r.howFound);
+  /* Keep the free-text report description separate from structured pet markings. */
+  const desc = r.description || r.howFound || '';
   const facts = [
-    ['Species', speciesOf(r)], ['Breed', r.breed || 'Not specified'], ['Color', r.color],
+    ['Species', speciesOf(r)], ['Breed', r.breed || 'Not specified'], ['Sex', petSexLabel(r.sex) || 'Not specified'], ['Color', r.color],
     ['Size', r.size || 'Not specified'],
-    markingsUsed ? null : ['Markings', r.markings]
+    r.markings ? ['Markings', r.markings] : null
   ].filter(x => x && x[1]);
 
   const place = [

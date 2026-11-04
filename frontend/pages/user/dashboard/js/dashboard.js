@@ -91,8 +91,8 @@ function listHTML() {
 function detailHTML(r) {
   const state = reportState(r), lost = state === 'lost', owner = isOwner(r), cf = confirmedFind(r);
   const pics = r.photos && r.photos.length ? r.photos : [r.photo];
-  const desc = r.kind === 'lost' ? (r.description || r.markings || '') : (r.howFound || r.markings || '');
-  const facts = [['Species', speciesOf(r)], ['Breed', r.breed], ['Color', r.color], ['Size', r.size], ['Markings', r.kind === 'lost' && r.description ? r.markings : '']].filter(x => x[1]);
+  const desc = r.description || r.howFound || '';
+  const facts = [['Species', speciesOf(r)], ['Breed', r.breed], ['Sex', petSexLabel(r.sex) || 'Not specified'], ['Color', r.color], ['Size', r.size], ['Markings', r.markings]].filter(x => x[1]);
   const verb = r.kind === 'lost' ? 'Last seen' : 'Found';
   return `<button type="button" class="side-back" id="side-back">&larr; Back to results</button>
     <div class="side-photo"><img id="side-img" src="${esc(pics[0])}" alt="Photo of ${esc(titleOf(r))}"></div>
