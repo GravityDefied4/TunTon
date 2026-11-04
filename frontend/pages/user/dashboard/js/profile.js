@@ -21,7 +21,7 @@ const loadMyReports = async () => {
 
 const pfForm = $('#profile-form');
 
-/* ---------- Saving to the server (phone number + profile picture live in the users table) ---------- */
+/* ---------- Saving to the server (phone, barangay, Facebook, Messenger + profile picture live in the users table) ---------- */
 const ORIGIN = API_BASE.replace(/\/api\/?$/, '');                       // '' when the API is on the same origin
 const assetUrl = u => (u && u.startsWith('/') ? ORIGIN + u : u || '');   // uploaded pictures come back as /uploads/avatars/...
 const stripPhone = v => v.replace(/[\s-]/g, '');                         // "0917 123-4567" -> "09171234567"
@@ -38,14 +38,19 @@ function rememberServerPicture(url) {
 }
 
 /* Sends only what changed. Returns { ok, message, picture } where picture is the saved URL ('' when removed). */
-async function saveToServer(phoneValue) {
+async function saveToServer(phoneValue, brgyValue = '', facebookValue = '', messengerValue = '') {
   const result = { ok: true, picture: undefined };
   try {
     const phone = stripPhone(phoneValue);
-    if (phone !== (serverUser?.phone || '')) {
-      const res = await authFetch('/users/me', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone || null }) });
+    const changes = {};
+    if (phone !== (serverUser?.phone || '')) changes.phone = phone || null;
+    if (brgyValue !== (serverUser?.barangay || '')) changes.barangay = brgyValue || null;
+    if (facebookValue !== (serverUser?.facebook || '')) changes.facebook = facebookValue || null;
+    if (messengerValue !== (serverUser?.messenger || '')) changes.messenger = messengerValue || null;
+    if (Object.keys(changes).length) {
+      const res = await authFetch('/users/me', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes) });
       const body = await apiJson(res);
-      if (!res.ok || !body.success) return { ok: false, message: body.message || 'Could not save your phone number.' };
+      if (!res.ok || !body.success) return { ok: false, message: body.message || 'Could not save your profile details.' };
       serverUser = body.data.user;
     }
     if (draftPicture !== undefined) {
@@ -69,7 +74,7 @@ async function saveToServer(phoneValue) {
   return result;
 }
 
-/* The database is the source of truth for phone and picture, so other devices see the same values. */
+/* The database is the source of truth for phone, barangay, Facebook, Messenger and picture, so other devices see the same values. */
 let serverUser = null;
 async function loadServerProfile() {
   if (!sess) return;
@@ -79,7 +84,7 @@ async function loadServerProfile() {
     if (!res.ok || !body.success) return;
     serverUser = body.data.user;
     const p = prof(), picture = assetUrl(serverUser.picture);
-    const next = { ...p, phone: serverUser.phone || '' };
+    const next = { ...p, phone: serverUser.phone || '', brgy: serverUser.barangay || '', facebook: serverUser.facebook || '', messenger: serverUser.messenger || '' };
     if (picture) next.picture = picture; else delete next.picture;
     try { localStorage.setItem(profileKey(myId), JSON.stringify(next)); } catch { /* storage full */ }
     rememberServerPicture(picture);
@@ -251,7 +256,7 @@ pfForm.addEventListener('submit', async e => {
   const current = prof();
   const saveBtn = pfForm.querySelector('[type="submit"]'), saveLabel = saveBtn?.textContent;
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
-  const saved = await saveToServer(String(f.get('phone') || ''));   // phone + picture go to the database first
+  const saved = await saveToServer(String(f.get('phone') || ''), String(f.get('brgy') || ''), String(f.get('facebook') || '').trim(), String(f.get('messenger') || '').trim());   // phone, barangay, links + picture go to the database first
   if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = saveLabel; }
   if (!saved.ok) {
     $('#pf-note').textContent = saved.message;
@@ -262,9 +267,9 @@ pfForm.addEventListener('submit', async e => {
     ...current,
     dname: String(f.get('dname') || '').trim() || (sess?.given_name || sess?.name || 'Guest'),
     phone: serverUser ? (serverUser.phone || '') : String(f.get('phone') || '').trim(),   // the server's normalized form
-    brgy: String(f.get('brgy') || ''),
-    facebook: String(f.get('facebook') || '').trim(),
-    messenger: String(f.get('messenger') || '').trim()
+    brgy: serverUser ? (serverUser.barangay || '') : String(f.get('brgy') || ''),   // the server's saved values
+    facebook: serverUser ? (serverUser.facebook || '') : String(f.get('facebook') || '').trim(),
+    messenger: serverUser ? (serverUser.messenger || '') : String(f.get('messenger') || '').trim()
   };
   if (draftPicture !== undefined) {
     if (saved.picture) next.picture = saved.picture;

@@ -72,7 +72,7 @@ function contactFields(src) {
 /* Validate a full set of report fields (used by create, and by update after merging with the stored row). */
 async function normalize(src, type, db = pool) {
   const f = {};
-  f.pet_name = v.text(src.pet_name, 'pet_name', { max: 60, required: true });
+  f.pet_name = v.text(src.pet_name, 'pet_name', { max: 60, required: type === 'lost' }) || 'Unknown';   // pet_name is NOT NULL; a finder may not know it
   f.species = v.text(src.species, 'species', { max: 50, required: true });
   f.breed = v.text(src.breed, 'breed', { max: 50 }) || 'Unknown';   // breed is NOT NULL in the schema
   f.color = colorText(src.colors !== undefined && src.color === undefined ? src.colors : src.color);

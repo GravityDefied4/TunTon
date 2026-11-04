@@ -64,64 +64,64 @@ async function sendClaim(kind, reportId, f, photos, prev) {
   return ClaimsAPI.save(fd, prev?.id);
 }
 
-/* Sends the finished form to the server. Resolves to the saved report object, or throws an Error whose
-   message is safe to show the person. `f` is the FormData of the form, `photos` the chosen [{ name, data }]. */
-async function createReport(k, f, photos) {
-  const lk = await getLookups();
-  const extras = [];
-
-  const speciesName = f.get('species');
-  const species = lk.species.find(x => plainName(x.name) === plainName(speciesName));
-  if (!species) throw new Error(`"${speciesName}" reports are not available yet. Ask an admin to add it to the database.`);
-  if (speciesName === 'Other') extras.push('Animal: ' + (f.get('otherSpecies') || '').trim() + '.');
-
-  const options = lk.breeds.filter(b => b.species_id === species.species_id);
-  const typedBreed = (f.get('breed') || '').trim();
-  const breed = options.find(b => !b.is_unknown && b.name.toLowerCase() === typedBreed.toLowerCase())      // exact name first (e.g. 'Native (Itik)')
-    || options.find(b => !b.is_unknown && plainName(b.name) === plainName(typedBreed))                       // then ignoring brackets ('Aspin (Asong Pinoy)' = 'Aspin')
-    || options.find(b => b.is_unknown);
-  if (!breed) throw new Error('No breed is set up for this species in the database.');
-  /* Only a breed typed by hand that is not in the breeds table is kept as a note ('Mixed breed' / 'Unknown' mean the Unknown row). */
-  if (typedBreed && breed.is_unknown && !/^(mixed breed|unknown)$/i.test(typedBreed)) extras.push('Breed: ' + typedBreed + '.');
-
-  const words = (f.get('color') || '').split(/[,;]+/).map(w => w.trim()).filter(Boolean);
-  const colorIds = [], unmatched = [];
-  words.forEach(w => {
-    const key = plainName(w), c = lk.colors.find(x => plainName(x.name) === key || plainName(x.name) === COLOR_ALIASES[key]);
-    if (c && !colorIds.includes(c.color_id) && colorIds.length < 4) colorIds.push(c.color_id);
-    else if (!c) unmatched.push(w);
-  });
-  if (!colorIds.length) throw new Error('Please use one of these colors: ' + lk.colors.map(c => c.name).join(', ') + '.');
-  if (unmatched.length) extras.push('Other colors: ' + unmatched.join(', ') + '.');
-
+/* Turns the form into the multipart body the reports API expects (species, breed and color are plain text columns).
+   `f` is the FormData of the form, `photos` the chosen [{ name, data, pid? }]; photos with a pid are already on the server. */
+async function reportFormData(k, f, photos) {
+  const lk = await getLookups().catch(() => null);
   const fd = new FormData();
-  fd.append('type', k);
-  fd.append('species_id', species.species_id);
-  fd.append('breed_id', breed.breed_id);
+  const speciesName = f.get('species'), typedAnimal = (f.get('otherSpecies') || '').trim();
+  const text = n => String(f.get(n) ?? '').trim();
+  fd.append('species', speciesName === 'Other' && typedAnimal ? typedAnimal : speciesName);
+  fd.append('breed', text('breed') || 'Unknown');
+  fd.append('color', text('color'));
   fd.append('size', String(f.get('size')).toLowerCase().replace(' ', '_'));
+  if (text('sex')) fd.append('sex', text('sex').toLowerCase());
   fd.append('event_date', f.get('date'));
   fd.append('lat', f.get('lat'));
   fd.append('lng', f.get('lng'));
-  fd.append('color_ids', colorIds.join(','));
-  if ((f.get('name') || '').trim()) fd.append('pet_name', f.get('name').trim());
-  if ((f.get('markings') || '').trim()) fd.append('markings', f.get('markings').trim());
-  const description = [f.get('description'), f.get('howfound'), f.get('where') && 'Pet is now: ' + f.get('where'), ...extras]
-    .map(x => String(x || '').trim()).filter(Boolean).join('\n');
-  if (description) fd.append('description', description);
-  const brgy = lk.barangays.find(b => plainName(b.name) === plainName(f.get('brgy')));
+  if (text('name')) fd.append('pet_name', text('name'));
+  fd.append('markings', text('markings'));
+  fd.append('description', [f.get('description'), f.get('howfound'), f.get('where') && 'Pet is now: ' + f.get('where')]
+    .map(x => String(x || '').trim()).filter(Boolean).join('\n'));
+  const brgy = lk?.barangays?.find(b => plainName(b.name) === plainName(f.get('brgy')));
   if (brgy) fd.append('barangay_id', brgy.barangay_id);   // otherwise the server picks the nearest barangay
   if (k === 'lost') fd.append('search_radius_km', Math.min(5, Math.max(1, Math.round((+f.get('zone') || 1000) / 1000))));
-  for (const [i, p] of photos.entries()) {
+  /* Contact is one box (phone or email). Only a phone number or a web address fits the report's own columns. */
+  const contact = text('contact').replace(/[\s-]/g, '');
+  if (/^(\+63|09)\d{9}$/.test(contact)) fd.append('phone', contact);
+  if (/^https?:\/\//i.test(text('facebook'))) fd.append('facebook_profile_link', text('facebook'));
+  for (const [i, p] of photos.filter(x => !x.pid).entries()) {
     const blob = await (await fetch(p.data)).blob();   // the photo is a downscaled JPEG data URL
     fd.append('photos', blob, (p.name || 'photo' + (i + 1)).replace(/\.[^.]+$/, '') + '.jpg');
   }
+  return fd;
+}
 
+async function sendReport(method, path, fd) {
   let res;
-  try { res = await authFetch('/reports', { method: 'POST', body: fd }); }
+  try { res = await authFetch(path, { method, body: fd }); }
   catch { throw new Error('Could not reach the server. Please try again.'); }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.message || 'Could not save the report. Please try again.');
+  reportsReady = loadReports();   // refresh the cache so the next page sees the change
+  reportsReady.catch(() => {});
   return body.data.report;
+}
+
+/* NEW report: POST /api/reports. Resolves to the saved report, or throws an Error safe to show the person. */
+async function createReport(k, f, photos) {
+  const fd = await reportFormData(k, f, photos);
+  fd.append('type', k);
+  return sendReport('POST', '/reports', fd);
+}
+
+/* EDIT own report: PUT /api/reports/:id. Photos no longer in the form are removed on the server. */
+async function updateReport(existing, k, f, photos) {
+  const fd = await reportFormData(k, f, photos);
+  const kept = photos.filter(p => p.pid).map(p => p.pid);
+  const gone = (existing.photoIds || []).filter(id => !kept.includes(id));
+  if (gone.length) fd.append('remove_photo_ids', gone.join(','));
+  return sendReport('PUT', '/reports/' + encodeURIComponent(existing.id), fd);
 }
 
 /* The form markup lives in add-report.html (#view-lost and #view-found). This only fills in what depends on the user or the day:
@@ -516,11 +516,11 @@ function setupForm(k, host) {
 
   /* ---------- Edit mode: add-report.html?edit=<id> (owner only) ---------- */
   const editId = new URLSearchParams(location.search).get('edit');
-  const editing = editId ? read(REPORTS_KEY, []).find(x => x.id === editId && x.owner === myId && x.kind === k) : null;
+  const editing = editId ? mergedReports().find(x => x.id === editId && x.owner === myId && x.kind === k && x.status === 'active') : null;
   if (editId && !editing) {
     const note = document.createElement('p');
     note.className = 'match-banner';
-    note.textContent = 'This report could not be found, or it is not yours to edit.';
+    note.textContent = 'This report could not be found, is no longer active, or is not yours to edit.';
     form.parentElement.insertBefore(note, form); form.hidden = true;
   }
   /* Fills the whole form from a saved object (a report, or a response such as a find or a claim).
@@ -750,42 +750,28 @@ function setupForm(k, host) {
       return;
     }
     let savedId;
-    if (editing) {
-      /* Editing is still local only (the server has no form for it here yet). */
-      const r = { id: editing.id, kind: k, species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: editing.created, owner: editing.owner, ownerName: editing.ownerName, status: editing.status, finds: editing.finds, claims: editing.claims, found: editing.found, matchFor: editing.matchFor };
-      try { saveReport({ ...editing, ...r }); }
-      catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
-      savedId = editing.id;
-    } else {
-      /* A new report is saved in the database. Nothing is stored in the browser. */
-      const submitBtn = btnSubmit, label = submitBtn.textContent;
-      submitBtn.disabled = true; submitBtn.textContent = 'Saving…';
-      try { savedId = String((await createReport(k, f, photos)).id); }
-      catch (ex) {
-        const colorStepError = /^Please use one of these colors:/i.test(ex.message || '');
-        if (colorStepError) {
-          const colorInput = form.querySelector('.step-about .pills[data-pills="color"] .pills-input');
-          setFieldError(colorInput, true, ex.message);
-          show(1, { scroll: false, keepErrors: true });
-          focusField(colorInput);
-        } else {
-          err.textContent = ex.message || 'Could not save the report. Please try again.';
-        }
-        return;
+    const saveBtn = btnSubmit, saveLabel = saveBtn.textContent;
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    try {
+      /* Saved in the database (POST / PUT /api/reports). Nothing is stored in the browser. */
+      savedId = String((editing ? await updateReport(editing, k, f, photos) : await createReport(k, f, photos)).id);
+    } catch (ex) {
+      const colorStepError = /color/i.test(ex.message || '');
+      if (colorStepError) {
+        const colorInput = form.querySelector('.step-about .pills[data-pills="color"] .pills-input');
+        setFieldError(colorInput, true, ex.message);
+        show(1, { scroll: false, keepErrors: true });
+        focusField(colorInput);
+      } else {
+        err.textContent = ex.message || 'Could not save the report. Please try again.';
       }
-      finally { submitBtn.disabled = false; submitBtn.textContent = label; }
-    }
+      return;
+    } finally { saveBtn.disabled = false; saveBtn.textContent = saveLabel; }
     host.querySelector('.done h2').textContent = editing ? 'Report updated' : 'Report filed';
     host.querySelector('.done p').textContent = editing ? 'Your changes have been saved.' : k === 'lost' ? 'Your lost pet report is now on the map.' : 'Thank you! Your found report is now on the map.';
     host.querySelector('.done .actions a').href = editing ? 'report.html?id=' + encodeURIComponent(editing.id) : 'dashboard.html';
     host.querySelector('.done .actions a').textContent = editing ? 'View report' : 'View on map';
-    const r = { id: 'u' + Date.now(), kind: k, species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), size: f.get('size'), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), markings: f.get('markings'), description: f.get('description') || '', howFound: f.get('howfound') || '', brgy: f.get('brgy'), date: f.get('date'), contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), zone: +f.get('zone') || 0, where: f.get('where') || '', lat: +f.get('lat'), lng: +f.get('lng'), photo: photos[0].data, photos: photos.map(p => p.data), created: Date.now(), owner: myId, ownerName: shownName(), status: 'active', matchFor: form.dataset.matchFor || '' };
-    try {
-      if (editing) saveReport({ ...editing, ...r, id: editing.id, owner: editing.owner, ownerName: editing.ownerName, created: editing.created, status: editing.status, finds: editing.finds, claims: editing.claims, found: editing.found, matchFor: editing.matchFor });
-      else localStorage.setItem(REPORTS_KEY, JSON.stringify(read(REPORTS_KEY, []).concat(r)));
-    }
-    catch { err.textContent = 'Could not save this report (browser storage is full).'; return; }
-    { const go = host.querySelector('.see-matches'); go.href = 'matching.html?report=' + encodeURIComponent(editing ? editing.id : r.id); go.hidden = false; }
+    { const go = host.querySelector('.see-matches'); go.href = 'matching.html?report=' + encodeURIComponent(savedId); go.hidden = false; }
     document.querySelector('.type-pick').hidden = true; document.querySelector('.type-lead').hidden = true;
     form.hidden = true; host.querySelector('.done').hidden = false;
     host.querySelector('.match-banner')?.remove(); delete form.dataset.matchFor; delete form.dataset.claimFor; delete form.dataset.updating;

@@ -93,12 +93,6 @@ const whereAmI = () => _here || (_here = new Promise(done => {
 const awayText = (here, r) => here && isFinite(r.lat) && isFinite(r.lng) ? distText(km(here, [r.lat, r.lng])) + ' away' : '';
 const reportState = r => r.kind === 'lost' && confirmedFind(r) ? 'found' : r.kind;
 const isOwner = r => !!r.owner && r.owner === myId;
-/* Save one report (a sample is copied into storage the first time it changes). Throws if storage is full. */
-const saveReport = u => {
-  const saved = read(REPORTS_KEY, []), has = saved.some(x => x.id === u.id);
-  localStorage.setItem(REPORTS_KEY, JSON.stringify(has ? saved.map(x => x.id === u.id ? u : x) : saved.concat(u)));
-};
-
 /* Map helpers (only used on pages that load Leaflet) */
 /* Locks a Leaflet map to Dagupan City: it cannot be dragged outside the city, and it cannot be
    zoomed out further than the whole city (re-checked whenever the map changes size). */
@@ -280,8 +274,9 @@ rememberMe();
 const REPORT_SIZES = { small: 'Small', medium: 'Medium', large: 'Large', extra_large: 'Extra large' };
 const REPORT_ORIGIN = API_BASE.replace(/\/api\/?$/, '');                        // '' when the API is on the same origin
 const reportAsset = u => (u && u.startsWith('/') ? REPORT_ORIGIN + u : u || '');   // photos come back as /uploads/reports/...
-/* One API report -> the object the pages use. Contact details are never sent by the server (they are
-   only shared after a claim is approved), so contact stays empty. The owner's first name and picture do come from the API (owner_name, owner_picture). */
+/* One API report -> the object the pages use. The server sends the report's phone, Facebook link and the
+   poster's email, which are joined into `contact` (phone first) and split again by splitContact() for the contact card.
+   The owner's first name and picture come from the API too (owner_name, owner_picture). */
 const toReport = row => {
   const photos = (row.photos || []).map(p => reportAsset(p.url));
   const colors = (row.colors || []).map(c => c.name);
@@ -289,9 +284,11 @@ const toReport = row => {
     id: String(row.id),
     kind: row.type,
     owner: row.is_mine ? myId : 'user-' + row.user_id,
-    ownerName: row.owner_name || '', ownerPicture: reportAsset(row.owner_picture), contact: '', facebook: '',
-    name: row.pet_name || '',
-    species: row.species,
+    ownerName: row.owner_name || '', ownerPicture: reportAsset(row.owner_picture),
+    contact: [row.phone, row.owner_email].filter(Boolean).join(', '), facebook: row.facebook_profile_link || '',
+    name: row.pet_name === 'Unknown' && row.type === 'found' ? '' : (row.pet_name || ''),   // finders may not know the name
+    species: ['Dog', 'Cat'].includes(row.species) ? row.species : 'Other',   // species is free text in the database
+    otherSpecies: ['Dog', 'Cat'].includes(row.species) ? '' : (row.species || ''),
     breed: row.breed_unknown ? '' : (row.breed || ''),
     color: colors.join(' and '),
     size: REPORT_SIZES[row.size] || '',
@@ -304,6 +301,7 @@ const toReport = row => {
     zone: row.search_radius_km ? row.search_radius_km * 1000 : 0,   // metres
     photo: photos[0] || reportAsset(row.primary_photo),
     photos,
+    photoIds: (row.photos || []).map(p => p.photo_id),   // needed to remove photos when editing
     status: row.status,
     created: row.created_at ? Date.parse(row.created_at) : 0
   };

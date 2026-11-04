@@ -298,10 +298,19 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
         dialog.addEventListener('click', ev => {
           if (ev.target === dialog || ev.target.closest('.d-delete-cancel')) { dialog.close(); return; }
           if (!ev.target.closest('.d-delete-confirm')) return;
-          const all = read(REPORTS_KEY, []);
-          localStorage.setItem(REPORTS_KEY, JSON.stringify(all.filter(x => !(x.id === current?.id && x.owner === myId))));
-          dialog.close();
-          location.href = 'profile.html';
+          const btn = ev.target.closest('.d-delete-confirm'), label = btn.textContent;
+          btn.disabled = true; btn.textContent = 'Removing…';
+          /* DELETE /api/reports/:id removes it from the database (owner only; its photos, matches and claims go too). */
+          authFetch('/reports/' + encodeURIComponent(current.id), { method: 'DELETE' })
+            .then(async res => {
+              if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Could not remove the report.');
+              dialog.close();
+              location.href = 'profile.html';
+            })
+            .catch(ex => {
+              btn.disabled = false; btn.textContent = label;
+              dialog.querySelector('p').textContent = ex.message === 'Failed to fetch' ? 'Could not reach the server. Please try again.' : ex.message;
+            });
         });
       }
       dialog.showModal();

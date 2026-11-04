@@ -107,7 +107,7 @@ function requestedKind() {
   if (params.get('claim')) return 'lost';
   if (params.get('match')) return 'found';
   const editId = params.get('edit');
-  if (editId) return read(REPORTS_KEY, []).find(x => x.id === editId && x.owner === myId)?.kind || 'lost';
+  if (editId) return 'edit';   // resolved below, once the reports are loaded from the database
   return null;
 }
 
@@ -115,7 +115,9 @@ const fixed = requestedKind();      // claim / match / edit: the type is already
 if (fixed) {
   picker.hidden = true;
   /* claim / match point at a report in the database: wait for it (a failed load still opens the form) */
-  reportsReady.catch(() => {}).then(() => show(fixed));
+  reportsReady.catch(() => {}).then(() => {
+    show(fixed === 'edit' ? (mergedReports().find(x => x.id === params.get('edit') && x.owner === myId)?.kind || 'lost') : fixed);
+  });
 } else {
   const t = params.get('type');
   if (t === 'lost' || t === 'found') show(t);

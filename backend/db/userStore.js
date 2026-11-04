@@ -10,7 +10,9 @@ const pool = require('./pool');
 /* picture_url holds either a Google URL (starts with http) or just the file name of a picture the person uploaded
    (e.g. 3f2a....jpg, kept in backend/uploads/avatars/). A Google login refreshes the Google picture but must not replace an uploaded one. */
 
-const COLS = `user_id, google_sub, full_name, email, phone, picture_url AS picture, role, status, created_at, last_login_at`;
+const COLS = `user_id, google_sub, full_name, email, phone, facebook_profile_link, messenger_profile_link, barangay_id,
+  (SELECT b.name FROM barangays b WHERE b.barangay_id = users.barangay_id) AS barangay,
+  picture_url AS picture, role, status, created_at, last_login_at`;
 
 const withGivenName = u => u && { ...u, given_name: (u.full_name || u.email).split(' ')[0] };
 
@@ -90,11 +92,20 @@ module.exports = {
     return module.exports.findById(id);
   },
 
+  /* Barangay id for a barangay name (the profile form sends the name). null when there is no such barangay. */
+  async barangayIdByName(name) {
+    const [rows] = await pool.query('SELECT barangay_id FROM barangays WHERE name = ? LIMIT 1', [name]);
+    return rows[0]?.barangay_id ?? null;
+  },
+
   /* PUT /api/users/me. Only the fields passed are changed. */
-  async updateProfile(id, { full_name, phone }) {
+  async updateProfile(id, { full_name, phone, facebook_profile_link, messenger_profile_link, barangay_id }) {
     const sets = [], params = [];
     if (full_name !== undefined) { sets.push('full_name = ?'); params.push(full_name); }
     if (phone !== undefined) { sets.push('phone = ?'); params.push(phone); }
+    if (facebook_profile_link !== undefined) { sets.push('facebook_profile_link = ?'); params.push(facebook_profile_link); }
+    if (messenger_profile_link !== undefined) { sets.push('messenger_profile_link = ?'); params.push(messenger_profile_link); }
+    if (barangay_id !== undefined) { sets.push('barangay_id = ?'); params.push(barangay_id); }
     if (sets.length) await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE user_id = ?`, [...params, id]);
     return module.exports.findById(id);
   }

@@ -9,13 +9,29 @@ const { checkFiles, discardFiles, UPLOAD_ROOT } = require('../middleware/upload'
 
 const PHONE = /^(\+63|09)[0-9]{9}$/;   // same rule as chk_users_phone in schema.sql
 
-const me = u => ({ ...publicUser(u), phone: u.phone ?? null });
+const me = u => ({ ...publicUser(u), phone: u.phone ?? null, facebook: u.facebook_profile_link ?? null,
+  messenger: u.messenger_profile_link ?? null, barangay: u.barangay ?? null });
+
+/* Only these sites are accepted for the social links (same lists as the profile form). */
+const SOCIAL = {
+  facebook: { name: 'Facebook', hosts: ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.com', 'www.fb.com'] },
+  messenger: { name: 'Messenger', hosts: ['m.me', 'www.messenger.com', 'messenger.com'] }
+};
+function socialLink(value, key) {
+  if (value !== null && value !== undefined && typeof value !== 'string') throw v.bad(`${SOCIAL[key].name} link must be text.`);
+  const t = v.text(value, key, { max: 255 });
+  if (t === null) return null;
+  let u;
+  try { u = new URL(t); } catch { throw v.bad(`${SOCIAL[key].name} link must be a web address (https://...).`); }
+  if (!/^https?:$/.test(u.protocol) || !SOCIAL[key].hosts.includes(u.hostname.toLowerCase())) throw v.bad(`Enter a ${SOCIAL[key].name} link (for example https://${SOCIAL[key].hosts[0]}/your.name).`);
+  return t;
+}
 
 /* GET /api/users/me */
 exports.getMe = (req, res) => res.ok({ user: me(req.user) });
 
-/* PUT /api/users/me  { full_name?, phone? }  Only the fields sent are changed. phone "" or null clears it.
-   (The users table has no barangay column, so a barangay field is ignored.) */
+/* PUT /api/users/me  { full_name?, phone?, facebook?, messenger?, barangay? }  Only the fields sent are changed.
+   An empty value or null clears phone / facebook / messenger / barangay. barangay is the barangay's name. */
 exports.updateMe = wrap(async (req, res) => {
   const body = req.body || {};
   const changes = {};
@@ -27,7 +43,19 @@ exports.updateMe = wrap(async (req, res) => {
     if (p !== null && !PHONE.test(p)) throw v.bad('Phone must look like 09171234567 or +63 917 123 4567.');
     changes.phone = p;
   }
-  if (!Object.keys(changes).length) throw v.bad('Nothing to update. Send full_name and/or phone.');
+  if ('facebook' in body) changes.facebook_profile_link = socialLink(body.facebook, 'facebook');
+  if ('messenger' in body) changes.messenger_profile_link = socialLink(body.messenger, 'messenger');
+  if ('barangay' in body) {
+    if (body.barangay !== null && body.barangay !== undefined && typeof body.barangay !== 'string') throw v.bad('Barangay must be text.');
+    const name = v.text(body.barangay, 'barangay', { max: 60 });
+    if (name === null) changes.barangay_id = null;
+    else {
+      const bid = await users.barangayIdByName(name);
+      if (bid === null) throw v.bad('Choose a barangay from the list.');
+      changes.barangay_id = bid;
+    }
+  }
+  if (!Object.keys(changes).length) throw v.bad('Nothing to update. Send full_name, phone, facebook, messenger and/or barangay.');
 
   const user = await users.updateProfile(req.user.user_id, changes);
   await logActivity({ userId: req.user.user_id, action: 'profile_updated', table: 'users', id: req.user.user_id, details: { fields: Object.keys(changes) } });

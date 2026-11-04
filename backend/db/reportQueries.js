@@ -1,6 +1,6 @@
 /* Shared report queries (plan 4.3 task 6: radius search, candidate lookup, per-barangay).
-   Reports are read through one projection that NEVER selects contact details (plan rule 5;
-   same columns as the v_public_reports view). Points are built with
+   Reports are read through one projection. Contact details (phone, Facebook link, poster email) are
+   included so logged-in users can reach the owner / finder (the routes require login). Points are built with
    ST_GeomFromText('POINT(lng lat)', 4326, 'axis-order=long-lat') because MySQL 8 reads
    SRID 4326 coordinates as lat,lng unless told otherwise. */
 const pool = require('./pool');
@@ -11,10 +11,11 @@ const FROM = `FROM pet_reports r
   LEFT JOIN users ow ON ow.user_id = r.user_id`;   // ow = poster: only first name + picture are exposed (see hydrate)
 
 /* species, breed and color are plain text columns of pet_reports (no lookup tables). phone / facebook_profile_link
-   on the report are contact details and are deliberately not selected. */
+   on the report and the poster's email are the contact details shown on the report page. */
 const COLS = `r.report_id, r.user_id, r.report_type, r.pet_name, r.species, r.breed, r.color, r.size, r.sex, r.markings,
   r.description, r.event_date, r.lat, r.lng, r.barangay_id, bg.name AS barangay, r.search_radius_km,
-  r.status, r.created_at, r.updated_at, ow.full_name AS _owner_full_name, ow.picture_url AS _owner_picture`;
+  r.status, r.created_at, r.updated_at, r.phone, r.facebook_profile_link,
+  ow.full_name AS _owner_full_name, ow.picture_url AS _owner_picture, ow.email AS _owner_email`;
 
 const POINT = "ST_GeomFromText(?, 4326, 'axis-order=long-lat')";
 const pointWkt = (lat, lng) => `POINT(${Number(lng)} ${Number(lat)})`;   // numbers only: no injection path
@@ -34,7 +35,7 @@ async function nearestBarangayId(lat, lng, db = pool) {
   return rows[0]?.barangay_id ?? null;
 }
 
-/* Who posted a report, shown as "Posted by <first name>". Never the email, phone or full name.
+/* Who posted a report, shown as "Posted by <first name>". Contact details are returned separately (phone, facebook_profile_link, owner_email).
    picture_url is a Google URL (http...) or the file name of an uploaded avatar (public, served from /uploads/avatars). */
 const ownerFirstName = full => (full || '').trim().split(/\s+/)[0] || '';
 const ownerPictureUrl = p => !p ? '' : /^https?:\/\//i.test(p) ? p : `/uploads/avatars/${encodeURIComponent(p)}`;
@@ -47,12 +48,13 @@ async function hydrate(rows, viewerId = null, db = pool) {
     'SELECT photo_id, report_id, file_path, is_primary FROM report_photos WHERE report_id IN (?) ORDER BY is_primary DESC, photo_id', [ids]);
   const by = (list, id) => list.filter(x => x.report_id === id);
   return rows.map(r => {
-    const { report_id, report_type, _owner_full_name, _owner_picture, ...rest } = r;
+    const { report_id, report_type, _owner_full_name, _owner_picture, _owner_email, ...rest } = r;
     const ph = by(photos, report_id).map(p => ({ photo_id: p.photo_id, url: photoUrl(p.file_path), is_primary: !!p.is_primary }));
     return {
       id: report_id, type: report_type, ...rest,
       owner_name: ownerFirstName(_owner_full_name),
       owner_picture: ownerPictureUrl(_owner_picture),
+      owner_email: _owner_email || '',
       breed_unknown: isUnknownBreed(r.breed),
       distance_km: r.distance_km === undefined ? undefined : Math.round(r.distance_km * 100) / 100,
       colors: splitColors(r.color).map((name, i) => ({ name, is_primary: i === 0 })),   // derived from the single color text column
