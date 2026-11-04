@@ -36,6 +36,23 @@ function applyMatch({ form, host, map }, r, mine) {
   form.elements.brgy.value = r.brgy;
   form.dataset.matchFor = r.id;
   host.querySelector('.match-banner')?.remove();
+
+  // The pet's identity/appearance belongs to the original lost-pet report.
+  // A finder may add discovery details, but must not change the owner's description.
+  const about = form.querySelector('.step-about');
+  if (about && !about.dataset.locked) {
+    about.dataset.locked = 'true';
+    about.classList.add('is-locked');
+    const notice = document.createElement('p');
+    notice.className = 'about-lock-note';
+    notice.setAttribute('role', 'note');
+    notice.innerHTML = '<strong>Pet details are locked.</strong> These details come from the original lost-pet report and can only be changed by the pet owner.';
+    about.querySelector('.step-head').appendChild(notice);
+    about.querySelectorAll('input, select, textarea, button').forEach(control => {
+      control.disabled = true;
+    });
+  }
+
   const what = esc(r.name || [r.color, speciesOf(r)].filter(Boolean).join(' '));
   host.querySelector('.box').insertAdjacentHTML('afterbegin', mine
     ? `<p class="match-banner">You are editing the found report you sent to &ldquo;${what}&rdquo; (lost in ${esc(r.brgy)}). Change what you need, then save. It does not create a new found report.</p>`

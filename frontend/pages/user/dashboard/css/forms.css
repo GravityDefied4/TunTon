@@ -949,3 +949,27 @@ main.is-choosing .type-card b {
     transform: none;
   }
 }
+
+/* Read-only pet identity when a finder responds to an existing lost report. */
+.step-about.is-locked .step-body {
+  opacity: .78;
+}
+.step-about.is-locked .step-body input:disabled,
+.step-about.is-locked .step-body textarea:disabled,
+.step-about.is-locked .step-body select:disabled {
+  cursor: not-allowed;
+}
+.step-about.is-locked .step-body .chips label,
+.step-about.is-locked .step-body .pills {
+  cursor: not-allowed;
+}
+.about-lock-note {
+  margin: .85rem 0 0;
+  padding: .75rem 1rem;
+  border: 1px solid var(--line, #cfe5c8);
+  border-radius: 12px;
+  background: var(--mint);
+  color: var(--ink, #174b35);
+  font-size: .9rem;
+  line-height: 1.5;
+}

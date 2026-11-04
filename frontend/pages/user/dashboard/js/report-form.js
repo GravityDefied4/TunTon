@@ -581,7 +581,7 @@ function setupForm(k, host) {
       setFieldError(el, true, 'Please add at least one photo of the pet.');
       return { msg: 'Please add at least one photo of the pet.', el };
     }
-    if (s.querySelector('input[name="species"]')) {
+    if (s.querySelector('input[name="species"]') && !s.classList.contains('is-locked')) {
       const speciesInput = s.querySelector('input[name="species"]');
       if (!species()) { setFieldError(speciesInput, true, 'Please choose a species.'); return { msg: 'Please choose a species.', el: speciesInput }; }
       if (species() === 'Other' && !otherInput.value.trim()) { setFieldError(otherInput, true, REQUIRED_MESSAGES.otherSpecies); return { msg: REQUIRED_MESSAGES.otherSpecies, el: otherInput }; }
