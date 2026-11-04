@@ -384,38 +384,37 @@ main.is-choosing .type-card b {
 }
 
 
-/* ---------- Report type cards: clean white cards, red for lost, green for found ----------
-   Each card sets its own tone. Idle: colored icon. Hover: lifts.
-   Selected: colored border and ring, tinted background and a solid icon. */
+/* ---------- Report type cards: calm and neutral ----------
+   Lost keeps a soft red, found keeps the brand green, so the two stay easy to tell apart.
+   Hover = the card rises and the icon fills with its color. Selected = colored border and a solid icon.
+   The card itself stays white: no tinted fill, no glow ring, no check badge, no icon scaling. */
 .type-card {
-  --tone: var(--leaf);
-  --tone-soft: #e4f5d3;
-  --tone-ring: rgba(47, 160, 90, .22);
-  --tone-glow: rgba(47, 160, 90, .28);
+  --tone: var(--forest);
+  --tone-soft: var(--mint);
+  --tone-ring: rgba(15, 107, 63, .14);
+  --on-tone: #fff;
   border: 2px solid #e3ece0;
   background: var(--white);
-  box-shadow: 0 2px 10px rgba(15, 107, 63, .07);
-  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
+  box-shadow: 0 2px 10px rgba(15, 107, 63, .06);
+  transition: transform .25s cubic-bezier(.2, .8, .3, 1.2), border-color .18s ease, box-shadow .25s ease, background .18s ease, opacity .2s ease, filter .2s ease;
 }
 
 .type-card--lost {
-  --tone: #d11f1f;
-  --tone-soft: #fde6e6;
-  --tone-ring: rgba(209, 31, 31, .18);
-  --tone-glow: rgba(209, 31, 31, .26);
+  --tone: #d94141;
+  --tone-soft: #fdeeee;
+  --tone-ring: rgba(217, 65, 65, .13);
 }
 
 .type-card--found {
-  --tone: #0f8a43;
-  --tone-soft: #dff3e6;
-  --tone-ring: rgba(15, 138, 67, .18);
-  --tone-glow: rgba(15, 138, 67, .26);
+  --tone: var(--forest);
+  --tone-soft: var(--mint);
+  --tone-ring: rgba(15, 107, 63, .14);
 }
 
 .type-card svg {
   background: var(--tone-soft);
   stroke: var(--tone);
-  transition: background .18s ease, stroke .18s ease, transform .18s ease;
+  transition: background .2s ease, stroke .2s ease;
 }
 
 .type-card b {
@@ -425,43 +424,51 @@ main.is-choosing .type-card b {
 /* hover and keyboard focus */
 .type-pick label:hover .type-card,
 .type-pick input:focus-visible+.type-card {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   border-color: var(--tone);
-  box-shadow: 0 10px 24px var(--tone-ring);
+  box-shadow: 0 14px 28px -8px var(--tone-ring), 0 4px 10px rgba(15, 40, 25, .06);
 }
 
-.type-pick label:hover .type-card svg {
-  transform: scale(1.06);
+.type-pick label:hover .type-card svg,
+.type-pick input:focus-visible+.type-card svg {
+  background: var(--tone);
+  stroke: var(--on-tone);
+}
+
+.type-pick label:active .type-card {
+  transform: translateY(-1px) scale(.992);
+  transition-duration: .08s;
 }
 
 .type-pick input:focus-visible+.type-card {
-  outline: 3px solid var(--tone);
+  outline: 3px solid var(--leaf);
   outline-offset: 3px;
 }
 
 /* selected */
 .type-pick input:checked+.type-card {
   border-color: var(--tone);
-  background: linear-gradient(180deg, var(--tone-soft) 0%, var(--white) 70%);
-  box-shadow: 0 0 0 4px var(--tone-ring), 0 14px 30px var(--tone-glow);
+  background: var(--white);
+  box-shadow: 0 4px 14px var(--tone-ring);
 }
 
 .type-pick input:checked+.type-card svg {
   background: var(--tone);
-  stroke: var(--white);
+  stroke: var(--on-tone);
 }
 
-.type-pick input:checked+.type-card b {
-  color: var(--tone);
-}
-
-/* once one is chosen, the other one steps back a little (still clear and clickable) */
+/* once a type is chosen, the other card is visibly "off": faded, desaturated and flat.
+   It stays fully clickable and wakes up on hover. */
 .type-pick:has(input:checked) label:not(:has(input:checked)) .type-card {
-  opacity: .72;
+  opacity: .68;
+  filter: saturate(.5);
+  box-shadow: none;
 }
 
-.type-pick:has(input:checked) label:not(:has(input:checked)):hover .type-card {
+.type-pick:has(input:checked) label:not(:has(input:checked)):hover .type-card,
+.type-pick:has(input:checked) label:not(:has(input:checked)) input:focus-visible+.type-card {
   opacity: 1;
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -472,7 +479,8 @@ main.is-choosing .type-card b {
   }
 
   .type-pick label:hover .type-card,
-  .type-pick label:hover .type-card svg {
+  .type-pick label:active .type-card,
+  .type-pick input:focus-visible+.type-card {
     transform: none;
   }
 }
@@ -577,41 +585,55 @@ main.is-choosing .type-card b {
   margin-bottom: .25rem;
 }
 
-.wp-bar {
-  height: 8px;
-  border-radius: 999px;
-  background: #e3ece0;
-  overflow: hidden;
-}
-
-.wp-bar span {
-  display: block;
-  height: 100%;
-  width: 20%;
-  border-radius: 999px;
-  background: var(--grad-bright);
-  transition: width .3s ease;
-}
-
+/* Stepper: numbered circles joined by a line. The line between two circles fills in once the earlier step is done. */
 .wp-dots {
   display: flex;
-  justify-content: space-between;
-  gap: .5rem;
-  margin: .85rem 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .wp-dots li {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
 }
 
+/* grey track from the middle of the previous circle to the middle of this one */
+.wp-dots li + li::before,
+.wp-dots li + li::after {
+  content: "";
+  position: absolute;
+  top: calc(.95rem - 2px);          /* vertical middle of the circles (1.9rem tall) */
+  left: -50%;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.wp-dots li + li::before {
+  background: #e3ece0;
+}
+
+/* green fill, grows left to right when the previous step is complete */
+.wp-dots li + li::after {
+  background: var(--grad-bright);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .35s ease;
+}
+
+.wp-dots li.is-linked::after {
+  transform: scaleX(1);
+}
+
 .wp-dot {
+  position: relative;
+  z-index: 1;                       /* circles sit on top of the lines */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .3rem;
+  gap: .4rem;
   width: 100%;
   padding: 0;
   border: 0;
@@ -625,8 +647,11 @@ main.is-choosing .type-card b {
 }
 
 .wp-dot b {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: none;
   width: 1.9rem;
   height: 1.9rem;
   border-radius: 50%;
@@ -634,20 +659,34 @@ main.is-choosing .type-card b {
   background: var(--white);
   font-family: var(--font-display);
   font-size: .95rem;
-  transition: background .2s ease, color .2s ease, border-color .2s ease;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 
 .wp-dot span {
   max-width: 100%;
+  padding-inline: .25rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .wp-dot.is-done b {
-  background: var(--mint);
+  background: var(--leaf);
   border-color: var(--leaf);
-  color: var(--forest);
+  color: var(--white);
+  font-size: 0;                     /* hide the number, show a check mark instead */
+}
+
+.wp-dot.is-done b::before {
+  content: "";
+  flex: none;
+  display: block;
+  width: .95rem;
+  height: .95rem;
+  transform: translateY(.5px);
+  background: currentColor;         /* drawn as a shape so it is truly centered (a text glyph sits off-center) */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .wp-dot.is-current {
@@ -704,9 +743,10 @@ main.is-choosing .type-card b {
 /* ---------- Dark theme: Add pet report ----------
    The cards, steps and progress bar used fixed light colors; point them at the theme tokens. */
 :root[data-theme="dark"] .type-card {
+  --tone: #5fcf86;
   --tone-soft: rgba(95, 207, 134, .14);
-  --tone-ring: rgba(95, 207, 134, .28);
-  --tone-glow: rgba(0, 0, 0, .45);
+  --tone-ring: rgba(95, 207, 134, .18);
+  --on-tone: var(--page);   /* dark glyph on the light solid icon keeps contrast */
   border-color: var(--line);
   background: var(--surface);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
@@ -715,7 +755,7 @@ main.is-choosing .type-card b {
 :root[data-theme="dark"] .type-card--lost {
   --tone: #ff8f85;
   --tone-soft: rgba(255, 143, 133, .14);
-  --tone-ring: rgba(255, 143, 133, .28);
+  --tone-ring: rgba(255, 143, 133, .18);
 }
 
 :root[data-theme="dark"] .type-card--found {
@@ -723,12 +763,8 @@ main.is-choosing .type-card b {
 }
 
 :root[data-theme="dark"] .type-pick input:checked+.type-card {
-  background: linear-gradient(180deg, var(--tone-soft) 0%, var(--surface) 70%);
-  box-shadow: 0 0 0 4px var(--tone-ring), 0 14px 30px var(--tone-glow);
-}
-
-:root[data-theme="dark"] .type-pick input:checked+.type-card svg {
-  stroke: var(--page);   /* dark glyph on the light solid icon keeps contrast */
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
 }
 
 :root[data-theme="dark"] .step {
@@ -740,7 +776,7 @@ main.is-choosing .type-card b {
   border-bottom-color: var(--line);
 }
 
-:root[data-theme="dark"] .wp-bar {
+:root[data-theme="dark"] .wp-dots li + li::before {
   background: var(--line-soft);
 }
 
@@ -750,9 +786,9 @@ main.is-choosing .type-card b {
 }
 
 :root[data-theme="dark"] .wp-dot.is-done b {
-  background: var(--mint);
-  border-color: var(--leaf-text);
-  color: var(--heading);
+  background: var(--leaf);
+  border-color: var(--leaf);
+  color: var(--white);
 }
 
 :root[data-theme="dark"] .wp-dot.is-current {
@@ -765,4 +801,151 @@ main.is-choosing .type-card b {
 
 :root[data-theme="dark"] .step-eyebrow {
   color: var(--leaf-text);
+}
+
+/* ---------- Green gradient shapes ----------
+   A gradient starts at the padding box by default and repeats into a transparent border, which draws a ring or
+   strip around circles, chips and buttons. Start it at the outer edge and never repeat it, so it fills the shape
+   exactly. These come last so they win over the `background:` shorthands above. */
+.chips input:checked+span,
+.wp-dot.is-current b,
+.step-num,
+.pill,
+.form .drop .upload-action,
+.file-main {
+  background-origin: border-box;
+  background-repeat: no-repeat;
+  background-clip: border-box;
+}
+
+/* Centered content: the number or label sits exactly in the middle of its circle / pill */
+.step-num,
+.wp-dot b {
+  line-height: 1;
+}
+
+.chips span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Buttons that sit side by side get the same height, so their labels line up */
+.wizard-nav .btn,
+.done .actions .btn {
+  min-height: 3rem;
+}
+
+/* ---------- "About your pet" step: tidy, evenly aligned fields ---------- */
+.step-about .step-body {
+  align-items: start;
+  row-gap: 1.5rem;
+}
+
+/* every control in this step is the same height, so each row lines up */
+.step-about input[type=text],
+.step-about .pills {
+  box-sizing: border-box;
+  min-height: 3.4rem;
+}
+
+.step-about .pills {
+  padding-block: .25em;
+}
+
+/* Sex and Size: the choices share the column width evenly, like the boxes beside them */
+.step-about fieldset:not(.full) .chips {
+  flex-wrap: nowrap;
+  gap: .6rem;
+}
+
+.step-about fieldset:not(.full) .chips label {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.step-about .chips span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 3.4rem;
+  padding: .45em 1.3em;
+  text-align: center;
+}
+
+.step-about fieldset:not(.full) .chips span {
+  padding-inline: .5em;
+}
+
+@media (max-width: 1000px) {
+  .step-about .step-body { row-gap: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .step-about fieldset:not(.full) .chips { flex-wrap: wrap; }
+  .step-about fieldset:not(.full) .chips label { flex: 1 1 auto; }
+}
+
+/* ---------- Hover effects inside the form ---------- */
+.form input[type=text],
+.form input[type=date],
+.form input[type=url],
+.form select,
+.form textarea,
+.pills,
+.chips span,
+.wp-dot b,
+.pill {
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
+}
+
+.form input[type=text]:not(.is-invalid):hover,
+.form input[type=date]:not(.is-invalid):hover,
+.form input[type=url]:not(.is-invalid):hover,
+.form select:not(.is-invalid):hover,
+.form textarea:not(.is-invalid):hover,
+.pills:not(.is-disabled):hover {
+  border-color: var(--leaf);
+  box-shadow: 0 0 0 3px rgba(47, 160, 90, .12);
+}
+
+.chips label:hover input:not(:checked)+span {
+  border-color: var(--leaf);
+  background: var(--surface-tint);
+  transform: translateY(-1px);
+}
+
+.chips label:hover input:checked+span {
+  box-shadow: 0 6px 16px rgba(15, 107, 63, .28);
+}
+
+.pill:hover {
+  transform: translateY(-1px);
+}
+
+.wp-dot:hover b {
+  border-color: var(--leaf);
+  box-shadow: 0 0 0 4px rgba(47, 160, 90, .15);
+}
+
+.wizard-nav .btn {
+  transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+
+.wizard-nav .btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(.96);
+}
+
+.wizard-nav .btn:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chips label:hover input:not(:checked)+span,
+  .pill:hover,
+  .wizard-nav .btn:hover {
+    transform: none;
+  }
 }

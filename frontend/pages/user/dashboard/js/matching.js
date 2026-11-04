@@ -171,7 +171,7 @@ async function init() {
 
   if (!mine.length) {
     $('#match-lead').textContent = 'File a lost or found report and we will show the reports that look most like it.';
-    listEl.innerHTML = `<div class="box m-empty"><h2>No report to match yet</h2><p>Attribute matching needs one of your own reports. If you lost a pet, we compare it with found reports. If you found a pet, we compare it with lost reports.</p><a class="btn btn-sun" href="add-report.html">Add pet report</a></div>`;
+    listEl.innerHTML = `<div class="box m-empty"><h2>No report to match yet</h2><p>Add a lost or found report and we'll show the closest matches.</p><a class="btn btn-sun" href="add-report.html">Add pet report</a></div>`;
     return;
   }
   mine.sort((a, b) => (b.created || 0) - (a.created || 0));    // newest first

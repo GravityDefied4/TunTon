@@ -58,13 +58,13 @@
               </div>
             </header>
             <div class="step-body">
-          <label class="drop full"><span aria-hidden="true" class="upload-icon">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span aria-live="polite" class="upload-status">No photos selected yet</span>
+          <label class="drop full"><span aria-hidden="true" class="upload-icon">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">JPG, PNG or WEBP · up to 5 photos</span><span aria-live="polite" class="upload-status"></span>
 <input accept="image/*" aria-label="Choose pet photos" multiple="" name="photo" type="file"/>
 </label>
           <ul aria-label="Selected pet photos" class="files full"></ul>
             </div>
           </section>
-          <section class="step full" aria-labelledby="lost-step2">
+          <section class="step full step-about" aria-labelledby="lost-step2">
             <header class="step-head">
               <span class="step-num" aria-hidden="true">2</span>
               <div>
@@ -89,36 +89,34 @@
 </div>
           <div>
 <label for="lost-name">Pet's name</label>
-<input id="lost-name" maxlength="40" name="name" type="text"/>
+<input autocomplete="off" id="lost-name" maxlength="40" name="name" required="" type="text"/>
 </div>
-          <div>
-<label for="lost-breed">Breed</label>
-<div class="pills" data-pills="breed" data-sep="comma"><input autocomplete="off" class="pills-input" id="lost-breed" list="lost-breed-list" maxlength="40" placeholder="e.g. Shih Tzu" type="text"/></div>
-<datalist id="lost-breed-list"></datalist>
-<input name="breed" type="hidden"/>
-<p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
-</div>
-          <div>
-<label for="lost-color">Main color</label>
-<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="lost-color" list="lost-color-list" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
-<datalist id="lost-color-list"></datalist>
-<input name="color" type="hidden"/>
-<p class="hint">Press the space bar after each word to turn it into a tag, or choose a common color from the dropdown.</p>
-</div>
-          <fieldset>
-<legend>Size</legend>
-<div class="chips">
-<label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
-<label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
-<label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
-</div>
-</fieldset>
           <fieldset>
 <legend>Sex</legend>
 <div class="chips sex-choice">
 <label><input name="sex" required="" type="radio" value="male"/><span>Male</span></label>
 <label><input name="sex" required="" type="radio" value="female"/><span>Female</span></label>
 <label><input name="sex" required="" type="radio" value="unknown"/><span>Unknown</span></label>
+</div>
+</fieldset>
+          <div>
+<label for="lost-breed">Breed</label>
+<div class="pills" data-pills="breed" data-sep="comma"><input autocomplete="off" class="pills-input" id="lost-breed" list="lost-breed-list" maxlength="40" placeholder="e.g. Shih Tzu" type="text"/></div>
+<datalist id="lost-breed-list"></datalist>
+<input name="breed" type="hidden"/>
+</div>
+          <div>
+<label for="lost-color">Main color</label>
+<div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="lost-color" list="lost-color-list" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
+<datalist id="lost-color-list"></datalist>
+<input name="color" type="hidden"/>
+</div>
+          <fieldset class="full">
+<legend>Size</legend>
+<div class="chips">
+<label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
+<label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
+<label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
 </div>
 </fieldset>
             </div>
@@ -223,13 +221,13 @@
               </div>
             </header>
             <div class="step-body">
-          <label class="drop full"><span aria-hidden="true" class="upload-icon">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">Click to browse your device · JPG, PNG, or WEBP · Up to 5 photos</span><span aria-live="polite" class="upload-status">No photos selected yet</span>
+          <label class="drop full"><span aria-hidden="true" class="upload-icon">＋</span><b>Add clear photos of the pet</b><span class="upload-action">Choose photos</span><span class="hint upload-hint">JPG, PNG or WEBP · up to 5 photos</span><span aria-live="polite" class="upload-status"></span>
 <input accept="image/*" aria-label="Choose pet photos" multiple="" name="photo" type="file"/>
 </label>
           <ul aria-label="Selected pet photos" class="files full"></ul>
             </div>
           </section>
-          <section class="step full" aria-labelledby="found-step2">
+          <section class="step full step-about" aria-labelledby="found-step2">
             <header class="step-head">
               <span class="step-num" aria-hidden="true">2</span>
               <div>
@@ -252,19 +250,25 @@
 <input aria-required="true" autocomplete="off" disabled="" id="found-otherspecies" list="found-otherspecies-list" maxlength="30" name="otherSpecies" placeholder="e.g. Rabbit, Parrot, Hamster" type="text"/>
 <datalist id="found-otherspecies-list"></datalist>
 </div>
+          <fieldset>
+<legend>Sex</legend>
+<div class="chips sex-choice">
+<label><input name="sex" required="" type="radio" value="male"/><span>Male</span></label>
+<label><input name="sex" required="" type="radio" value="female"/><span>Female</span></label>
+<label><input name="sex" required="" type="radio" value="unknown"/><span>Unknown</span></label>
+</div>
+</fieldset>
           <div>
 <label for="found-breed">Breed</label>
 <div class="pills" data-pills="breed" data-sep="comma"><input autocomplete="off" class="pills-input" id="found-breed" list="found-breed-list" maxlength="40" placeholder="e.g. Shih Tzu" type="text"/></div>
 <datalist id="found-breed-list"></datalist>
 <input name="breed" type="hidden"/>
-<p class="hint">Pick a suggestion, or type it and press Enter or comma to turn it into a tag.</p>
 </div>
           <div>
 <label for="found-color">Main color</label>
 <div class="pills" data-pills="color"><input aria-required="true" autocomplete="off" class="pills-input" id="found-color" list="found-color-list" maxlength="40" placeholder="e.g. brown, then space" type="text"/></div>
 <datalist id="found-color-list"></datalist>
 <input name="color" type="hidden"/>
-<p class="hint">Press the space bar after each word to turn it into a tag, or choose a common color from the dropdown.</p>
 </div>
           <fieldset>
 <legend>Size</legend>
@@ -272,14 +276,6 @@
 <label><input name="size" required="" type="radio" value="Small"/><span>Small</span></label>
 <label><input name="size" required="" type="radio" value="Medium"/><span>Medium</span></label>
 <label><input name="size" required="" type="radio" value="Large"/><span>Large</span></label>
-</div>
-</fieldset>
-          <fieldset>
-<legend>Sex</legend>
-<div class="chips sex-choice">
-<label><input name="sex" required="" type="radio" value="male"/><span>Male</span></label>
-<label><input name="sex" required="" type="radio" value="female"/><span>Female</span></label>
-<label><input name="sex" required="" type="radio" value="unknown"/><span>Unknown</span></label>
 </div>
 </fieldset>
             </div>

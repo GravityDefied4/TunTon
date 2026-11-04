@@ -174,7 +174,11 @@ p {
 
 /* ---------- Buttons ---------- */
 .btn {
-    display: inline-block;
+    display: inline-flex;          /* label is centered both ways, even when a flex row stretches the button */
+    align-items: center;
+    justify-content: center;
+    gap: .5em;
+    text-align: center;
     padding: .75em 1.6em;
     border-radius: var(--radius-sm);
     font-family: var(--font-display);
