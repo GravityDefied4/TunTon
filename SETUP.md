@@ -18,9 +18,6 @@ The password should be your root MySQL password
 ```terminal
 & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend/db/schema.sql"
 & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend/db/seed.sql"
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend\db\migrations\001_photos_and_breeds.sql"
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend\db\migrations\002_barangays.sql"
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend\db\migrations\003_report_claims.sql"
 ```
 
 Or open MySQL Workbench, then File > Open SQL Script, and run `schema.sql` followed by `seed.sql`.
