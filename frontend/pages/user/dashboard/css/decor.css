@@ -34,13 +34,13 @@
   background: url("../../../../assets/elements/element2.webp") center / contain no-repeat;
   opacity: .9;
 }
-.m-empty p, .done p { margin-inline: auto; }
+.done p { margin-inline: auto; }
 .m-empty::before {
   content: "";
   display: block;
-  width: 6.5rem;
+  width: 4.5rem;
   aspect-ratio: 1;
-  margin: 0 auto .8rem;
+  margin: 0 auto .6rem;
   background: url("../../../../assets/elements/element4.webp") center / contain no-repeat;
 }
 

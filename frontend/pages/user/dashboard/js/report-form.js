@@ -125,7 +125,7 @@ function fillForm(k, host) {
   form.elements.contact.defaultValue = form.elements.contact.value = prof().phone || sess?.email || '';
   form.querySelector('#' + k + '-otherspecies-list').innerHTML = OTHER_ANIMALS.map(a => `<option value="${a}"></option>`).join('');
   const targetColorList = form.querySelector('#' + k + '-color-list');
-  if (targetColorList) targetColorList.innerHTML = COLOR_SUGGESTIONS.map(color => `<option value="${esc(color)}"></option>`).join('');
+  if (targetColorList) targetColorList.innerHTML = colorsFor('').map(color => `<option value="${esc(color)}"></option>`).join('');
 }
 
 /* Full-size preview of one uploaded photo (the dialog is created on first use). */
@@ -228,8 +228,8 @@ function normalizeOptionValue(value) {
   return String(value || '').replace(/&/g, ' and ').replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function allowedPillValues(kind) {
-  if (kind === 'color') return new Set(COLOR_SUGGESTIONS.map(normalizeOptionValue));
+function allowedPillValues(kind, species) {
+  if (kind === 'color') return new Set(colorsFor(species).concat('Grey').map(normalizeOptionValue));   // "Grey" is accepted as another spelling of Gray
   if (kind === 'breed') {
     const values = Object.values(BREEDS).flat().concat(Object.values(OTHER_BREEDS).flat());
     return new Set(values.map(normalizeOptionValue));
@@ -237,10 +237,10 @@ function allowedPillValues(kind) {
   return new Set();
 }
 
-function isValidPillValue(kind, value) {
+function isValidPillValue(kind, value, species) {
   const text = normalizeOptionValue(value);
   if (!text) return false;
-  return allowedPillValues(kind).has(text);
+  return allowedPillValues(kind, species).has(text);
 }
 
 function splitPillValues(raw, kind) {
@@ -253,14 +253,15 @@ function splitPillValues(raw, kind) {
     .filter(v => !/^(and|&)$/.test(v.toLowerCase()));
 }
 
-function parsePillValues(raw, kind) {
-  return splitPillValues(raw, kind).filter(v => isValidPillValue(kind, v));
+function parsePillValues(raw, kind, species) {
+  return splitPillValues(raw, kind).filter(v => isValidPillValue(kind, v, species));
 }
 
 function setupPills(form) {
   const MAX = 8;
   form.querySelectorAll('.pills').forEach(box => {
     const input = box.querySelector('.pills-input'), hidden = form.elements[box.dataset.pills];
+    const speciesNow = () => form.querySelector('input[name="species"]:checked')?.value || '';   // colors depend on the species
     let list = [];
     const draw = () => {
       box.querySelectorAll('.pill').forEach(p => p.remove());
@@ -270,9 +271,9 @@ function setupPills(form) {
     const add = raw => {
       const typed = String(raw || '').trim().replace(/^[,;]+|[,;]+$/g, '');
       if (!typed) return;
-      const vals = parsePillValues(typed, box.dataset.pills);
+      const vals = parsePillValues(typed, box.dataset.pills, speciesNow());
       /* remember words that were not on the suggestion list, so validation can name them in its error message */
-      box.dataset.rejected = splitPillValues(typed, box.dataset.pills).filter(v => !isValidPillValue(box.dataset.pills, v)).join(' ');
+      box.dataset.rejected = splitPillValues(typed, box.dataset.pills).filter(v => !isValidPillValue(box.dataset.pills, v, speciesNow())).join(' ');
       if (!vals.length) return;
       vals.forEach(v => {
         if (list.length < MAX && !list.some(x => normalizeOptionValue(x) === normalizeOptionValue(v))) list.push(v);
@@ -302,13 +303,15 @@ function setupPills(form) {
     form.addEventListener('reset', () => setTimeout(() => { list = []; input.value = ''; draw(); }));
     box.pills = {
       commit,
+      /* the species changed: drop any tag that does not fit it any more (a blue dog) */
+      refilter() { list = list.filter(v => isValidPillValue(box.dataset.pills, v, speciesNow())); draw(); },
       clear() { list = []; input.value = ''; draw(); },
       set(str) {   // "White and brown" -> White, Brown (breed keeps spaces: "Shih Tzu")
         list = []; input.value = '';
         const split = box.dataset.pills === 'breed' ? /[,;]+|\s+and\s+/i : /[,;]+|\s+and\s+|\s+/;
         const tokens = typeof str === 'string' ? str.split(split) : [];
         tokens.filter(Boolean).forEach(v => {
-          const values = parsePillValues(v, box.dataset.pills);
+          const values = parsePillValues(v, box.dataset.pills, speciesNow());
           values.forEach(value => {
             if (!list.some(x => normalizeOptionValue(x) === normalizeOptionValue(value))) list.push(value);
           });
@@ -345,13 +348,16 @@ function setupForm(k, host) {
     otherBox.hidden = !other; otherInput.disabled = !other; otherInput.required = other;
     if (!other) otherInput.value = '';
     breedInput.disabled = !sp; breedBox.classList.toggle('is-disabled', !sp);
-    breedInput.placeholder = !sp ? 'Choose a species first' : other ? 'Breed or variety, if you know it' : 'e.g. ' + (sp === 'Dog' ? 'Shih Tzu' : 'Persian');
+    breedInput.placeholder = !sp ? 'Choose a species first' : other ? 'Breed or variety, then Enter' : 'e.g. ' + (sp === 'Dog' ? 'Shih Tzu' : 'Persian') + ', then Enter';
     fillBreeds();
+    const colorList = form.querySelector('#' + k + '-color-list');
+    if (colorList) colorList.innerHTML = colorsFor(sp).map(c => `<option value="${esc(c)}"></option>`).join('');
   };
   form.syncSpecies = syncSpecies;
   form.querySelectorAll('input[name="species"]').forEach(r => r.addEventListener('change', () => {
     breedBox.pills.clear();                  // a breed from the old species no longer applies
     syncSpecies();
+    form.querySelector('.pills[data-pills="color"]').pills.refilter();   // nor a color that species does not have
     if (species() === 'Other') otherInput.focus();
   }));
   otherInput.addEventListener('input', fillBreeds);
@@ -431,8 +437,8 @@ function setupForm(k, host) {
       </li>`).join('');
     dropZone.classList.toggle('has-photos', photos.length > 0);
     uploadStatus.textContent = photos.length
-      ? `${photos.length} of ${photoLimit()} photo${photos.length === 1 ? '' : 's'} selected${photos.length === 1 ? ' · Add more if helpful' : ''}`
-      : 'No photos selected yet';
+      ? `${photos.length} of ${photoLimit()} photo${photoLimit() === 1 ? '' : 's'} added`
+      : '';
     dropZone.querySelector('.upload-action').textContent = photos.length ? 'Add more photos' : 'Choose photos';
   };
   const shrink = f => new Promise((resolve, reject) => {
@@ -544,9 +550,12 @@ function setupForm(k, host) {
     const input = form.querySelector(`.pills[data-pills="${kind}"] .pills-input`);
     const raw = [hidden?.value || '', input?.value || ''].filter(Boolean).join(', ');
     if (!raw.trim()) return null;
-    const invalid = splitPillValues(raw, kind).filter(v => !isValidPillValue(kind, v));
+    const sp = form.querySelector('input[name="species"]:checked')?.value || '';
+    const invalid = splitPillValues(raw, kind).filter(v => !isValidPillValue(kind, v, sp));
     if (invalid.length) {
-      const msg = `“${invalid.join(', ')}” is not a recognized ${label}. Pick one from the suggestions list.`;
+      const msg = kind === 'color' && COLORS_BY_SPECIES[sp]
+        ? `“${invalid.join(', ')}” is not a usual ${sp.toLowerCase()} color. Pick one from the suggestions list.`
+        : `“${invalid.join(', ')}” is not a recognized ${label}. Pick one from the suggestions list.`;
       setFieldError(input, true, msg);
       return { msg, el: input };
     }

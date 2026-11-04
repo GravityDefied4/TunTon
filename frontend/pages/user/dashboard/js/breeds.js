@@ -48,7 +48,20 @@ const OTHER_BREEDS = {
   'goat': ['Native', 'Boer', 'Anglo-Nubian', 'Saanen', 'Unknown']
 };
 
+/* Colors for "Other" animals (birds, reptiles, rabbits...): the wide list. */
 const COLOR_SUGGESTIONS = [
-  'Amber', 'Beige', 'Black', 'Blue', 'Brown', 'Chocolate', 'Cream', 'Golden', 'Gray', 'Green', 'Grey', 'Ginger',
+  'Amber', 'Beige', 'Black', 'Blue', 'Brown', 'Chocolate', 'Cream', 'Golden', 'Gray', 'Green', 'Ginger',
   'Orange', 'Pink', 'Purple', 'Red', 'Silver', 'Tabby', 'Tan', 'White', 'Yellow'
 ];
+
+/* Real coat colors for dogs and cats, so nobody picks a blue dog or a green cat.
+   (Dogs and cats that look blue are really Gray, which is on both lists.) One word each, because a space makes a new tag. */
+const COLORS_BY_SPECIES = {
+  Dog: ['Black', 'Brown', 'Brindle', 'Chocolate', 'Cream', 'Fawn', 'Golden', 'Gray', 'Merle', 'Red', 'Silver', 'Spotted', 'Tan', 'White', 'Yellow'],
+  Cat: ['Black', 'Brown', 'Calico', 'Chocolate', 'Cream', 'Ginger', 'Gray', 'Orange', 'Silver', 'Tabby', 'Tortoiseshell', 'Tuxedo', 'White']
+};
+
+/* The colors that make sense for the chosen species (the wide list until one is chosen, or for "Other"). */
+function colorsFor(species) {
+  return COLORS_BY_SPECIES[species] || COLOR_SUGGESTIONS;
+}
