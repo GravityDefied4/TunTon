@@ -1,5 +1,6 @@
 const express = require('express');
 const ctrl = require('../controllers/reportsController');
+const claims = require('../controllers/claimsController');
 const { requireAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
@@ -11,8 +12,9 @@ router.post('/', upload.reportPhotos, ctrl.create);   // Create report (multipar
 router.get('/', ctrl.list);   // List with filters (type, species, status, radius)
 router.get('/mine', ctrl.mine);   // Own reports (must stay above /:id)
 router.get('/:id', ctrl.getOne);   // Details (contact info hidden)
+router.get('/:id/claims', claims.forReport);   // Claims on this report (everyone sees pending + approved; contact details only for the owner and the claimant)
 router.put('/:id', upload.reportPhotos, ctrl.update);   // Update own report (owner only; may add photos)
 router.patch('/:id/status', ctrl.setStatus);   // Close or resolve (owner only)
-router.delete('/:id', ctrl.remove);   // Permanently delete (owner only; refused while a claim is open or approved)
+router.delete('/:id', ctrl.remove);   // Permanently delete (owner only; its claims are deleted with it)
 
 module.exports = router;

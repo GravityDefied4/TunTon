@@ -20,9 +20,12 @@ The password should be your root MySQL password
 & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend/db/seed.sql"
 & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend\db\migrations\001_photos_and_breeds.sql"
 & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend\db\migrations\002_barangays.sql"
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -h 127.0.0.1 -P 3307 -e "source backend\db\migrations\003_report_claims.sql"
 ```
 
 Or open MySQL Workbench, then File > Open SQL Script, and run `schema.sql` followed by `seed.sql`.
+
+`003_report_claims.sql` is only needed on a database built before claims moved onto reports (it drops the old claims tables). A fresh `schema.sql` already includes it.
 
 What this does:
 - `schema.sql` creates the `tunton` database and all tables. **It starts with `DROP DATABASE IF EXISTS tunton`, so re-running it erases your local data.**

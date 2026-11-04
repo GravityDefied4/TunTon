@@ -8,7 +8,6 @@ const crypto = require('crypto');
 const multer = require('multer');
 
 const IMAGES = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
-const IMAGES_AND_PDF = { ...IMAGES, 'application/pdf': '.pdf' };   // vet records are often PDFs
 const MAX_BYTES = 5 * 1024 * 1024;
 const UPLOAD_ROOT = path.join(__dirname, '..', 'uploads');
 
@@ -23,19 +22,23 @@ const make = (folder, allowed, message) => (require('fs').mkdirSync(path.join(UP
     allowed[file.mimetype] ? cb(null, true) : cb(Object.assign(new Error(message), { status: 400 }))
 }));
 
-/* Report photos are NOT written to disk: they are kept in memory and saved in the database
-   (report_photos.image_data). Each file still gets a random name (file.filename), which is the public URL id. */
-const reportPhotosMulter = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_BYTES, files: 5 },
-  fileFilter: (req, file, cb) =>
-    IMAGES[file.mimetype] ? cb(null, true) : cb(Object.assign(new Error('Only JPG, PNG or WebP images are allowed.'), { status: 400 }))
-}).array('photos', 5);
-const reportPhotos = (req, res, next) => reportPhotosMulter(req, res, err => {
-  if (err) return next(err);
-  (req.files || []).forEach(f => { f.filename = crypto.randomUUID() + IMAGES[f.mimetype]; });
-  next();
-});
+/* Report and claim photos are NOT written to disk: they are kept in memory and saved in the database
+   (report_photos.image_data, claim_photos.image_data). Each file still gets a random name (file.filename), which is the URL id. */
+const memoryPhotos = max => {
+  const multerPhotos = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_BYTES, files: max },
+    fileFilter: (req, file, cb) =>
+      IMAGES[file.mimetype] ? cb(null, true) : cb(Object.assign(new Error('Only JPG, PNG or WebP images are allowed.'), { status: 400 }))
+  }).array('photos', max);
+  return (req, res, next) => multerPhotos(req, res, err => {
+    if (err) return next(err);
+    (req.files || []).forEach(f => { f.filename = crypto.randomUUID() + IMAGES[f.mimetype]; });
+    next();
+  });
+};
+const reportPhotos = memoryPhotos(5);
+const claimPhotos = memoryPhotos(3);
 
 /* The MIME type comes from the browser, so also check the file's first bytes. */
 const SIGNATURES = [
@@ -69,6 +72,6 @@ const discardFiles = (files = []) => Promise.all(files.filter(f => f.path).map(f
 module.exports = {
   reportPhotos,   // POST /api/reports (saved in the database, see above)
   avatar: make('avatars', IMAGES, 'Only JPG, PNG or WebP images are allowed.').single('picture'),   // POST /api/users/me/picture
-  proofFiles: make('proofs', IMAGES_AND_PDF, 'Only JPG, PNG, WebP or PDF files are allowed.').array('proofs', 3),   // POST /api/claims/:id/proofs
+  claimPhotos,    // POST /api/claims, PUT /api/claims/:id (saved in the database, up to 3)
   checkFiles, discardFiles, UPLOAD_ROOT
 };

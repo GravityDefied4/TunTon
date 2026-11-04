@@ -32,8 +32,8 @@ app.use('/api', notFound);
 
 /* ---- Uploads ----
    Pet photos are shown on public report cards, so they are served read-only from /uploads/reports
-   (random file names, no directory listing). Proof documents are NOT served here: they are private and
-   only delivered by GET /api/claims/:id/proofs/:proofId/file after a permission check. */
+   (random file names, no directory listing). Claim photos are served below by their random name; the API only
+   lists those names to the report's owner (pending claims) or everyone (approved claims). */
 /* Report photos live in the database (report_photos.image_data). Older photos that were saved as files
    fall through to the static folder below. */
 const pool = require('./db/pool');
@@ -45,6 +45,15 @@ app.get('/uploads/reports/:name', async (req, res, next) => {
     res.send(rows[0].image_data);
   } catch (e) { next(e); }
 });
+/* Claim photos (also kept in the database, see claim_photos). */
+app.get('/uploads/claims/:name', async (req, res, next) => {
+  try {
+    const [rows] = await pool.query('SELECT image_data, mime_type FROM claim_photos WHERE file_path = ? LIMIT 1', [req.params.name]);
+    if (!rows[0]) return res.status(404).end();
+    res.set({ 'Content-Type': rows[0].mime_type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, max-age=3600' });
+    res.send(rows[0].image_data);
+  } catch (e) { next(e); }
+});
 app.use('/uploads/reports', express.static(path.join(__dirname, 'uploads', 'reports'),
   { index: false, dotfiles: 'deny', maxAge: '1d', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
 
@@ -53,7 +62,15 @@ app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avat
   { index: false, dotfiles: 'deny', maxAge: '1h', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
 
 /* ---- Frontend ---- */
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+/* Clean URLs: /pages/user/dashboard/add-report?match=1 instead of add-report.html?match=1.
+   An old .html address is redirected to the clean one (query string kept), and the clean one serves the .html file.
+   index.html is the home page, so it becomes '/'. */
+app.use((req, res, next) => {
+  if ((req.method !== 'GET' && req.method !== 'HEAD') || !req.path.endsWith('.html')) return next();
+  const clean = req.path.slice(0, -5).replace(/\/index$/, '/') || '/';
+  res.redirect(301, clean + req.originalUrl.slice(req.path.length));
+});
+app.use(express.static(path.join(__dirname, '..', 'frontend'), { extensions: ['html'] }));
 
 app.use(errorHandler);
 

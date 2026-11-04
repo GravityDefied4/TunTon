@@ -15,7 +15,7 @@ tunton/
 │   ├── services/          google.js, matching.js (pure scoring), matchRunner.js (DB side), geofence.js
 │   ├── db/                pool.js, schema.sql, seed.sql, userStore.js, reportQueries.js, activityLog.js
 │   ├── tests/             matching.test.js (npm test)
-│   └── uploads/           reports/ (pet photos), proofs/ (proof documents; private)
+│   └── uploads/           avatars/ (profile pictures). Pet and claim photos live in the database
 ├── frontend/              index.html, css/, js/, pages/, assets/
 └── docs/                  AUTH.md (Google sign-in), API.md (every endpoint)
 ```
@@ -29,7 +29,8 @@ Run: `cp .env.example .env`, fill it in, `npm install`, `npm start`, open http:/
 | backend/db/: users on MySQL (`userStore.js`), shared report queries, audit log + transactions | done |
 | Reports (create/list/mine/detail/edit/status, photos, lookups), geofence (nearby, barangays) | done |
 | Matching: pure scoring (`backend/services/matching.js`, unit tested) + runner with auto-trigger | done |
-| Matches (mine/detail/dismiss), claims (proofs, decision, private files, contact release) | done |
+| Matches (mine/detail/dismiss) | done |
+| Claims on reports ("I found this pet" / "This is my pet"), owner approves or rejects | done |
 | Admin (users, reports, claims, stats, logs) | done |
 | Frontend wiring | not backend work: see docs/API.md |
 
@@ -37,4 +38,4 @@ Run: `npm test` (scoring unit tests). Full API reference: **docs/API.md**.
 Database: `mysql -u root -p < backend/db/schema.sql` then `< backend/db/seed.sql`, put the app user in `.env`.
 
 Rules (from the plan): frontend only calls the API; controllers hold logic; SQL uses `?` placeholders;
-responses are `{ success, data, message }` (use `res.ok()` / `res.fail()`); contact info is never returned before an approved claim.
+responses are `{ success, data, message }` (use `res.ok()` / `res.fail()`); a claimant's contact info is only returned to the owner of the report and to the claimant.

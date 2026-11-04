@@ -68,6 +68,9 @@ const myPendingClaim = r => claimsOf(r).find(c => c.by === myId && c.status === 
 const respondButton = (r, attrs = '') => {
   const lost = r.kind === 'lost', mine = lost ? myPendingFind(r) : myPendingClaim(r);
   const href = (lost ? 'add-report.html?match=' : 'add-report.html?claim=') + encodeURIComponent(r.id);
+  /* The owner rejected my response: the server allows only one claim per person per report, so no button. */
+  if (!mine && (lost ? findsOf(r) : claimsOf(r)).some(c => c.by === myId && c.status === 'rejected'))
+    return `<span class="pet-status" ${attrs}>Marked not a match</span>`;
   return mine
     ? `<a class="btn btn-edit" ${attrs} href="${href}&update=1">Edit my ${lost ? 'found' : 'lost'} report</a>`
     : `<a class="btn btn-sun" ${attrs} href="${href}">${lost ? 'I found this pet' : 'This is my lost pet'}</a>`;
@@ -305,6 +308,81 @@ const toReport = row => {
     created: row.created_at ? Date.parse(row.created_at) : 0
   };
 };
+/* ---------- Claims from the database ----------
+   Claims live on the server (/api/claims, /api/reports/:id/claims), never in the browser, so the other
+   person sees them. The pages still talk about "finds" (a response to a LOST report, claim_type found_it)
+   and "claims" (a response to a FOUND report, claim_type my_pet), so toClaim() turns an API claim into that
+   shape: an approved claim is 'confirmed', and contact details are '' unless the server sent them
+   (only to the owner of the report and to the claimant). */
+const CLAIM_STATUS = { pending: 'pending', approved: 'confirmed', rejected: 'rejected' };
+const toClaim = c => {
+  const pet = c.pet || {}, ct = c.contact || {}, ids = (c.photos || []).map(p => p.photo_id);
+  const known = ['Dog', 'Cat', 'Other'], other = pet.species && !known.includes(pet.species);
+  const coord = v => v == null ? NaN : Number(v);
+  return {
+    id: String(c.id), reportId: String(c.report_id), type: c.type,
+    by: c.is_mine ? myId : 'user-' + c.claimant.id,
+    founderName: c.claimant.name, ownerName: c.claimant.name,
+    status: CLAIM_STATUS[c.status] || c.status, decisionReason: c.decision_reason || '',
+    contact: ct.text || [ct.phone, ct.email].filter(Boolean).join(', '), facebook: ct.facebook || '',
+    where: c.pet_location || '', brgy: c.barangay || '', date: c.event_date ? String(c.event_date).slice(0, 10) : '',
+    lat: coord(c.lat), lng: coord(c.lng), zone: 0,
+    markings: c.markings || '', description: c.description || '', howFound: c.description || '',
+    name: pet.name || '', species: other ? 'Other' : (pet.species || ''), otherSpecies: other ? pet.species : '',
+    breed: pet.breed || '', color: pet.color || '', size: REPORT_SIZES[pet.size] || '',
+    photos: (c.photos || []).map(p => reportAsset(p.url)), photoIds: ids,
+    at: c.created_at ? Date.parse(c.created_at) : 0
+  };
+};
+/* Where a report keeps its responses: finds on a lost report, claims on a found report. */
+const claimKey = r => r.kind === 'lost' ? 'finds' : 'claims';
+const claimError = async (res, fallback) => {
+  const msg = (await res.json().catch(() => ({}))).message;
+  return new Error(msg || fallback);
+};
+const ClaimsAPI = {
+  /* Claims on one report: the owner gets pending + approved with contact details, everyone else approved + their own. */
+  async forReport(reportId) {
+    const res = await authFetch(`/reports/${encodeURIComponent(reportId)}/claims`);
+    if (!res.ok) throw await claimError(res, 'Could not load the responses to this report');
+    return ((await res.json()).data?.items || []).map(toClaim);
+  },
+  /* Every claim I sent, any status. */
+  async mine() {
+    const res = await authFetch('/claims/mine');
+    if (!res.ok) throw await claimError(res, 'Could not load your claims');
+    return ((await res.json()).data?.items || []).map(toClaim);
+  },
+  /* POST /claims (new) or PUT /claims/:id (edit while pending). `fd` is a FormData. */
+  async save(fd, claimId) {
+    const res = await authFetch(claimId ? `/claims/${encodeURIComponent(claimId)}` : '/claims', { method: claimId ? 'PUT' : 'POST', body: fd });
+    if (!res.ok) throw await claimError(res, 'Could not save this. Please try again.');
+    return toClaim((await res.json()).data.claim);
+  },
+  /* Owner of the report only: decision is 'approve' or 'reject'. */
+  async decide(claimId, decision, reason) {
+    const res = await authFetch(`/claims/${encodeURIComponent(claimId)}/decision`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision, reason: reason || undefined })
+    });
+    if (!res.ok) throw await claimError(res, 'Could not save your decision. Please try again.');
+    return toClaim((await res.json()).data.claim);
+  }
+};
+/* Puts the server's claims on the reports so findsOf / claimsOf / myPendingFind / confirmedClaim keep working:
+   my own reports get every claim sent to me, other people's reports get only MY claims on them (so the buttons
+   say "Edit my ..." or "Marked not a match"). The full list of one report is loaded on its detail page.
+   A failure here must not hide the reports, so it is swallowed. */
+const attachClaims = async reports => {
+  try {
+    const mine = await ClaimsAPI.mine(), own = reports.filter(r => r.owner === myId);
+    const received = await Promise.all(own.map(r => ClaimsAPI.forReport(r.id).catch(() => [])));
+    reports.forEach(r => {
+      r[claimKey(r)] = r.owner === myId ? received[own.indexOf(r)] : mine.filter(c => c.reportId === r.id);
+    });
+  } catch (err) { console.error(err); }
+  return reports;
+};
+
 /* Fetches every active report (the server pages at 100) and replaces the cache. Never falls back to
    sample data: if the server can't be reached the promise rejects and each page shows its own error. */
 const loadReports = async () => {
@@ -317,7 +395,7 @@ const loadReports = async () => {
     items.push(...d.items);
     total = d.total ?? items.length;
   }
-  return (_reportCache = items.map(toReport));
+  return (_reportCache = await attachClaims(items.map(toReport)));
 };
 let reportsReady = loadReports();
 reportsReady.catch(() => {});   // pages handle the error themselves; this only silences the "unhandled" warning

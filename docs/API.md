@@ -8,7 +8,7 @@ Errors keep the same shape (`success: false`, `data: null`, `message` = text saf
 - Lists return `data: { items, total, limit, offset }`. Paging: `?limit=` (1 to 100) and `?offset=`.
 - Dates are `YYYY-MM-DD`. Timestamps are ISO strings (UTC).
 - Ids are integers. Report fields: `species_id`, `breed_id`, `color_ids`, `barangay_id` come from `GET /reports/lookups`.
-- Contact details (phone, email) appear **only** in `GET /claims/:id/contact` after approval.
+- Contact details (phone, email, Facebook) of a claimant appear in every claim returned to any logged-in user.
 
 **Report object** (used by every endpoint that returns reports)
 ```json
@@ -42,10 +42,10 @@ Errors keep the same shape (`success: false`, `data: null`, `message` = text saf
 | GET | /reports/mine | Own reports (all statuses), each with `match_count`. Filters: `type`, `status` |
 | GET | /reports/:id | `data.report` |
 | PUT | /reports/:id | Owner, active reports only. Send only changed fields (JSON or multipart). Add photos in `photos`, delete with `remove_photo_ids` (`"4,5"`). Type cannot change. Re-runs matching. Returns `{ report, matches }` |
-| PATCH | /reports/:id/status | `{ status: "closed"\|"resolved" }` owner only. `closed` is refused (409) while a claim is in progress |
-| DELETE | /reports/:id | Owner only. **Permanently deletes** the report, its photos (files too), colors and match suggestions. Refused (409) while a claim on it is open or approved. Audit action `report_deleted` |
+| PATCH | /reports/:id/status | `{ status: "closed"\|"resolved" }` owner only |
+| DELETE | /reports/:id | Owner only. **Permanently deletes** the report, its photos (files too), colors and match suggestions. Claims sent on it (and their photos) are deleted with it. Audit action `report_deleted` |
 
-Statuses: `active`, `matched` (claim approved), `resolved`, `closed`, `removed` (admin).
+Statuses: `active`, `matched` (a claim was approved), `resolved`, `closed`, `removed` (admin).
 
 ## P3 Geofence
 | Method | Endpoint | Notes |
@@ -61,33 +61,44 @@ Statuses: `active`, `matched` (claim approved), `resolved`, `closed`, `removed` 
 
 Runs automatically after a report is created, edited, closed or removed. Hard filters: opposite type, same species, both active, found pin inside the lost report's radius, found date not earlier than lost date minus 2 days, never the same user. Score 0 to 100 (weights in `backend/services/matching.js` `CONFIG`); stored at 50+. Labels: 80+ Strong, 65 to 79 Likely, 50 to 64 Possible. Re-running updates scores and never duplicates; dismissed matches stay dismissed; suggestions that stop qualifying are removed.
 
-## P5 Matches and claims
+## P5 Matches
 | Method | Endpoint | Notes |
 |---|---|---|
-| GET | /matches/mine | Filters: `status` (default all except dismissed; or `suggested`, `claim_pending`, `confirmed`, `dismissed`, `all`), `as` (owner\|finder), `min_score`. Best score first. Item: `{ id, score, label, status, my_role: "owner"\|"finder", claim: {id,status}\|null, lost: <report>, found: <report> }` |
+| GET | /matches/mine | Filters: `status` (default all except dismissed; or `suggested`, `claim_pending`, `confirmed`, `dismissed`, `all`), `as` (owner\|finder), `min_score`. Best score first. Item: `{ id, score, label, status, my_role: "owner"\|"finder", lost: <report>, found: <report> }` |
 | GET | /matches/:id | Same item plus `breakdown` `{ breed, color, markings, size, sex, ageGroup, distance, recency }` (points per attribute) |
 | PATCH | /matches/:id/dismiss | Either involved user. Only `suggested` matches (else 409) |
-| POST | /claims | `{ match_id }`. Only the owner of the lost report, match must be `suggested`. 201 `{ claim }`, status `pending_proof`, match becomes `claim_pending` |
-| POST | /claims/:id/proofs | **multipart**. `proof_type` (vet_record, older_photo, microchip_number, hidden_marks, other), `note`? (required for microchip_number and hidden_marks), files in `proofs` (up to 3, JPG/PNG/WebP/PDF). One request = one submission, **max 3 per claim**. Moves the claim to `under_review`. Allowed from `pending_proof` or `rejected` |
-| GET | /claims/:id | Claimant, finder or admin. `{ claim: { id, status, role, decision_reason, match, lost, found, proofs[], attempts_used, attempts_left, can_submit_proof, contact_available } }` |
-| GET | /claims/:id/proofs/:proofId/file | Private proof file. Needs the Bearer token, so fetch it with `authFetch` and use a blob URL (a plain `<img src>` cannot send the header) |
-| PATCH | /claims/:id/decision | `{ decision: "approve"\|"reject", reason? }` finder or admin. `reason` required to reject. Approve: claim `approved`, match `confirmed`, both reports `matched`. A 3rd rejection is final (match dismissed, claim flagged in the audit log). Admin may also override a rejection |
-| GET | /claims/:id/contact | **Only when approved** (else 403). Claimant receives `{ finder: {name, phone, email} }`, finder receives `{ claimant: {...} }`, admin both |
 
-Claim flow: `pending_proof` -> (proof) `under_review` -> `approved` \| `rejected` -> (resubmit, up to 3 total) `under_review`.
+
+## P5b Claims (a response to an existing report)
+A user sends a claim on an existing report: **"I found this pet"** on a *lost* report (`type: found_it`) or **"This is my pet"** on a *found* report (`type: my_pet`). The type follows the report, the client does not send it. The owner of the report approves or rejects it.
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| POST | /claims | JSON or **multipart**. `report_id` (required), `description`?, `markings`?, `pet_location`? (where the pet is now), `event_date`? (when found / last seen), `lat`+`lng`? (inside Dagupan, barangay is derived), `contact`?, `facebook`?, `photos` (up to 3 JPG/PNG/WebP). For `my_pet` also `pet_name`?, `species`?, `breed`?, `color`?, `size`? (`small\|medium\|large\|extra_large`). At least a photo, `description`, `markings` or pet details is required. 201 `{ claim }`, status `pending`. Not on your own report (403), only while the report is `active` (409), one claim per person per report (409) |
+| GET | /reports/:id/claims | `{ items, total }`. **Every logged-in user**: `pending` and `approved` claims. Each claim includes the claimant's contact details. Rejected claims never show here (the claimant still sees their own) |
+| GET | /claims/mine | Claims I sent, any status (so I can see a rejection), each with `report: { id, type, pet_name, species, status, primary_photo }` |
+| GET | /claims/:id | The claimant, the owner of the report, or an admin |
+| PUT | /claims/:id | Claimant only, while `pending`. Send only what changes. Add photos in `photos`, delete with `remove_photo_ids` (`"4,5"`). Pet fields (`pet_name`, `species`, `breed`, `color`, `size`) are replaced together |
+| DELETE | /claims/:id | Claimant only, while `pending`: withdraws the claim |
+| PATCH | /claims/:id/decision | `{ decision: "approve"\|"reject", reason? }`, **owner of the report only** (403 for anyone else, 409 if not `pending`). **approve**: claim `approved` and it **stays on the report**, the report becomes `matched`, every other pending claim on it is rejected, open match suggestions are cleared. **reject**: claim `rejected` and it **disappears** from the report (the claimant still sees it in `/claims/mine` and cannot send another claim on that report) |
+
+Claim item: `{ id, report_id, type, status: "pending"\|"approved"\|"rejected", is_mine, created_at, claimant: {id, name}, description, markings, pet_location, event_date, lat, lng, barangay, pet: {name,species,breed,color,size}\|null, photos: [{photo_id, url}], decision_reason, decided_at, contact: { text, facebook, phone, email }\|null }`. `contact` is visible to every logged-in user. Photo `url`s (`/uploads/claims/<random name>`) can be used directly in `<img src>`.
+
+Claim flow: `pending` -> `approved` \| `rejected`. There is no proof upload step and no approval is needed before the owner sees the claimant's contact details.
 
 ## P6 Admin (role `admin`, otherwise 403)
 | Method | Endpoint | Notes |
 |---|---|---|
 | GET | /admin/users | `q`, `role`, `status`. Item: `{ id, name, email, role, status, created_at, last_login_at, report_count, claim_count }` (no phone) |
 | PATCH | /admin/users/:id/status | `{ status: "active"\|"suspended", reason? }`. Not yourself, not other admins. Suspended users get 403 on their next request |
-| GET | /admin/reports | All reports including `removed`, plus `reporter_name`, `reporter_email`. Filters `type`, `status`, `species`, `barangay_id`, `user_id`, `q` |
+| GET | /admin/reports | All reports including `removed`, plus `reporter_name`, `reporter_email`, `claims_count`. Filters `type`, `status`, `species`, `barangay_id`, `user_id`, `q` |
 | PATCH | /admin/reports/:id/remove | `{ reason }` required. Hidden from users, kept in the database |
-| GET | /admin/claims | `status`. Item adds claimant/finder names, `attempts_used`, `proof_count`, `flagged` |
+| GET | /admin/reports/:id/claims | Every claim on one report, **including rejected ones**; existing rows only (empty list when nobody claimed it). Item: `{ id, type, status, created_at, claimant_name, claimant_email, message, photo_count, decision_reason }` (no phone) |
+| GET | /admin/claims | `status` (`pending\|approved\|rejected\|all`), `type` (`found_it\|my_pet`). Item: `{ id, type, status, report_id, report_type, report_pet_name, report_owner_name, claimant_name, decision_reason, created_at, decided_at }` |
 | GET | /admin/stats | `{ users, reports{lost,found,by_status,new_last_7_days}, matches, claims, recovery{lost_total,recovered,rate}, per_barangay[] }` (`rate` is a percent) |
 | GET | /admin/logs | Audit trail, newest first. Filters `user_id`, `action`, `target_table`, `target_id` |
 
-Audit actions written: `profile_updated`, `report_created`, `report_updated`, `report_status_changed`, `report_removed`, `report_deleted`, `match_created`, `match_dismissed`, `claim_created`, `proof_submitted`, `claim_approved`, `claim_rejected`, `claim_flagged`, `contact_viewed`, `user_suspended`, `user_reactivated`.
+Audit actions written: `profile_updated`, `report_created`, `report_updated`, `report_status_changed`, `report_removed`, `report_deleted`, `match_created`, `match_dismissed`, `claim_created`, `claim_updated`, `claim_withdrawn`, `claim_approved`, `claim_rejected`, `user_suspended`, `user_reactivated`.
 
 ## Files
 Pet photos: public read-only at `/uploads/reports/<name>`. Proof files: private (endpoint above). Uploads are checked by declared type **and** file signature, renamed to random names, max 5 MB.

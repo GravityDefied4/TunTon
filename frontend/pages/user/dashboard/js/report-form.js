@@ -16,6 +16,45 @@ const getLookups = () => _lookups || (_lookups = (async () => {
 const COLOR_ALIASES = { grey: 'gray' };
 const plainName = t => String(t || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
 
+/* A photo picked in the form is a downscaled JPEG data URL; the server wants a file. */
+const dataUrlToBlob = d => {
+  const [head, b64] = d.split(','), bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: (head.match(/:(.*?);/) || [])[1] || 'image/jpeg' });
+};
+
+/* Sends a response to someone else's report to the server (POST /api/claims, or PUT /api/claims/:id when `prev`
+   is the claim being edited). It is stored in the database, so the owner of the report sees it.
+   kind 'find'  = "I found this pet" on a LOST report  (claim_type found_it)
+   kind 'claim' = "This is my lost pet" on a FOUND report (claim_type my_pet). `f` is the FormData of the form. */
+async function sendClaim(kind, reportId, f, photos, prev) {
+  const fd = new FormData(), find = kind === 'find';
+  /* On an edit every field is sent, even an empty one, so a cleared box is cleared on the server too. */
+  const put = (k, v) => { v = String(v ?? '').trim(); if (v || prev) fd.append(k, v); };
+  if (!prev) fd.append('report_id', reportId);
+  put('description', find ? f.get('howfound') : f.get('description'));
+  put('markings', f.get('markings'));
+  put('event_date', f.get('date'));
+  put('contact', f.get('contact'));
+  put('facebook', f.get('facebook'));
+  fd.append('lat', f.get('lat')); fd.append('lng', f.get('lng'));
+  if (find) put('pet_location', f.get('where'));
+  else {
+    const sp = f.get('species');
+    put('pet_name', f.get('name'));
+    put('species', sp === 'Other' ? f.get('otherSpecies') : sp);
+    put('breed', f.get('breed'));
+    put('color', f.get('color'));
+    put('size', String(f.get('size') || '').toLowerCase().replace(' ', '_'));
+  }
+  /* photos already on the claim stay (or are removed); new ones are uploaded */
+  const kept = photos.filter(p => p.pid).map(p => p.pid);
+  const gone = (prev?.photoIds || []).filter(id => !kept.includes(id));
+  if (gone.length) fd.append('remove_photo_ids', gone.join(','));
+  photos.filter(p => !p.pid).forEach((p, i) => fd.append('photos', dataUrlToBlob(p.data), 'photo-' + (i + 1) + '.jpg'));
+  return ClaimsAPI.save(fd, prev?.id);
+}
+
 /* Sends the finished form to the server. Resolves to the saved report object, or throws an Error whose
    message is safe to show the person. `f` is the FormData of the form, `photos` the chosen [{ name, data }]. */
 async function createReport(k, f, photos) {
@@ -243,7 +282,8 @@ function setupForm(k, host) {
   });
 
   /* Photos: several allowed, listed by file name. Click a name to preview it. */
-  const MAX_PHOTOS = 5;
+  /* A report takes up to 5 photos; a response to someone else's report (a claim) takes up to 3 (server limit). */
+  const photoLimit = () => (form.dataset.matchFor || form.dataset.claimFor) ? 3 : 5;
   const input = form.elements.photo, fileList = host.querySelector('.files');
   let photos = [];   // [{ name, size, data }]  (data = downscaled JPEG, so it fits in storage)
   const kb = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
@@ -260,7 +300,7 @@ function setupForm(k, host) {
       </li>`).join('');
     dropZone.classList.toggle('has-photos', photos.length > 0);
     uploadStatus.textContent = photos.length
-      ? `${photos.length} of ${MAX_PHOTOS} photo${photos.length === 1 ? '' : 's'} selected${photos.length === 1 ? ' · Add more if helpful' : ''}`
+      ? `${photos.length} of ${photoLimit()} photo${photos.length === 1 ? '' : 's'} selected${photos.length === 1 ? ' · Add more if helpful' : ''}`
       : 'No photos selected yet';
     dropZone.querySelector('.upload-action').textContent = photos.length ? 'Add more photos' : 'Choose photos';
   };
@@ -281,7 +321,7 @@ function setupForm(k, host) {
     const picked = [...input.files].filter(f => f.type.startsWith('image/'));
     input.value = '';   // so the same file can be picked again later
     for (const f of picked) {
-      if (photos.length >= MAX_PHOTOS) { err.textContent = `You can add up to ${MAX_PHOTOS} photos.`; break; }
+      if (photos.length >= photoLimit()) { err.textContent = `You can add up to ${photoLimit()} photos.`; break; }
       if (photos.some(p => p.name === f.name && p.size === f.size)) continue;
       try { photos.push({ name: f.name, size: f.size, data: await shrink(f) }); }
       catch { err.textContent = `Could not read "${f.name}". Try a JPG or PNG.`; }
@@ -317,7 +357,7 @@ function setupForm(k, host) {
     set('brgy', r.brgy); set('date', r.date); set('zone', r.zone || ''); set('contact', r.contact); set('facebook', r.facebook || '');
     if ('breed' in r) breedBox.pills.set(r.breed || '');
     if ('color' in r) form.querySelector('.pills[data-pills="color"]').pills.set(r.color || '');
-    photos = (r.photos && r.photos.length ? r.photos : [r.photo]).filter(Boolean).map((d, i) => ({ name: 'Photo ' + (i + 1), size: Math.round(d.length * .75), data: d }));
+    photos = (r.photos && r.photos.length ? r.photos : [r.photo]).filter(Boolean).map((d, i) => ({ name: 'Photo ' + (i + 1), size: r.photoIds ? 0 : Math.round(d.length * .75), data: d, pid: r.photoIds?.[i] }));   // pid = photo already saved on the server (editing a claim)
     drawFiles();
     put(L.latLng(r.lat, r.lng), true);
     setupAutoGrowTextareas?.(form);
@@ -433,12 +473,12 @@ function setupForm(k, host) {
       if (!base) { err.textContent = 'That lost report is no longer available.'; return; }
       if (isOwner(base)) { err.textContent = 'This is your own lost report.'; return; }
       const prev = form.dataset.updating ? myPendingFind(base) : null;
-      const find = { id: prev ? prev.id : 'f' + Date.now(), by: myId, founderName: shownName(), status: 'pending', contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), where: f.get('where') || '', brgy: f.get('brgy'), date: f.get('date'), lat: +f.get('lat'), lng: +f.get('lng'), markings: f.get('markings'), howFound: f.get('howfound') || '', photos: photos.map(p => p.data), at: prev ? prev.at : Date.now(), ...(prev ? { editedAt: Date.now() } : {}) };
-      const { found: _old, ...rest } = base;
-      /* one open find per person: sending again replaces your earlier one that is still waiting */
-      const finds = findsOf(base).filter(x => !(x.by === myId && x.status === 'pending')).concat(find);
-      try { saveReport({ ...rest, owner: base.owner, finds }); }
-      catch { err.textContent = 'Could not save this (browser storage is full).'; return; }
+      /* Saved in the database (POST/PUT /api/claims), so the owner of the lost report sees it. */
+      const btn = btnSubmit, label = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try { await sendClaim('find', matchId, f, photos, prev); }
+      catch (ex) { err.textContent = ex.message === 'Failed to fetch' ? 'Could not reach the server. Please try again.' : ex.message; return; }
+      finally { btn.disabled = false; btn.textContent = label; }
       host.querySelector('.done h2').textContent = prev ? 'Found report updated' : 'Found report sent';
       host.querySelector('.done p').textContent = prev ? 'Your changes have been saved on the lost report.' : 'Thank you! The owner of the lost report can now see your details and will confirm if this is their pet.';
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(matchId);
@@ -458,11 +498,12 @@ function setupForm(k, host) {
       if (isOwner(base)) { err.textContent = 'This is your own found report.'; return; }
       if (confirmedClaim(base)) { err.textContent = 'The finder already confirmed an owner for this pet.'; return; }
       const prev = form.dataset.updating ? myPendingClaim(base) : null;
-      const claim = { id: prev ? prev.id : 'c' + Date.now(), by: myId, ownerName: shownName(), status: 'pending', species: f.get('species'), otherSpecies: (f.get('otherSpecies') || '').trim(), name: f.get('name') || '', breed: f.get('breed'), color: f.get('color'), size: f.get('size'), markings: f.get('markings'), description: f.get('description') || '', brgy: f.get('brgy'), date: f.get('date'), zone: +f.get('zone') || 0, contact: f.get('contact'), facebook: (f.get('facebook') || '').trim(), lat: +f.get('lat'), lng: +f.get('lng'), photos: photos.map(p => p.data), at: prev ? prev.at : Date.now(), ...(prev ? { editedAt: Date.now() } : {}) };
-      /* one open claim per person: sending again replaces your earlier one that is still waiting */
-      const claims = claimsOf(base).filter(x => !(x.by === myId && x.status === 'pending')).concat(claim);
-      try { saveReport({ ...base, owner: base.owner, claims }); }
-      catch { err.textContent = 'Could not save this (browser storage is full).'; return; }
+      /* Saved in the database (POST/PUT /api/claims), so the finder of the found report sees it. */
+      const btn = btnSubmit, label = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try { await sendClaim('claim', claimId, f, photos, prev); }
+      catch (ex) { err.textContent = ex.message === 'Failed to fetch' ? 'Could not reach the server. Please try again.' : ex.message; return; }
+      finally { btn.disabled = false; btn.textContent = label; }
       host.querySelector('.done h2').textContent = prev ? 'Lost report updated' : 'Lost report sent';
       host.querySelector('.done p').textContent = prev ? 'Your changes have been saved on the found report.' : "Thank you! The finder can now see your pet's details and will confirm if this is your pet.";
       host.querySelector('.done .actions a').href = 'report.html?id=' + encodeURIComponent(claimId);

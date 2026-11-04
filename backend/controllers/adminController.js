@@ -1,6 +1,6 @@
 /* admin controller: business logic lives here, routes only map URLs (plan rule 2).
    Routes are behind requireAuth + requireRole('admin'). Phone numbers are never returned here:
-   contact details are released only through an approved claim (plan rule 5). */
+   phone numbers are never returned here (plan rule 5). Claims are listed only when they exist in the claims table. */
 const pool = require('../db/pool');
 const { withTransaction, logActivity } = require('../db/activityLog');
 const rq = require('../db/reportQueries');
@@ -65,7 +65,8 @@ exports.reports = wrap(async (req, res) => {
     where, params, ...v.paging(q), includeRemoved: true, viewerId: req.user.user_id,
     orderBy: 'r.created_at DESC, r.report_id DESC',
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
-    extraCols: 'u.full_name AS reporter_name, u.email AS reporter_email'
+    extraCols: `u.full_name AS reporter_name, u.email AS reporter_email,
+      (SELECT COUNT(*) FROM claims c WHERE c.report_id = r.report_id) AS claims_count`
   });
   res.ok(out);
 });
@@ -85,30 +86,43 @@ exports.removeReport = wrap(async (req, res) => {
   res.ok({ id, status: 'removed' }, 'Report removed.');
 });
 
-/* GET /api/admin/claims  ?status=&limit=&offset=  Review claims and disputes (flagged = all proof submissions rejected) */
+/* GET /api/admin/reports/:id/claims  Every claim on one report (including rejected ones, which are hidden from users).
+   Only real rows from the claims table are returned, so a report nobody has claimed gives an empty list.
+   Item: claimant name/email, claim type, status, message (the claimant's description). No phone numbers. */
+exports.reportClaims = wrap(async (req, res) => {
+  const id = v.id(req.params.id, 'report id');
+  const [[report]] = await pool.query('SELECT report_id FROM pet_reports WHERE report_id = ?', [id]);
+  if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
+  const [rows] = await pool.query(
+    `SELECT c.claim_id AS id, c.claim_type AS type, c.status, c.created_at, c.decided_at, c.decision_reason,
+            c.claimant_user_id, cu.full_name AS claimant_name, cu.email AS claimant_email,
+            c.description AS message,
+            (SELECT COUNT(*) FROM claim_photos p WHERE p.claim_id = c.claim_id) AS photo_count
+       FROM claims c
+       JOIN users cu ON cu.user_id = c.claimant_user_id
+      WHERE c.report_id = ?
+      ORDER BY c.created_at DESC, c.claim_id DESC`, [id]);
+  res.ok({ items: rows, total: rows.length });
+});
+
+/* GET /api/admin/claims  ?status=&type=&limit=&offset=  All claims that exist in the database, newest first */
 exports.claims = wrap(async (req, res) => {
   const { limit, offset } = v.paging(req.query);
   const where = [], params = [];
-  if (req.query.status && req.query.status !== 'all') { where.push('c.status = ?'); params.push(v.oneOf(req.query.status, ['pending_proof', 'under_review', 'approved', 'rejected'], 'status')); }
+  if (req.query.status && req.query.status !== 'all') { where.push('c.status = ?'); params.push(v.oneOf(req.query.status, ['pending', 'approved', 'rejected'], 'status')); }
+  if (req.query.type) { where.push('c.claim_type = ?'); params.push(v.oneOf(req.query.type, ['found_it', 'my_pet'], 'type')); }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await pool.query(
-    `SELECT c.claim_id AS id, c.status, c.created_at, c.decided_at, c.decision_reason,
-            m.match_id, m.score, m.label, m.status AS match_status,
-            m.lost_report_id, lr.pet_name AS lost_pet_name, m.found_report_id,
-            c.claimant_user_id, cu.full_name AS claimant_name, fr.user_id AS finder_user_id, fu.full_name AS finder_name,
-            c.decided_by, du.full_name AS decided_by_name,
-            (SELECT COALESCE(MAX(p.attempt_no), 0) FROM claim_proofs p WHERE p.claim_id = c.claim_id) AS attempts_used,
-            (SELECT COUNT(*) FROM claim_proofs p WHERE p.claim_id = c.claim_id) AS proof_count
+    `SELECT c.claim_id AS id, c.claim_type AS type, c.status, c.created_at, c.decided_at, c.decision_reason,
+            c.report_id, r.report_type, r.pet_name AS report_pet_name, r.user_id AS report_user_id, ru.full_name AS report_owner_name,
+            c.claimant_user_id, cu.full_name AS claimant_name
        FROM claims c
-       JOIN matches m ON m.match_id = c.match_id
-       JOIN pet_reports lr ON lr.report_id = m.lost_report_id
-       JOIN pet_reports fr ON fr.report_id = m.found_report_id
+       JOIN pet_reports r ON r.report_id = c.report_id
        JOIN users cu ON cu.user_id = c.claimant_user_id
-       JOIN users fu ON fu.user_id = fr.user_id
-       LEFT JOIN users du ON du.user_id = c.decided_by
+       JOIN users ru ON ru.user_id = r.user_id
        ${whereSql} ORDER BY c.created_at DESC, c.claim_id DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
   const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM claims c ${whereSql}`, params);
-  res.ok({ items: rows.map(r => ({ ...r, flagged: r.status === 'rejected' && r.attempts_used >= 3 })), total, limit, offset });
+  res.ok({ items: rows, total, limit, offset });
 });
 
 /* GET /api/admin/stats  Dashboard numbers: totals, recovery rate, reports per barangay */

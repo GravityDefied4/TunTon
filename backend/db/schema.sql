@@ -141,35 +141,48 @@ CREATE TABLE matches (
     CONSTRAINT chk_matches_score CHECK (score BETWEEN 0 AND 100)
 ) ENGINE=InnoDB;
 
--- 8. CLAIMS AND PROOFS
+-- 8. CLAIMS (a response to an existing report)
+-- A user claims an existing report: "I found this pet" on a LOST report (claim_type found_it) or
+-- "This is my pet" on a FOUND report (claim_type my_pet). The owner of the report approves or rejects it.
+-- Approved claims stay on the report. Rejected claims are hidden from everyone except the claimant and admins.
 CREATE TABLE claims (
     claim_id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    match_id          INT UNSIGNED NOT NULL,
+    report_id         INT UNSIGNED NOT NULL,
     claimant_user_id  INT UNSIGNED NOT NULL,
-    status            ENUM('pending_proof','under_review','approved','rejected') NOT NULL DEFAULT 'pending_proof',
-    decision_reason   VARCHAR(500) NULL,
-    created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    decided_at        TIMESTAMP    NULL,
-    decided_by        INT UNSIGNED NULL,
+    claim_type        ENUM('found_it','my_pet') NOT NULL,
+    status            ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    description       TEXT          NULL,
+    markings          VARCHAR(500)  NULL,
+    pet_location      VARCHAR(255)  NULL,
+    event_date        DATE          NULL,
+    lat               DECIMAL(9,6)  NULL,
+    lng               DECIMAL(9,6)  NULL,
+    barangay_id       SMALLINT UNSIGNED NULL,
+    pet               JSON          NULL,
+    contact           VARCHAR(255)  NULL,
+    facebook          VARCHAR(255)  NULL,
+    decision_reason   VARCHAR(500)  NULL,
+    decided_at        TIMESTAMP     NULL,
+    created_at        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (claim_id),
-    UNIQUE KEY uq_claim_per_user_match (match_id, claimant_user_id),
-    CONSTRAINT fk_claims_match    FOREIGN KEY (match_id)         REFERENCES matches (match_id),
-    CONSTRAINT fk_claims_claimant FOREIGN KEY (claimant_user_id) REFERENCES users (user_id),
-    CONSTRAINT fk_claims_decider  FOREIGN KEY (decided_by)       REFERENCES users (user_id)
+    UNIQUE KEY uq_claim_per_user_report (report_id, claimant_user_id),
+    KEY ix_claims_status (report_id, status),
+    CONSTRAINT fk_claims_report    FOREIGN KEY (report_id)        REFERENCES pet_reports (report_id) ON DELETE CASCADE,
+    CONSTRAINT fk_claims_claimant  FOREIGN KEY (claimant_user_id) REFERENCES users (user_id),
+    CONSTRAINT fk_claims_barangay  FOREIGN KEY (barangay_id)      REFERENCES barangays (barangay_id)
 ) ENGINE=InnoDB;
 
-CREATE TABLE claim_proofs (
-    proof_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+CREATE TABLE claim_photos (
+    photo_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     claim_id    INT UNSIGNED NOT NULL,
-    attempt_no  TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    proof_type  ENUM('vet_record','older_photo','microchip_number','hidden_marks','other') NOT NULL,
-    file_path   VARCHAR(255) NULL,
-    note        TEXT         NULL,
+    file_path   VARCHAR(255) NOT NULL,
+    image_data  LONGBLOB     NOT NULL,
+    mime_type   VARCHAR(20)  NOT NULL,
     uploaded_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (proof_id),
-    CONSTRAINT fk_proofs_claim FOREIGN KEY (claim_id) REFERENCES claims (claim_id) ON DELETE CASCADE,
-    CONSTRAINT chk_proof_attempt CHECK (attempt_no BETWEEN 1 AND 3),
-    CONSTRAINT chk_proof_content CHECK (file_path IS NOT NULL OR note IS NOT NULL)
+    PRIMARY KEY (photo_id),
+    UNIQUE KEY uq_claim_photo_name (file_path),
+    CONSTRAINT fk_claim_photos_claim FOREIGN KEY (claim_id) REFERENCES claims (claim_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- 9. AUDIT TRAIL (Weak Entity dependent on Users/Actions)
@@ -203,14 +216,3 @@ JOIN species sp ON sp.species_id = r.species_id
 JOIN breeds br ON br.breed_id = r.breed_id
 LEFT JOIN barangays bg ON bg.barangay_id = r.barangay_id
 WHERE r.status <> 'removed';
-
-CREATE VIEW v_released_contacts AS
-SELECT c.claim_id, c.decided_at,
-       c.claimant_user_id, cu.full_name AS claimant_name, cu.phone AS claimant_phone, cu.email AS claimant_email,
-       fr.user_id AS finder_user_id, fu.full_name AS finder_name, fu.phone AS finder_phone, fu.email AS finder_email
-FROM claims c
-JOIN matches m ON m.match_id = c.match_id
-JOIN pet_reports fr ON fr.report_id = m.found_report_id
-JOIN users cu ON cu.user_id = c.claimant_user_id
-JOIN users fu ON fu.user_id = fr.user_id
-WHERE c.status = 'approved';

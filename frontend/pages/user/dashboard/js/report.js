@@ -37,7 +37,7 @@ function responseCard(f, kind) {
   const person = (claim ? f.ownerName : f.founderName) || f.reporterName || info.name || (f.by === myId ? shownName() : 'Community member');
   const picture = f.finderPicture || f.ownerPicture || info.picture || '';
   const posted = f.at ? new Date(f.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-  const canSee = current && (isOwner(current) || f.by === myId);
+  const canSee = true;   // the claimant's contact details are visible to every logged-in user
   const photos = f.photos || [];
   const fact = (icon, label, val, sub) => `<li>${icon}<div><span class="d-label">${label}</span><strong>${esc(val)}</strong>${sub ? `<small>${esc(sub)}</small>` : ''}</div></li>`;
   const note = (label, val) => `<div class="d-find-note"><span class="d-label">${label}</span><p>${esc(val)}</p></div>`;
@@ -354,11 +354,22 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
       ? (lost ? 'Confirm that this is your pet? The report will be marked as Found and the other found reports will be closed.' : 'Confirm that this person is the owner of this pet? The report will be marked as Owner found and the other lost reports will be closed.')
       : (lost ? 'Mark this found report as not your pet?' : 'Mark this lost report as not the owner?');
     if (!await showReportDialog({ title: ok ? 'Confirm match' : 'Reject match', message, confirmText: ok ? 'Yes, confirm' : 'Yes, reject', danger: !ok })) return;
-    const next = finds.map(x => x.id === f.id ? { ...x, status: ok ? 'confirmed' : 'rejected', reviewedAt: Date.now() }
-      : ok && x.status === 'pending' ? { ...x, status: 'rejected', reviewedAt: Date.now() } : x);
-    try { const { found: _old, ...rest } = r; saveReport({ ...rest, [key]: next }); }
-    catch { await showReportDialog({ title: 'Unable to save', message: 'Could not save your changes. Your browser storage may be full.', confirmText: 'OK', showCancel: false }); return; }
-    show({ ...r, [key]: next, found: undefined });
+    /* The decision is saved on the server (PATCH /api/claims/:id/decision), then the report and its claims are
+       read again, so what is shown is what the other people will see: an approved claim stays on the report
+       (the report becomes matched) and a rejected one disappears from it. */
+    const buttons = card.querySelectorAll('button[data-confirm], button[data-reject]');
+    buttons.forEach(b => { b.disabled = true; });
+    try { await ClaimsAPI.decide(f.id, ok ? 'approve' : 'reject'); }
+    catch (ex) {
+      buttons.forEach(b => { b.disabled = false; });
+      await showReportDialog({ title: 'Unable to save', message: ex.message === 'Failed to fetch' ? 'Could not reach the server. Please try again.' : ex.message, confirmText: 'OK', showCancel: false });
+      return;
+    }
+    try {
+      const fresh = (await ReportsAPI.get(r.id)) || r;
+      fresh[key] = await ClaimsAPI.forReport(r.id);
+      show(fresh);
+    } catch { location.reload(); }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }));
 
@@ -384,7 +395,11 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
   try {
     const [r, all] = await Promise.all([ReportsAPI.get(id), ReportsAPI.list({ kind: 'all' }).catch(() => [])]);
     matchPool = all;
-    r ? show(r) : notFound();
+    if (!r) return notFound();
+    /* Finds / claims on this report come from the database: the owner sees pending and approved ones with their
+       contact details, everybody else sees approved ones plus their own. If they can't load, the report still opens. */
+    r[claimKey(r)] = await ClaimsAPI.forReport(r.id).catch(err => { console.error(err); return []; });
+    show(r);
   } catch (err) {
     console.error(err);
     host.innerHTML = '<p class="rempty">Could not load this report. Please try again.</p>';

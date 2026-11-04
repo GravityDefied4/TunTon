@@ -3,13 +3,20 @@
    ========================================================= */
 
 /* "My reports" come from the database (GET /api/reports/mine), newest first. A resolved report counts as reunited. */
-let _myReports = [];
+let _myReports = [], _myClaims = [];
 const myReports = () => _myReports;
 const loadMyReports = async () => {
   const res = await authFetch('/reports/mine?limit=100');
   if (!res.ok) throw new Error('Could not load your reports');
   const items = ((await res.json()).data?.items || []).filter(r => r.status !== 'removed');
-  _myReports = items.map(toReport).map(r => r.status === 'resolved' ? { ...r, status: 'reunited' } : r).sort((a, b) => b.created - a.created);
+  /* Claims are loaded onto each report (so the "to review" alerts work).
+     "Reunited" counts the times I reunited an owner with their pet, that is, when I was the FINDER and the owner's side was confirmed:
+       - a FOUND report of mine on which I approved a claim ("this is my pet"), or
+       - a claim of mine ("I found this pet") on someone's LOST report that its owner approved.
+     A found report with an approved claim gets the Reunited label. A lost report of mine does not count: there I am the owner. */
+  const reports = await attachClaims(items.map(toReport));
+  _myClaims = await ClaimsAPI.mine().catch(() => []);
+  _myReports = reports.map(r => r.status === 'resolved' || (r.kind === 'found' && confirmedClaim(r)) ? { ...r, status: 'reunited' } : r).sort((a, b) => b.created - a.created);
 };
 
 const pfForm = $('#profile-form');
@@ -97,7 +104,7 @@ function renderProfile() {
   pfForm.elements.brgy.value = p.brgy || '';
   $('#st-lost').textContent = mine.filter(r => r.kind === 'lost').length;
   $('#st-found').textContent = mine.filter(r => r.kind === 'found').length;
-  $('#st-home').textContent = mine.filter(r => r.status === 'reunited').length;
+  $('#st-home').textContent = mine.filter(r => r.kind === 'found' && confirmedClaim(r)).length + _myClaims.filter(c => c.type === 'found_it' && c.status === 'confirmed').length;
   $('#rep-list').innerHTML = mine.length ? mine.map(r => `
     <li class="rep"><img src="${esc(r.photo)}" alt="">
       <div class="rep-body">

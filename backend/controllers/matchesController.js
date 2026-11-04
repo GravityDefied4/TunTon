@@ -11,9 +11,7 @@ const { scoreMatch } = require('../services/matching');
 const STATUSES = ['suggested', 'dismissed', 'claim_pending', 'confirmed'];
 
 const SELECT = `SELECT m.match_id, m.lost_report_id, m.found_report_id, m.score, m.label, m.status, m.created_at, m.updated_at,
-    lr.user_id AS lost_user_id, fr.user_id AS found_user_id,
-    (SELECT c.claim_id FROM claims c WHERE c.match_id = m.match_id ORDER BY c.claim_id DESC LIMIT 1) AS claim_id,
-    (SELECT c.status FROM claims c WHERE c.match_id = m.match_id ORDER BY c.claim_id DESC LIMIT 1) AS claim_status
+    lr.user_id AS lost_user_id, fr.user_id AS found_user_id
   FROM matches m
   JOIN pet_reports lr ON lr.report_id = m.lost_report_id
   JOIN pet_reports fr ON fr.report_id = m.found_report_id`;
@@ -32,7 +30,6 @@ async function shape(rows, user) {
   return rows.map(r => ({
     id: r.match_id, score: r.score, label: r.label, status: r.status,
     my_role: r.lost_user_id === user.user_id ? 'owner' : r.found_user_id === user.user_id ? 'finder' : null,
-    claim: r.claim_id ? { id: r.claim_id, status: r.claim_status } : null,
     created_at: r.created_at, updated_at: r.updated_at,
     lost: byId.get(r.lost_report_id), found: byId.get(r.found_report_id)
   }));
