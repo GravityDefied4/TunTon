@@ -21,7 +21,24 @@
   <div class="dash-main">
     <main>
       <section class="view" id="view-map">
-        <div class="view-head"><h1>Map</h1><p>Browse lost and found pet reports. You can explore anywhere, but reports can only be filed inside Dagupan City.</p></div>
+        <div class="view-head view-head--dashboard">
+          <div>
+            <h1>Dashboard</h1>
+            <p>See the latest pet reports around your community and help bring pets home.</p>
+            <p class="dashboard-greeting">Welcome back, <span id="dashboard-name">there</span>!</p>
+          </div>
+          <div class="dashboard-actions" aria-label="Quick actions">
+            <a class="btn btn-small" href="add-report.html">Add a pet report</a>
+            <a class="dashboard-link" href="reports.html">Browse all reports <span aria-hidden="true">&rarr;</span></a>
+          </div>
+        </div>
+
+        <div class="dashboard-section-head">
+          <div>
+            <h2>Explore nearby reports</h2>
+            <p>Search, filter, and select a report to see it on the map.</p>
+          </div>
+        </div>
 
         <!-- Top bar: search + filter chips (YouTube chip row, Google Maps search pill) -->
         <div class="map-bar">

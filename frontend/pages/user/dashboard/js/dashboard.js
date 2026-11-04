@@ -36,6 +36,7 @@ let meMarker = null, ring = null;
 let visible = [], selectedId = null;   // reports shown in the panel, and the one open in the panel
 let filter = 'all', query = '';
 const side = $('#side'), sideBody = $('#side-body');
+$('#dashboard-name').textContent = shownName();
 const desktop = () => matchMedia('(min-width: 1001px)').matches;   // on desktop the panel sits beside the map
 const titleOf = r => r.name || [r.color, speciesOf(r)].filter(Boolean).join(' ') || 'Pet';
 const stateText = r => reportState(r) === 'lost' ? 'Missing' : 'Potentially found';
