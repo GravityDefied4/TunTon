@@ -1850,6 +1850,8 @@ p {
     color: var(--white);
 }
 
+.theme-toggle--mobile { display: none; }
+
 .theme-toggle--icon:hover { background: rgba(255, 255, 255, .18); }
 .theme-toggle:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 
@@ -1966,4 +1968,179 @@ p {
     .recovery-article__body h2 { font-size: 2.05rem; }
     .recovery-article__readtime { font-size: .68rem; }
     .recovery-dialog__story { font-size: .95rem; line-height: 1.8; }
+}
+
+/* ---------- Landing page: small-screen refinements ---------- */
+@media (max-width: 640px) {
+    html { scroll-padding-top: 68px; }
+
+    body { font-size: .96rem; line-height: 1.55; }
+    .container { width: min(1120px, calc(100% - 1.75rem)); }
+
+    .theme-toggle--mobile {
+        display: inline-flex;
+        flex: none;
+        width: 40px;
+        height: 40px;
+        margin-left: auto;
+    }
+
+    .nav-toggle { width: 40px; height: 40px; }
+    .nav { justify-content: initial; gap: .55rem; }
+
+    .menu {
+        max-height: 0;
+        padding-inline: 1rem;
+    }
+
+    .menu > .theme-toggle--icon { display: none; }
+
+    .menu.open {
+        max-height: min(80vh, 560px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .menu > a {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+    }
+
+    .auth { padding: .55rem 0; }
+    .auth-out { width: 100%; }
+    .auth-out .btn { flex: 1; min-height: 44px; }
+
+    .hero { padding: calc(1.35rem + 72px) 0 4.25rem; }
+    .hero-inner { gap: 1.2rem; padding-bottom: 0; }
+    .hero h1 {
+        margin-bottom: .8rem;
+        font-size: clamp(1.95rem, 8.5vw, 2.8rem);
+        line-height: 1.08;
+    }
+    .hero .lead {
+        margin-bottom: 1.1rem;
+        font-size: clamp(1rem, 3.8vw, 1.15rem);
+        line-height: 1.45;
+    }
+    .hero .actions { gap: .55rem; }
+    .hero .actions .btn { min-height: 44px; padding: .75em 1.1em; font-size: .96rem; }
+    .hero-visual { margin-top: .1rem; }
+    .hero-card { height: clamp(12rem, 62vw, 15.5rem); }
+    .stack-card { padding: .7rem; border-radius: 20px; }
+    .stack-card img { border-radius: 14px; }
+    .hero-badge--status {
+        top: .8rem;
+        left: .6rem;
+        padding: .35rem .7rem;
+        font-size: .76rem;
+    }
+    .hero-visual { width: 96%; }
+    .hero-caption {
+        gap: .35rem;
+        margin-top: .8rem;
+        padding: .45rem .65rem;
+        border-radius: 14px;
+    }
+    .hero-caption-text strong { font-size: .8rem; }
+    .hero-caption-text small { font-size: .67rem; }
+    .hero-dots { gap: .2rem; }
+    .hero-dot {
+        position: relative;
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        background: transparent;
+    }
+    .hero-dot::before {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .55);
+        content: "";
+        transform: translate(-50%, -50%);
+    }
+    .hero-dot[aria-current="true"] { flex-basis: 34px; }
+    .hero-dot[aria-current="true"]::before {
+        width: 22px;
+        background: var(--white);
+    }
+
+    .section { padding: 3rem 0; }
+    .two-col.about { gap: 1.4rem; }
+    .section-head { align-items: flex-start; }
+    .section-head h2 { font-size: clamp(1.55rem, 6vw, 1.8rem); }
+    .section > .container > .lead { font-size: 1rem; }
+    .panel {
+        --panel-pad: 1rem;
+        margin-inline: 0;
+        border-radius: 18px;
+    }
+    .panel .cards { gap: .65rem; margin-top: 1rem; }
+    .panel .card {
+        min-height: 0;
+        width: 96%;
+        margin-inline: auto;
+        padding: .9rem 1rem;
+        border-radius: 16px;
+    }
+    .panel .card::before { height: 5px; }
+    .panel .card h3 { margin-bottom: .3em; font-size: 1.15rem; }
+    .panel .card p { margin-bottom: 0; font-size: .87rem; line-height: 1.45; }
+
+    .filter-bar { gap: .4rem; }
+    .filter-bar .btn { min-height: 40px; }
+    .pet-list--grid { gap: .8rem; }
+    .pet-list--grid .pet-card,
+    .recovered-card { width: 96%; margin-inline: auto; border-radius: 20px; }
+    .pet-list--grid .pet-thumb,
+    .recovered-card .pet-thumb { aspect-ratio: 3 / 2; }
+    .pet-list--grid .pet-body { padding: .7rem .85rem .3rem; gap: .35rem; }
+    .pet-list--grid .pet-body h3 { font-size: 1.1rem; }
+    .pet-list--grid .pet-info { gap: .15rem; font-size: .82rem; }
+    .tag-missing {
+        top: 10px;
+        left: 10px;
+        padding: .3em .75em .3em .65em;
+        font-size: .76rem;
+    }
+    .pet-list--grid .pet-card .btn { min-height: 38px; margin: .45rem .85rem .85rem; }
+    .recovered-card .pet-body { gap: .1rem; padding: .7rem .85rem .2rem; }
+    .recovered-card .pet-body h3 { font-size: 1.1rem; }
+    .recovered-card .pet-meta { font-size: .82rem; }
+    .recovered-card .pet-story {
+        display: -webkit-box;
+        overflow: hidden;
+        margin-top: .2rem;
+        font-size: .82rem;
+        line-height: 1.4;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    .recovered-card .btn {
+        flex: none;
+        align-self: stretch;
+        min-height: 38px;
+        margin: .45rem .85rem .85rem;
+    }
+
+    #pets { padding-bottom: 3.5rem; }
+    #recovered { padding-top: 3rem; padding-bottom: 6rem; }
+    .footer { padding: 4.5rem 0 1.25rem; }
+    .footer-links { gap: .6rem 1rem; font-size: .88rem; }
+    .footer-scenery {
+        top: 40px;
+        width: clamp(120px, 34vw, 180px);
+    }
+}
+
+@media (max-width: 380px) {
+    .container { width: calc(100% - 1.5rem); }
+    .hero h1 { font-size: clamp(1.85rem, 8.5vw, 2.1rem); }
+    .panel { --panel-pad: .9rem; }
+    .hero-caption { padding-inline: .6rem; }
+    .hero-dots { gap: .15rem; }
 }
