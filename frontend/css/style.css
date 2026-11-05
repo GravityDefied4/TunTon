@@ -1975,7 +1975,7 @@ p {
     html { scroll-padding-top: 68px; }
 
     body { font-size: .96rem; line-height: 1.55; }
-    .container { width: min(1120px, calc(100% - 1.75rem)); }
+    .container { width: min(1120px, calc(100% - 3.5rem)); }
 
     .theme-toggle--mobile {
         display: inline-flex;
@@ -2023,10 +2023,10 @@ p {
         font-size: clamp(1rem, 3.8vw, 1.15rem);
         line-height: 1.45;
     }
-    .hero .actions { gap: .55rem; }
+    .hero .actions { gap: .55rem; margin-bottom: 5rem; }
     .hero .actions .btn { min-height: 44px; padding: .75em 1.1em; font-size: .96rem; }
     .hero-visual { margin-top: .1rem; }
-    .hero-card { height: clamp(12rem, 62vw, 15.5rem); }
+    .hero-card { height: clamp(10rem, 48vw, 13rem); }
     .stack-card { padding: .7rem; border-radius: 20px; }
     .stack-card img { border-radius: 14px; }
     .hero-badge--status {
@@ -2035,7 +2035,7 @@ p {
         padding: .35rem .7rem;
         font-size: .76rem;
     }
-    .hero-visual { width: 96%; }
+    .hero-visual { display: none; }
     .hero-caption {
         gap: .35rem;
         margin-top: .8rem;
@@ -2138,7 +2138,7 @@ p {
 }
 
 @media (max-width: 380px) {
-    .container { width: calc(100% - 1.5rem); }
+    .container { width: calc(100% - 3.25rem); }
     .hero h1 { font-size: clamp(1.85rem, 8.5vw, 2.1rem); }
     .panel { --panel-pad: .9rem; }
     .hero-caption { padding-inline: .6rem; }
