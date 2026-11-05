@@ -1072,6 +1072,16 @@ a.cc-value:hover {
 .d-find-actions .btn { text-align: center; }
 
 @media (max-width: 800px) {
+  .d-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .d-gallery,
+  .d-summary {
+    width: 100%;
+    min-width: 0;
+  }
+
   .d-find { padding: 1.1rem; }
   .d-find-body { grid-template-columns: 1fr; }
   .d-find-main { aspect-ratio: 4 / 3; }
