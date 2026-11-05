@@ -1280,3 +1280,5 @@ body.adm {
   .a-logout-dialog__actions { gap: .65rem; margin-top: 1.4rem; }
   .a-logout-dialog__actions button { min-height: 52px; font-size: .95rem; }
 }
+/* A locked button, e.g. Restore on a report whose owner is suspended */
+.a-btn:disabled { opacity: .45; cursor: not-allowed; pointer-events: auto; }

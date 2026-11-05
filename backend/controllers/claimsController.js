@@ -25,7 +25,7 @@ const photoUrl = name => `/uploads/claims/${name}`;
 
 /* One claim row with the claimant and the report it sits on. */
 const SELECT = `SELECT c.*, bg.name AS barangay, ${CLAIM_REASON_SQL},
-    cu.full_name AS claimant_name, cu.email AS claimant_email, cu.phone AS claimant_phone,
+    cu.full_name AS claimant_name, cu.email AS claimant_email, cu.phone AS claimant_phone, cu.status AS claimant_status,
     r.user_id AS report_user_id, r.report_type, r.status AS report_status
   FROM claims c
   JOIN pet_reports r ON r.report_id = c.report_id
@@ -187,7 +187,7 @@ exports.withdraw = wrap(async (req, res) => {
   res.ok({ id: claimId }, 'Claim withdrawn.');
 });
 
-/* GET /api/reports/:id/claims  Claims on one report.
+/* GET /api/reports/:id/claims  Claims on one report (claims from a suspended person are hidden until they are reactivated).
    Everybody who is logged in sees the pending and approved claims on a report, with the claimant's contact details.
    Rejected claims never show on the report (the claimant still sees their own). */
 exports.forReport = wrap(async (req, res) => {
@@ -197,8 +197,9 @@ exports.forReport = wrap(async (req, res) => {
 
   const [rows] = await pool.query(
     `${SELECT} WHERE c.report_id = ? AND (c.status IN ('pending', 'approved') OR c.claimant_user_id = ?)
+      AND (cu.status = 'active' OR ? = 'admin')
       ORDER BY (c.status = 'approved') DESC, c.created_at DESC, c.claim_id DESC`,
-    [reportId, req.user.user_id]);
+    [reportId, req.user.user_id, req.user.role]);
   const items = await shape(rows, req.user);
   res.ok({ items, total: items.length });
 });
@@ -224,6 +225,8 @@ exports.mine = wrap(async (req, res) => {
 exports.getOne = wrap(async (req, res) => {
   const claim = await loadOne(v.id(req.params.id, 'claim id'), req.user);
   const [[r]] = claim ? await pool.query('SELECT user_id FROM pet_reports WHERE report_id = ?', [claim.report_id]) : [[]];
+  const [[cl]] = claim ? await pool.query('SELECT u.status FROM claims c JOIN users u ON u.user_id = c.claimant_user_id WHERE c.claim_id = ?', [claim.id]) : [[]];
+  if (cl && cl.status !== 'active' && req.user.role !== 'admin') throw err(404, 'Claim not found.');   // suspended claimant: hidden
   if (!claim || !(claim.is_mine || r?.user_id === req.user.user_id || req.user.role === 'admin')) throw err(404, 'Claim not found.');
   res.ok({ claim });
 });
@@ -245,6 +248,8 @@ exports.decide = wrap(async (req, res) => {
     if (!c || (c.report_user_id !== req.user.user_id && c.claimant_user_id !== req.user.user_id)) throw err(404, 'Claim not found.');
     if (c.report_user_id !== req.user.user_id) throw err(403, 'Only the owner of the report can approve or reject a claim.');
     if (c.status !== 'pending') throw err(409, `This claim is already ${c.status}.`);
+    const [[claimant]] = await conn.query('SELECT status FROM users WHERE user_id = ?', [c.claimant_user_id]);
+    if (claimant?.status !== 'active') throw err(404, 'Claim not found.');   // suspended claimant: the claim is hidden for now
     reportId = c.report_id;
 
     if (decision === 'approve') {

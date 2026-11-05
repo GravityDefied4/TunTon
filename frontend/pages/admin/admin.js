@@ -43,6 +43,24 @@ const USER_DASHBOARD = '../user/user.html';
 if (!session) logout();
 else if (session.role !== 'admin') location.replace(USER_DASHBOARD);   // regular users only use the user dashboard
 
+/* If this account is no longer an admin in the database, the server sends a fresh token and this page moves to the
+   user dashboard straight away (checked on load, every few seconds, and when the tab is shown again). */
+async function syncRole() {
+  try {
+    const r = await fetch(API + '/auth/me', { headers: { Authorization: `Bearer ${session.token}` } });
+    if (r.status === 401) return logout();
+    const j = await r.json();
+    if (!j?.data?.token) return;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(SESSION_KEY) || '{}'), token: j.data.token }));
+    if (j.data.user?.role !== 'admin') location.replace(USER_DASHBOARD);
+  } catch { }
+}
+if (session && session.role === 'admin') {
+  syncRole();
+  setInterval(syncRole, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncRole(); });
+}
+
 async function api(path, { method = 'GET', query = {}, body } = {}) {
   const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v !== null && v !== undefined));
   const response = await fetch(API + path + (qs.size ? `?${qs}` : ''), {
@@ -169,7 +187,7 @@ function reportRow(r) {
   const flag = r.review_flag ? `<small>${esc(label(String(r.review_flag).replace('report_flagged_', '')))}</small>` : '';
   return `<tr><td><div class="a-report-name"><span class="a-report-icon">${type === 'lost' ? '!' : '✓'}</span><span><b>${esc(pet)}</b><small>${esc(label(type))}${r.barangay ? ` · ${esc(r.barangay)}` : ''}</small></span></div></td>
     <td><b>${esc(r.reporter_name || 'Unknown')}</b><small>${esc(r.reporter_email)}</small></td><td>${badge(hidden ? 'hidden' : r.status)}${flag}</td><td>${date(r.created_at)}</td>
-    <td class="r a-actions"><button class="a-btn" data-report-view="${esc(id)}">Review report</button><button class="a-btn" data-report-claims="${esc(id)}">Claims (${Number(r.claims_count || 0)})</button><button class="a-btn ${hidden ? '' : 'a-btn--danger'}" data-report-toggle="${esc(id)}" data-hidden="${hidden}">${hidden ? 'Restore' : 'Hide'}</button></td></tr>`;
+    <td class="r a-actions"><button class="a-btn" data-report-view="${esc(id)}">Review report</button><button class="a-btn" data-report-claims="${esc(id)}">Claims (${Number(r.claims_count || 0)})</button><button class="a-btn ${hidden ? '' : 'a-btn--danger'}" data-report-toggle="${esc(id)}" data-hidden="${hidden}"${hidden && r.reporter_status === 'suspended' ? ' disabled title="The owner of this report is suspended. Reactivate the account to bring it back."' : ''}>${hidden ? 'Restore' : 'Hide'}</button></td></tr>`;
 }
 async function loadReports() {
   const seq = nextSeq('reports'); setLoading('#r-rows', 5);

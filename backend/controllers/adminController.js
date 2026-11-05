@@ -42,6 +42,9 @@ exports.users = wrap(async (req, res) => {
   res.ok({ items: rows, total, limit, offset });
 });
 
+/* Log action for a report hidden because its owner was suspended (kept apart from 'report_removed', an admin hiding it). */
+const HOLD_ACTION = 'report_hidden_owner_suspended';
+
 /* PATCH /api/admin/users/:id/status  { status: 'active' | 'suspended', reason? }  */
 exports.setUserStatus = wrap(async (req, res) => {
   const id = v.id(req.params.id, 'user id');
@@ -49,6 +52,7 @@ exports.setUserStatus = wrap(async (req, res) => {
   const reason = v.text(req.body?.reason, 'reason', { max: 300 });
   if (id === req.user.user_id) throw v.bad('You cannot change the status of your own account.');
 
+  const restored = [];
   const user = await withTransaction(async conn => {
     const [[u]] = await conn.query('SELECT user_id, role, status FROM users WHERE user_id = ? FOR UPDATE', [id]);
     if (!u) throw Object.assign(new Error('User not found.'), { status: 404 });
@@ -57,9 +61,35 @@ exports.setUserStatus = wrap(async (req, res) => {
       await conn.query('UPDATE users SET status = ? WHERE user_id = ?', [status, id]);
       await logActivity({ userId: req.user.user_id, action: status === 'suspended' ? 'user_suspended' : 'user_reactivated', table: 'users', id, details: { reason } }, conn);
     }
+    /* Runs on every request, even when the status is already the same, so a user who was suspended before reports were
+       hidden with the suspension (or whose new reports slipped through) is brought in line by suspending again. */
+    if (status === 'suspended') {
+      /* Hide every visible report of this user until they are reactivated. Reports the admin already hid are skipped,
+         so they are never touched here and stay hidden after reactivation. The report's old status is logged. */
+      const [mine] = await conn.query("SELECT report_id, status FROM pet_reports WHERE user_id = ? AND status <> 'removed' FOR UPDATE", [id]);
+      for (const r of mine) {
+        await conn.query("UPDATE pet_reports SET status = 'removed' WHERE report_id = ?", [r.report_id]);
+        await logActivity({ userId: req.user.user_id, action: HOLD_ACTION, table: 'pet_reports', id: r.report_id, details: { previous_status: r.status, owner_suspended: id } }, conn);
+      }
+    } else {
+      /* Bring back only the reports hidden BY the suspension: a report is one of those when its latest hide entry is the
+         suspension one. A report the admin hid on its own (a 'report_removed' entry) stays hidden. */
+      const [hidden] = await conn.query("SELECT report_id FROM pet_reports WHERE user_id = ? AND status = 'removed' FOR UPDATE", [id]);
+      for (const r of hidden) {
+        const [[last]] = await conn.query(
+          `SELECT action, JSON_UNQUOTE(JSON_EXTRACT(details, '$.previous_status')) AS previous_status FROM activity_logs
+            WHERE target_table = 'pet_reports' AND target_id = ? AND action IN ('report_removed', ?) ORDER BY log_id DESC LIMIT 1`, [r.report_id, HOLD_ACTION]);
+        if (last?.action !== HOLD_ACTION) continue;
+        const back = ['active', 'matched', 'resolved', 'closed'].includes(last.previous_status) ? last.previous_status : 'active';
+        await conn.query('UPDATE pet_reports SET status = ? WHERE report_id = ?', [back, r.report_id]);
+        await logActivity({ userId: req.user.user_id, action: 'report_restored', table: 'pet_reports', id: r.report_id, details: { restored_status: back, owner_reactivated: id } }, conn);
+        if (back === 'active') restored.push(r.report_id);
+      }
+    }
     return { id, status };
   });
-  res.ok({ user }, status === 'suspended' ? 'User suspended.' : 'User reactivated.');
+  for (const rid of restored) await runQuietly(rid, req.user.user_id);   // matches are refreshed for the reports that came back
+  res.ok({ user }, status === 'suspended' ? 'User suspended. Their reports and claims are hidden until they are reactivated.' : 'User reactivated. Their reports and claims are back.');
 });
 
 /* GET /api/admin/reports  ?type=&status=&species=&q=&barangay_id=&user_id=&limit=&offset=  (includes removed, with reporter name/email) */
@@ -82,7 +112,7 @@ exports.reports = wrap(async (req, res) => {
     where, params, ...v.paging(q), includeRemoved: true, viewerId: req.user.user_id,
     orderBy: 'r.created_at DESC, r.report_id DESC',
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
-    extraCols: `u.full_name AS reporter_name, u.email AS reporter_email,
+    extraCols: `u.full_name AS reporter_name, u.email AS reporter_email, u.status AS reporter_status,
       (SELECT COUNT(*) FROM claims c WHERE c.report_id = r.report_id) AS claims_count`   // review_flag now comes from the shared report query
   });
   res.ok(out);
@@ -95,7 +125,7 @@ exports.reportDetail = wrap(async (req, res) => {
     where: ['r.report_id = ?'], params: [id], limit: 1, offset: 0,
     includeRemoved: true, viewerId: req.user.user_id,
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
-    extraCols: 'u.full_name AS reporter_name, u.email AS reporter_email'
+    extraCols: 'u.full_name AS reporter_name, u.email AS reporter_email, u.status AS reporter_status'
   });
   const candidates = out.items || out.rows || out.reports || out.data?.items || out.data?.rows || [];
   const resultRows = Array.isArray(candidates) ? candidates : [];
@@ -149,6 +179,8 @@ exports.restoreReport = wrap(async (req, res) => {
          FROM activity_logs
         WHERE target_table = 'pet_reports' AND target_id = ? AND action = 'report_removed'
         ORDER BY log_id DESC LIMIT 1`, [id]);
+    const [[owner]] = await conn.query('SELECT u.status FROM users u JOIN pet_reports r ON r.user_id = u.user_id WHERE r.report_id = ?', [id]);
+    if (owner?.status === 'suspended') throw Object.assign(new Error('The owner of this report is suspended, so it cannot be restored. Reactivate the account first.'), { status: 409 });
     const allowed = ['active', 'matched', 'resolved', 'closed'];
     restoredStatus = allowed.includes(log?.previous_status) ? log.previous_status : 'active';
     await conn.query('UPDATE pet_reports SET status = ? WHERE report_id = ?', [restoredStatus, id]);
