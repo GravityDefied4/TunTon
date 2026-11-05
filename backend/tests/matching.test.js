@@ -67,12 +67,14 @@ test('size, sex', () => {
   assert.equal(m.scoreSex({ sex: 'male' }, { sex: 'female' }), 0);
 });
 
-test('distance decays linearly to 0 at the radius edge', () => {
+test('distance: 100% under 500 m, linear fade to 0 at 3 km, 0 beyond', () => {
+  const at = kmNorth => m.scoreDistance(lost, { ...found, lat: lost.lat + kmNorth / 111.19 });
   assert.equal(m.scoreDistance(lost, found), 20);
-  const halfKmLat = 1.5 / 111.19;                               // about 1.5 km north = half of the 3 km radius
-  const half = m.scoreDistance(lost, { ...found, lat: lost.lat + halfKmLat });
-  assert.ok(Math.abs(half - 10) < 0.1, `got ${half}`);
-  assert.equal(m.scoreDistance(lost, { ...found, lat: lost.lat + 0.1 }), 0);
+  assert.equal(at(0.4), 20);
+  assert.ok(Math.abs(at(1.75) - 10) < 0.1, `got ${at(1.75)}`);   // halfway through the fade
+  assert.equal(at(3), 0);
+  assert.equal(at(4), 0);
+  assert.equal(m.scoreDistance({ ...lost, search_radius_km: 5 }, { ...found, lat: lost.lat + 4 / 111.19 }), 0);
 });
 
 test('recency: full within 3 days, then decays', () => {

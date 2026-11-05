@@ -14,6 +14,8 @@ const CONFIG = {
   threshold: 10,                                   // store a match at or above this score (weak matches are still shown)
   labels: [{ min: 80, label: 'Strong' }, { min: 65, label: 'Likely' }, { min: 50, label: 'Possible' }, { min: 10, label: 'Weak' }],
   weights: { breed: 20, color: 20, markings: 20, size: 10, sex: 5, distance: 20, recency: 5 },   // age_group was dropped from the schema; its 5 points went to markings
+  distanceFullKm: 0.5,                             // within this distance: full distance points
+  distanceFadeKm: 3,                               // at this distance or more: 0 points (linear fade in between)
   dateBufferDays: 2,                               // found date may be this many days before lost date
   recencyFullDays: 3,                              // full recency points within this many days
   recencyZeroDays: 14,                             // recency decays linearly to 0 at this many days
@@ -110,9 +112,10 @@ function scoreSex(lost, found) {
   return lost.sex === found.sex ? W.sex : 0;
 }
 
-/* Linear decay: 0 km = full points, edge of the lost report's search radius = 0. */
+/* Within distanceFullKm (500 m): full points. From 500 m to distanceFadeKm (3 km): linear fade to 0. Beyond 3 km: 0. */
 function scoreDistance(lost, found) {
-  return W.distance * clamp(1 - km(lost, found) / lost.search_radius_km, 0, 1);
+  const d = km(lost, found), full = CONFIG.distanceFullKm, end = CONFIG.distanceFadeKm;
+  return W.distance * (d <= full ? 1 : d >= end ? 0 : 1 - (d - full) / (end - full));
 }
 
 /* Full points if found within recencyFullDays of the lost date, then linear decay to 0. */

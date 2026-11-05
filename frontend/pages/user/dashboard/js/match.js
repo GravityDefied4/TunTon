@@ -15,6 +15,44 @@ const WEIGHTS = { color: 30, breed: 25, size: 15, markings: 15, location: 15 }; 
 const MIN_PERCENT = 10;        // lowest overall percentage that is still listed as a match
 const MISSING_WEIGHT = .5;     // share of an unknown attribute's weight that counts against the percentage
 const DEFAULT_RADIUS_KM = 5;   // search radius used when a lost report has none
+const LOCATION_FULL_KM = .5;   // within this distance the location score is always 100%
+const LOCATION_FADE_KM = 3;    // at this distance or more the location score is 0%; it fades linearly in between
+const BRGY_SLACK_KM = .3;      // allowance when judging distance from barangay centres
+/* Approximate barangay centres [lat, lng] (PhilAtlas, same data as backend/db/seed.sql). Used to sanity-check a pin against the barangay chosen on the report. */
+const BRGY_CENTER = {
+  'Bacayao Norte': [16.0322, 120.3444],
+  'Bacayao Sur': [16.0224, 120.3449],
+  'Barangay I (T. Bugallon)': [16.044, 120.3364],
+  'Barangay II (Nueva)': [16.0425, 120.3394],
+  'Barangay IV (Zamora)': [16.0408, 120.336],
+  'Bolosan': [16.0467, 120.3646],
+  'Bonuan Binloc': [16.1018, 120.3798],
+  'Bonuan Boquig': [16.0764, 120.3565],
+  'Bonuan Gueset': [16.0696, 120.3339],
+  'Calmay': [16.0451, 120.3257],
+  'Carael': [16.0387, 120.3163],
+  'Caranglaan': [16.0315, 120.3496],
+  'Herrero-Perez': [16.0421, 120.3422],
+  'Lasip Chico': [16.0217, 120.3402],
+  'Lasip Grande': [16.0285, 120.3433],
+  'Lomboy': [16.0548, 120.3248],
+  'Lucao': [16.0141, 120.3241],
+  'Malued': [16.0289, 120.3354],
+  'Mamalingling': [16.0522, 120.3621],
+  'Mangin': [16.0361, 120.3678],
+  'Mayombo': [16.0384, 120.3468],
+  'Pantal': [16.0461, 120.3389],
+  'Poblacion Oeste': [16.0436, 120.3293],
+  'Pogo Chico': [16.0374, 120.3374],
+  'Pogo Grande': [16.0337, 120.3379],
+  'Pugaro Suit': [16.0655, 120.3227],
+  'Salapingao': [16.059, 120.3216],
+  'Salisay': [16.0414, 120.3716],
+  'Tambac': [16.0459, 120.3563],
+  'Tapuac': [16.0334, 120.3308],
+  'Tebeng': [16.0345, 120.3601]
+};
+
 /* Labels shown to the person, in display order */
 const LABELS = { color: 'Color', breed: 'Breed', size: 'Size', markings: 'Markings', location: 'Location' };
 
@@ -71,11 +109,15 @@ const COMPARE = {
   },
   location: (a, b) => {
     if (!hasPin(a) || !hasPin(b)) return { score: null, mine: a.brgy, theirs: b.brgy };
-    const d = km([a.lat, a.lng], [b.lat, b.lng]);
-    /* full points at the same spot, fading to 0 at the edge of the lost report's search radius */
-    const zone = (a.kind === 'lost' ? a.zone : b.zone) / 1000;
-    let score = clamp01(1 - d / (zone > 0 ? zone : DEFAULT_RADIUS_KM));
-    if (a.brgy && a.brgy === b.brgy) score = Math.max(score, .5);   // same barangay is always at least half
+    let d = km([a.lat, a.lng], [b.lat, b.lng]);
+    /* The pin and the barangay on a report can disagree (a pin dropped carelessly, or the wrong barangay picked).
+       When the two reports name different barangays, the distance between those barangay centres (less a
+       BRGY_SLACK_KM allowance, since barangays are wide) is a lower bound for how far apart they really are. */
+    const ca = BRGY_CENTER[a.brgy], cb = BRGY_CENTER[b.brgy];
+    if (ca && cb && a.brgy !== b.brgy) d = Math.max(d, km(ca, cb) - BRGY_SLACK_KM);
+    /* Under LOCATION_FULL_KM (500 m): always 100%. From 500 m to LOCATION_FADE_KM (3 km): fades from 100% to 0%.
+       Beyond 3 km: always 0%. The search zone does not change this. */
+    const score = d <= LOCATION_FULL_KM ? 1 : d >= LOCATION_FADE_KM ? 0 : 1 - (d - LOCATION_FULL_KM) / (LOCATION_FADE_KM - LOCATION_FULL_KM);
     return { score, mine: a.brgy, theirs: b.brgy, dist: d };
   }
 };
