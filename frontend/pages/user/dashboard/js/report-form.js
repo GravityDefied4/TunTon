@@ -456,8 +456,10 @@ function setupForm(k, host) {
   m.on('click', e => put(e.latlng));
   zone?.addEventListener('change', () => pin && draw());
   host.querySelector('.locate-pin').addEventListener('click', () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(p => put(L.latLng(p.coords.latitude, p.coords.longitude), true), () => { setFieldError(pickEl, true, 'Could not get your location. Tap the map instead.'); });
+    getPosition({ enableHighAccuracy: true, timeout: 10000 }).then(p => {
+      if (p) put(L.latLng(p.lat, p.lng), true);
+      else setFieldError(pickEl, true, 'Could not get your location. Tap the map instead.');
+    });
   });
 
   /* Photos: several allowed, listed by file name. Click a name to preview it. */

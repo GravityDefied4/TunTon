@@ -167,16 +167,16 @@ document.querySelector('.chip-row').addEventListener('click', e => {
 
 function locate() {
   $('#status').textContent = 'Finding your location…';
-  if (!navigator.geolocation) return fallback('Location not supported. Showing Dagupan City.');
-  navigator.geolocation.getCurrentPosition(p => {
-    me = [p.coords.latitude, p.coords.longitude];
+  getPosition({ enableHighAccuracy: true, timeout: 10000 }).then(p => {
+    if (!p) return fallback('Location unavailable. Showing Dagupan City.');
+    me = [p.lat, p.lng];
     if (meMarker) meMarker.setLatLng(me);
     else meMarker = L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18] }), interactive: false, zIndexOffset: 1000 }).addTo(map);
     if (!inDagupan(...me)) {   // you can still look around, but all reports are in Dagupan City
       $('#radius').value = 'all'; $('#status').textContent = 'You are outside Dagupan City. Showing all reports.';
-    } else $('#status').textContent = 'Using your current location';
+    } else $('#status').textContent = p.approx ? 'Using your approximate location (GPS needs https)' : 'Using your current location';
     render(true);
-  }, () => fallback('Location unavailable. Showing Dagupan City.'), { enableHighAccuracy: true, timeout: 10000 });
+  });
 }
 function fallback(msg) { me = null; $('#status').textContent = msg; render(true); }
 

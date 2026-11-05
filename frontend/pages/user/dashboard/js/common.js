@@ -76,6 +76,23 @@ const respondButton = (r, attrs = '') => {
     ? `<a class="btn btn-edit" ${attrs} href="${href}&update=1">Edit my ${lost ? 'found' : 'lost'} report</a>`
     : `<a class="btn btn-sun" ${attrs} href="${href}">${lost ? 'I found this pet' : 'This is my lost pet'}</a>`;
 };
+/* ---------- Current location ----------
+   Browsers only allow GPS on https:// pages or localhost, so over plain-http port forwarding (or a LAN address)
+   navigator.geolocation is blocked. In that case, or when GPS fails for another reason, fall back to an approximate
+   location from the visitor's IP (GET /api/geo/ip). A person who clicks "Block" is respected: no fallback.
+   Resolves { lat, lng, approx } (approx = true for the IP estimate) or null. */
+const getPosition = (opts = {}) => new Promise(resolve => {
+  const viaIp = async () => {
+    try {
+      const j = await (await fetch((window.TUNTON?.API_BASE ?? '/api') + '/geo/ip')).json();
+      resolve(j.success ? { lat: j.data.lat, lng: j.data.lng, approx: true } : null);
+    } catch { resolve(null); }
+  };
+  if (!navigator.geolocation || !window.isSecureContext) return viaIp();
+  navigator.geolocation.getCurrentPosition(
+    p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, approx: false }),
+    err => (err && err.code === 1 ? resolve(null) : viaIp()), opts);
+});
 /* ---------- Distance from the person's current location ---------- */
 const distText = d => d < 1 ? Math.round(d * 1000) + ' m' : d.toFixed(1) + ' km';
 /* Asked once per browser tab (the answer is kept in sessionStorage); resolves to [lat, lng] or null
@@ -83,12 +100,12 @@ const distText = d => d < 1 ? Math.round(d * 1000) + ' m' : d.toFixed(1) + ' km'
 let _here = null;
 const whereAmI = () => _here || (_here = new Promise(done => {
   try { const c = JSON.parse(sessionStorage.getItem('tunton_here')); if (Array.isArray(c) && c.length === 2) return done(c); } catch { /* ignore */ }
-  if (!navigator.geolocation) return done(null);
-  navigator.geolocation.getCurrentPosition(p => {
-    const here = [p.coords.latitude, p.coords.longitude];
+  getPosition({ maximumAge: 300000, timeout: 8000 }).then(pos => {
+    if (!pos) return done(null);
+    const here = [pos.lat, pos.lng];
     try { sessionStorage.setItem('tunton_here', JSON.stringify(here)); } catch { /* ignore */ }
     done(here);
-  }, () => done(null), { maximumAge: 300000, timeout: 8000 });
+  });
 }));
 /* "1.2 km away" for a report, or '' when the location is unknown. */
 const awayText = (here, r) => here && isFinite(r.lat) && isFinite(r.lng) ? distText(km(here, [r.lat, r.lng])) + ' away' : '';
@@ -185,7 +202,9 @@ const pinIcon = k => L.divIcon({ className: '', html: `<div class="pin pin--${k}
 /* Basemap. TILE_URL_DARK is optional: OpenStreetMap's tiles are light-only and CSS filters would hurt
    readability, so dark tiles need a provider with a dark style (most need an API key and have their own
    attribution/usage terms: check them first). Leave it empty to keep the standard tiles in dark mode. */
-const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+/* Tiles come through this server (backend/routes/tiles.js): OpenStreetMap blocks direct browser requests from
+   port-forwarding/tunnel addresses with "403 Access blocked". */
+const TILE_URL = (window.TUNTON?.API_BASE ?? '/api').replace(/\/api\/?$/, '') + '/tiles/{z}/{x}/{y}.png';
 const TILE_URL_DARK = '';
 const tileLayers = [];
 const tileUrl = () => (TILE_URL_DARK && document.documentElement.dataset.theme === 'dark') ? TILE_URL_DARK : TILE_URL;

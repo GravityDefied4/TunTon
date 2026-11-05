@@ -13,6 +13,12 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 app.disable('x-powered-by');
+/* Port forwarding / tunnels (VS Code Ports, ngrok, cloudflared...) put a proxy in front of this server. Without this,
+   every visitor shows up as the tunnel's IP, so the login/preview rate limits are shared by everyone and req.ip is wrong.
+   Default trusts only proxies on this machine (the tunnel agent connects from loopback), so a direct client cannot fake
+   X-Forwarded-For. Override with TRUST_PROXY (a hop count like 1, or a subnet list) if your setup differs. */
+const tp = process.env.TRUST_PROXY;
+app.set('trust proxy', tp === undefined || tp === '' ? 'loopback, linklocal, uniquelocal' : (/^\d+$/.test(tp) ? Number(tp) : tp));
 app.use(express.json({ limit: '100kb' }));
 app.use(responseHelpers);
 
@@ -25,6 +31,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/geofence', require('./routes/geofence'));
+app.use('/tiles', require('./routes/tiles'));          // map tiles, proxied so tunnels are not blocked by OpenStreetMap
+app.use('/api/geo', require('./routes/geo'));          // approximate location fallback when browser GPS is blocked
 app.use('/api', require('./routes/matches'));          // /api/matching/run/:id and /api/matches/*
 app.use('/api/claims', require('./routes/claims'));
 app.use('/api/admin', require('./routes/admin'));
@@ -75,4 +83,22 @@ app.use(express.static(path.join(__dirname, '..', 'frontend'), { extensions: ['h
 app.use(errorHandler);
 
 const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log(`TunTon running at http://localhost:${port}`));
+
+/* Optional HTTPS. Browsers only allow GPS location (and Google sign-in) on https:// pages or localhost, so a plain
+   http://192.168.x.x:3000 or http tunnel loses both. Set SSL_KEY_FILE and SSL_CERT_FILE (e.g. made with mkcert) to serve https directly. */
+const { SSL_KEY_FILE, SSL_CERT_FILE, PUBLIC_URL } = process.env;
+let server, scheme = 'http';
+if (SSL_KEY_FILE && SSL_CERT_FILE) {
+  const fs = require('fs');
+  server = require('https').createServer({ key: fs.readFileSync(SSL_KEY_FILE), cert: fs.readFileSync(SSL_CERT_FILE) }, app);
+  scheme = 'https';
+} else server = require('http').createServer(app);
+
+server.listen(port, () => {
+  console.log(`TunTon running at ${scheme}://localhost:${port}`);
+  if (PUBLIC_URL) {
+    console.log(`Public address: ${PUBLIC_URL}`);
+    console.log(`  Google sign-in: add exactly this under "Authorized JavaScript origins": ${PUBLIC_URL.replace(/\/+$/, '')}`);
+    if (!/^https:/i.test(PUBLIC_URL)) console.warn('  [warn] PUBLIC_URL is not https: browsers will block GPS location and Google sign-in there. Use an https tunnel.');
+  }
+});

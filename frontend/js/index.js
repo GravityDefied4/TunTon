@@ -315,6 +315,18 @@ async function initGoogle() {
   } catch { return; }
   if (!clientId || clientId.startsWith('YOUR_') || !window.google?.accounts?.id) return;
 
+  /* Google only works on https:// pages or localhost, and only from an origin listed under "Authorized JavaScript
+     origins" in Google Cloud. Over a plain-http forward, say so instead of showing a button that cannot work. */
+  if (!window.isSecureContext) {
+    dialog.querySelectorAll('.auth-alt').forEach(el => {
+      el.hidden = false;
+      el.innerHTML = '<p class="hint" style="margin:0 0 10px;text-align:center">Google sign-in needs an https address. Open this site through an https link, or use your email and password.</p><div class="auth-or"><span>or</span></div>';
+    });
+    return;
+  }
+  if (!['localhost', '127.0.0.1'].includes(location.hostname))
+    console.info(`[TunTon] Google sign-in: add ${location.origin} under "Authorized JavaScript origins" in Google Cloud (Credentials > your OAuth client).`);
+
   google.accounts.id.initialize({ client_id: clientId, callback: handleCredential });
   googleReady = true;
   dialog.querySelectorAll('.auth-alt').forEach(el => (el.hidden = false));   // Google is an extra option
