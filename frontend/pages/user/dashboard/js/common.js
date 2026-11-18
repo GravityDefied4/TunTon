@@ -491,9 +491,14 @@ const applyIdentity = () => {
 
   /* ---------- Sidebar (mobile drawer) ---------- */
   const side = $('#sidebar'), scrim = $('#scrim'), tgl = $('#side-toggle');
-  const setSide = open => { side.classList.toggle('open', open); scrim.classList.toggle('open', open); tgl.setAttribute('aria-expanded', open); };
+  const setSide = open => {
+    side.classList.toggle('open', open); scrim.classList.toggle('open', open); tgl.setAttribute('aria-expanded', open);
+    document.documentElement.classList.toggle('side-open', open);   /* stops the page scrolling behind the drawer */
+  };
   tgl.addEventListener('click', () => setSide(!side.classList.contains('open')));
   scrim.addEventListener('click', () => setSide(false));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && side.classList.contains('open')) { setSide(false); tgl.focus(); } });
+  window.matchMedia('(min-width: 1001px)').addEventListener('change', e => { if (e.matches) setSide(false); });
 
   /* ---------- Sidebar: minimize to icons only (desktop) ---------- */
   const SIDE_KEY = 'tunton_side';

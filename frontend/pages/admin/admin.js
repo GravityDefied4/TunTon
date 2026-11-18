@@ -7,7 +7,6 @@ const EP = {
   stats: '/admin/stats',
   users: '/admin/users',
   userStatus: id => `/admin/users/${id}/status`,
-  userRole: id => `/admin/users/${id}/role`,
   reports: '/admin/reports',
   reportDetail: id => `/admin/reports/${id}`,
   flagReport: id => `/admin/reports/${id}/flag`,
@@ -27,7 +26,7 @@ const datetime = d => d ? new Date(d).toLocaleString(undefined, { month: 'short'
 const initials = s => String(s || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase();
 const rowsOf = d => Array.isArray(d) ? d : (d?.items || d?.rows || []);
 const debounce = (fn, ms = 300) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
-const state = { users: { offset: 0, total: 0 }, roles: { offset: 0, total: 0 }, reports: { offset: 0, total: 0 }, claims: { offset: 0, total: 0 }, logs: { offset: 0, total: 0 }, seq: {} };
+const state = { users: { offset: 0, total: 0 }, reports: { offset: 0, total: 0 }, claims: { offset: 0, total: 0 }, logs: { offset: 0, total: 0 }, seq: {} };
 const nextSeq = key => state.seq[key] = (state.seq[key] || 0) + 1;
 
 const session = (() => {
@@ -219,57 +218,6 @@ $('#u-rows').addEventListener('click', e => {
   }, suspend);
 });
 bindPager('u', 'users', loadUsers);
-
-/* Admin access: search one user, then promote them to admin or demote them to a regular user.
-   With nothing typed (and no role filter) the list shows the current admins; typing searches every account. */
-function roleRow(u) {
-  const id = pick(u, 'id', 'user_id'), name = pick(u, 'name', 'full_name') || u.email, isAdmin = u.role === 'admin';
-  const self = String(id) === String(session.payload?.sub);
-  const blocked = self ? 'You cannot change your own role.' : (!isAdmin && u.status !== 'active') ? 'Reactivate this account before making it an admin.' : '';
-  return `<tr><td><div class="a-person"><span class="a-avatar">${esc(initials(name))}</span><span><b>${esc(name)}${self ? ' <small class="a-you">(you)</small>' : ''}</b><small>${esc(u.email)}</small></span></div></td>
-    <td>${badge(u.role || 'user')}</td><td>${badge(u.status)}</td><td>${datetime(u.last_login_at)}</td>
-    <td class="r"><button class="a-btn ${isAdmin ? 'a-btn--danger' : 'a-btn--go'}" data-role-action data-id="${esc(id)}" data-name="${esc(name)}" data-role="${isAdmin ? 'user' : 'admin'}"${blocked ? ` disabled title="${esc(blocked)}"` : ''}>${isAdmin ? 'Demote to user' : 'Make admin'}</button></td></tr>`;
-}
-async function loadRoles() {
-  const seq = nextSeq('roles'), q = $('#ro-q').value.trim(), role = $('#ro-role').value || 'admin';
-  const plural = role === 'admin' ? 'admins' : 'users';
-  setLoading('#ro-rows', 5);
-  try {
-    const d = await api(EP.users, { query: { q, role, limit: LIMIT, offset: state.roles.offset } });
-    if (seq !== state.seq.roles) return;
-    const items = rowsOf(d); state.roles.total = Number(d.total ?? items.length);
-    $('#ro-rows').innerHTML = items.length ? items.map(roleRow).join('') : empty(5, q ? `No ${plural} match this search.` : `No ${plural} to show.`);
-    $('#ro-total').textContent = `${state.roles.total.toLocaleString()} ${plural}`;
-    pageControls('ro', state.roles.total, state.roles.offset, items.length); error('');
-  } catch (e) { fail(e); setLoading('#ro-rows', 5, 'Unable to load users.'); }
-}
-$('#ro-rows').addEventListener('click', e => {
-  const b = e.target.closest('[data-role-action]'); if (!b || b.disabled) return;
-  const to = b.dataset.role, promote = to === 'admin', name = esc(b.dataset.name);
-  /* Final confirmation: the admin must type CONFIRM exactly before the role is changed. */
-  showDialog(promote ? 'Make this user an admin?' : 'Demote this admin?',
-    `<p>${promote ? `<b>${name}</b> will be able to manage users, reports and claims, and change other people's roles.`
-      : `<b>${name}</b> will lose admin access and become a regular user. They are moved to the user dashboard right away.`}</p>
-    <label class="a-flag-reason-label" for="role-confirm">Type <b>CONFIRM</b> to continue</label>
-    <input type="text" id="role-confirm" class="a-confirm-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CONFIRM" aria-describedby="role-confirm-err">
-    <p class="a-reason-error" id="role-confirm-err" role="alert" hidden></p>`,
-    promote ? 'Make admin' : 'Demote', async () => {
-      const box = $('#role-confirm');
-      if (box.value.trim() !== 'CONFIRM') {
-        box.setAttribute('aria-invalid', 'true');
-        const err = $('#role-confirm-err'); err.textContent = 'Type CONFIRM in capital letters to proceed.'; err.hidden = false;
-        box.focus();
-        return false;   // keep the popup open
-      }
-      await api(EP.userRole(b.dataset.id), { method: 'PATCH', body: { role: to } });
-      await loadRoles();
-    }, !promote);
-  const box = $('#role-confirm');
-  box.addEventListener('input', () => { box.removeAttribute('aria-invalid'); $('#role-confirm-err').hidden = true; });
-  box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('#dlg-yes').click(); } });
-  box.focus();
-});
-bindPager('ro', 'roles', loadRoles);
 
 /* Reports */
 const reportCache = new Map();
@@ -492,7 +440,7 @@ sideCollapse.addEventListener('click', () => {
 });
 
 /* Navigation, mobile sidebar, and search */
-const tabs = { overview: { title: 'Overview', load: loadStats }, users: { title: 'Users', load: loadUsers }, roles: { title: 'Admin access', load: loadRoles }, reports: { title: 'Reports', load: loadReports }, claims: { title: 'Claims', load: loadClaims }, logs: { title: 'Activity logs', load: () => loadLogs(true) }, profile: { title: 'My profile', load: loadProfile } };
+const tabs = { overview: { title: 'Overview', load: loadStats }, users: { title: 'Users', load: loadUsers }, reports: { title: 'Reports', load: loadReports }, claims: { title: 'Claims', load: loadClaims }, logs: { title: 'Activity logs', load: () => loadLogs(true) }, profile: { title: 'My profile', load: loadProfile } };
 function route() {
   const key = location.hash.slice(1), tab = tabs[key] ? key : 'overview';
   document.querySelectorAll('.a-content > section').forEach(s => s.hidden = s.id !== `tab-${tab}`);
@@ -505,8 +453,8 @@ $('#menu-toggle').addEventListener('click', () => {
   const open = $('#admin-sidebar').classList.toggle('is-open');
   $('#menu-toggle').setAttribute('aria-expanded', String(open));
 });
-[['#u-q', () => { state.users.offset = 0; loadUsers(); }], ['#ro-q', () => { state.roles.offset = 0; loadRoles(); }],['#r-q', () => { state.reports.offset = 0; loadReports(); }], ['#c-q', () => { state.claims.offset = 0; loadClaims(); }], ['#l-q', () => loadLogs(true)], ['#l-action', () => loadLogs(true)]].forEach(([sel, fn]) => $(sel).addEventListener('input', debounce(fn)));
-[['#u-status', () => { state.users.offset = 0; loadUsers(); }], ['#ro-role', () => { state.roles.offset = 0; loadRoles(); }],['#r-type', () => { state.reports.offset = 0; loadReports(); }], ['#r-hidden', () => { state.reports.offset = 0; loadReports(); }], ['#c-status', () => { state.claims.offset = 0; loadClaims(); }], ['#l-from', () => loadLogs(true)], ['#l-to', () => loadLogs(true)]].forEach(([sel, fn]) => $(sel).addEventListener('change', fn));
+[['#u-q', () => { state.users.offset = 0; loadUsers(); }], ['#r-q', () => { state.reports.offset = 0; loadReports(); }], ['#c-q', () => { state.claims.offset = 0; loadClaims(); }], ['#l-q', () => loadLogs(true)], ['#l-action', () => loadLogs(true)]].forEach(([sel, fn]) => $(sel).addEventListener('input', debounce(fn)));
+[['#u-status', () => { state.users.offset = 0; loadUsers(); }], ['#r-type', () => { state.reports.offset = 0; loadReports(); }], ['#r-hidden', () => { state.reports.offset = 0; loadReports(); }], ['#c-status', () => { state.claims.offset = 0; loadClaims(); }], ['#l-from', () => loadLogs(true)], ['#l-to', () => loadLogs(true)]].forEach(([sel, fn]) => $(sel).addEventListener('change', fn));
 const logoutDialog = $('#logout-dialog');
 const cancelLogout = $('#cancel-logout');
 $('#logout').addEventListener('click', () => {

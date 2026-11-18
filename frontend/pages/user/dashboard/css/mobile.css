@@ -1,0 +1,93 @@
+/* ---------- Mobile fixes ----------
+   1. Uploaded-file rows can no longer push past their container.
+   2. Cards (report type, steps, upload box, report list) are compact on phones.
+   3. Cleaner dashboard: no "Add a pet report" / "All reports" (the bottom bar has both). */
+
+/* --- 1. File rows: let every level shrink so long names truncate with "…" --- */
+.form .files,
+.step-body > .files { min-width: 0; max-width: 100%; }
+.file { min-width: 0; max-width: 100%; overflow: hidden; }
+.file-open { min-width: 0; overflow: hidden; }
+.file-name { min-width: 0; }
+
+@media (max-width: 640px) {
+  .file { gap: .35rem; padding: .3rem .4rem .3rem .3rem; border-width: 1px; border-radius: 14px; }
+  .file-open { display: grid; grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: auto auto;
+    column-gap: .6rem; row-gap: 0; align-items: center; padding: .2rem .3rem; }
+  .file-thumb { grid-row: 1 / span 2; width: 48px; height: 48px; }
+  .file-open .file-name { grid-column: 2; font-size: .9rem; }
+  .file-open .file-size { grid-column: 2; font-size: .75rem; }
+  /* the "Main photo" badge becomes a small tag so it never squeezes the name */
+  .file-main { padding: .1em .55em; font-size: .68rem; white-space: nowrap; }
+  .file-remove { width: 30px; height: 30px; font-size: 1.3rem; }
+}
+
+/* --- 2. Smaller cards on phones --- */
+@media (max-width: 640px) {
+  /* Add pet report: "I lost my pet" / "I found a pet" */
+  main.is-choosing { min-height: 0; justify-content: flex-start; }
+  main.is-choosing .type-pick { gap: .75rem; margin-top: 1rem; }
+  main.is-choosing .type-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start; text-align: left;
+    column-gap: .85rem; row-gap: .1rem;
+    padding: .9rem 1rem;
+  }
+  main.is-choosing .type-card svg { grid-row: 1 / span 2; width: 2.8rem; height: 2.8rem; padding: .65rem; margin: 0; }
+  main.is-choosing .type-card b { font-size: 1.1rem; }
+  main.is-choosing .type-card small { font-size: .85rem; line-height: 1.35; }
+  .type-card { padding: .8rem 1rem; }
+
+  /* Wizard step card */
+  .step { padding: .9rem .85rem; border-radius: 20px; }
+  .step-head { margin-bottom: .85rem; padding-bottom: .75rem; gap: .65rem; }
+  .step-head h2 { font-size: 1.1rem; }
+  .step-head p { font-size: .85rem; }
+  .step-body { gap: .85rem; }
+
+  /* Photo drop box */
+  .form .drop { padding: .9rem 1rem; gap: .3rem; border-width: 2px; }
+  .form .drop .upload-icon { width: 32px; height: 32px; font-size: 1.3rem; }
+  .form .drop .upload-action { padding: .4rem 1rem; font-size: .95rem; }
+  .form .drop b { font-size: .95rem; }
+  .form .drop .upload-hint { font-size: .78rem; }
+  .form .drop .upload-status { font-size: .8rem; padding: .2rem .6rem; }
+}
+
+/* --- 3. Dashboard: cleaner on phones and tablets --- */
+@media (max-width: 1000px) {
+  .view-head--dashboard .dashboard-actions { display: none; }   /* bottom bar already has Report + Reports */
+}
+
+@media (max-width: 640px) {
+  .view-head--dashboard { margin-bottom: .9rem; gap: 0; }
+  .view-head--dashboard h1 { font-size: 1.45rem; margin-bottom: .15rem; }
+  .view-head--dashboard p { font-size: .85rem; line-height: 1.35; }
+
+  /* toolbar: search on top, then filter chips + radius + location on a tidy grid */
+  .map-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; margin-bottom: .4rem; }
+  .map-search { grid-column: 1 / -1; padding: 0 .85rem; }
+  .map-search input { padding: .55rem 0; font-size: .9rem; }
+  .chip-row { grid-column: 1 / -1; flex: none; width: 100%; overflow: visible; }
+  .fchip { flex: 1 1 0; padding: .4em .5em; font-size: .85rem; text-align: center; }
+  .map-actions { grid-column: 1 / -1; flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+  .radius-pick select { padding: .5em .8em; font-size: .85rem; }
+  .map-actions .btn { padding: .5em 1em; font-size: .85rem; white-space: nowrap; }
+
+  .map-status { margin: 0 .25rem .6rem; font-size: .78rem; }
+  .map-grid { gap: .9rem; }
+  #map { height: clamp(220px, 34vh, 300px); border-radius: 16px; }
+  .legend { font-size: .7rem; padding: .3rem .6rem; gap: .1rem .6rem; bottom: 20px; }
+
+  /* report list: slim horizontal cards (thumb left, text right) instead of big banners */
+  .vlist { grid-template-columns: 1fr; gap: .5rem; margin-top: .6rem; }
+  .vcard { grid-template-columns: 84px minmax(0, 1fr); gap: .7rem; padding: .5rem; align-items: center; }
+  .vthumb { aspect-ratio: 1 / 1; border-radius: 10px; }
+  .vtitle { font-size: .95rem; }
+  .vmeta { font-size: .78rem; }
+  .vbadge { font-size: .62rem; padding: .1em .45em; }
+  .side-title { font-size: 1.05rem; margin: 0; }
+  .sk-vlist { grid-template-columns: 1fr; }
+  .sk-vcard { grid-template-columns: 84px minmax(0, 1fr); }
+  .sk-vcard .sk-thumb { aspect-ratio: 1 / 1; }
+}

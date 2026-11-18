@@ -25,7 +25,6 @@
     <nav class="a-nav" aria-label="Admin sections">
       <a href="#overview" data-tab="overview" title="Overview"><svg class="a-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="a-nav-text">Overview</span></a>
       <a href="#users" data-tab="users" title="Users"><svg class="a-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="a-nav-text">Users</span></a>
-      <a href="#roles" data-tab="roles" title="Admin access"><svg class="a-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg><span class="a-nav-text">Admin access</span></a>
       <a href="#reports" data-tab="reports" title="Reports"><svg class="a-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="a-nav-text">Reports</span></a>
       <a href="#claims" data-tab="claims" title="Claims"><svg class="a-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="a-nav-text">Claims</span></a>
       <a href="#logs" data-tab="logs" title="Activity logs"><svg class="a-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></svg><span class="a-nav-text">Activity logs</span></a>
@@ -61,13 +60,6 @@
         <div class="a-toolbar"><label class="a-search"><span>⌕</span><input type="search" id="u-q" placeholder="Search by name or email" aria-label="Search users"></label><select id="u-status" aria-label="Account status"><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
         <div class="a-panel"><div class="a-table-scroll"><table class="a-table"><thead><tr><th>USER</th><th>ROLE</th><th>STATUS</th><th>JOINED</th><th class="r">ACTION</th></tr></thead><tbody id="u-rows"><tr><td colspan="5" class="a-empty">Loading users…</td></tr></tbody></table></div></div>
         <div class="a-pagination"><span id="u-page-info"></span><div><button class="a-btn" id="u-prev" disabled>Previous</button><button class="a-btn" id="u-next" disabled>Next</button></div></div>
-      </section>
-
-      <section id="tab-roles" hidden>
-        <div class="a-page-heading"><div><span class="a-eyebrow">ADMINISTRATIVE BOARD</span><h1>Admin access</h1><p>Search for a user, then make them an admin or return them to a regular user.</p></div><span class="a-total" id="ro-total">— admins</span></div>
-        <div class="a-toolbar"><label class="a-search"><span>⌕</span><input type="search" id="ro-q" placeholder="Search a user by name or email" aria-label="Search users to change their role"></label><select id="ro-role" aria-label="Role"><option value="admin" selected>Admins</option><option value="user">Users</option></select></div>
-        <div class="a-panel"><div class="a-table-scroll"><table class="a-table"><thead><tr><th>USER</th><th>ROLE</th><th>STATUS</th><th>LAST LOGIN</th><th class="r">ACTION</th></tr></thead><tbody id="ro-rows"><tr><td colspan="5" class="a-empty">Loading…</td></tr></tbody></table></div></div>
-        <div class="a-pagination"><span id="ro-page-info"></span><div><button class="a-btn" id="ro-prev" disabled>Previous</button><button class="a-btn" id="ro-next" disabled>Next</button></div></div>
       </section>
 
       <section id="tab-reports" hidden>
