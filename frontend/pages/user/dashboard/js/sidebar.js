@@ -18,7 +18,7 @@ window.sidebarReady = (async function () {
        function reaches the mount below WITHOUT awaiting anything, so the sidebar is on the page
        before the first paint. The copy is refreshed in the background (edits to sidebar.html show
        up from the next page on). */
-    const CACHE = 'tunton_sidebar_html';
+    const CACHE = 'tunton_sidebar_html_v3';
     const fetchMenu = async () => {
       const res = await fetch('sidebar.html');
       if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
@@ -33,11 +33,24 @@ window.sidebarReady = (async function () {
     else fetchMenu().catch(() => {});             /* refresh for the next page */
     const doc = new DOMParser().parseFromString(html, 'text/html');
 
-    const sb = doc.querySelector('#sidebar'), scrim = doc.querySelector('#scrim'), top = doc.querySelector('.dash-top');
-    if (!sb || !scrim || !top) throw new Error('sidebar.html must contain #sidebar, #scrim and .dash-top. Is the file complete?');
+    const sb = doc.querySelector('#sidebar'), scrim = doc.querySelector('#scrim'), top = doc.querySelector('.dash-top'), bar = doc.querySelector('#dash-bar');
+    if (!sb || !scrim || !top || !bar) throw new Error('sidebar.html must contain #sidebar, #scrim, #dash-bar and .dash-top. Is the file complete?');
 
     mount.replaceWith(sb, scrim);
     main.prepend(top);
+    main.prepend(bar);
+
+    /* Desktop: the profile card (bell, theme, avatar) lives in the top-right bar. Phones: it goes back into
+       the drawer. It is MOVED, never copied, so the ids (#user-avatar, #user-name...) stay unique. */
+    const profileCard = sb.querySelector('.side-profile'), sideUser = sb.querySelector('.side-user');
+    const desktop = window.matchMedia('(min-width: 1001px)');
+    const placeProfile = () => {
+      if (!profileCard) return;
+      if (desktop.matches) bar.append(profileCard);
+      else sideUser.prepend(profileCard);
+    };
+    placeProfile();
+    desktop.addEventListener ? desktop.addEventListener('change', placeProfile) : desktop.addListener(placeProfile);
     const logoutDlg = doc.querySelector('#logout-dialog');   /* the logout confirmation lives in sidebar.html too */
     if (logoutDlg) document.body.append(logoutDlg);
     window.TunTonTheme?.sync();   /* label/aria of the theme button that just arrived */
@@ -52,7 +65,10 @@ window.sidebarReady = (async function () {
       if (pageName(new URL(a.getAttribute('href'), location.href).pathname) === here) a.setAttribute('aria-current', 'page');
     });
 
-    /* ---------- Floating bottom bar (phones / tablets) ----------
+    const root = document.documentElement;
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------- Bottom bar (phones / tablets) ----------
        Built from the sidebar links so the menu is still defined only in sidebar.html.
        CSS (css/bottom-nav.css) shows it at 1000px and below. */
     if (!document.querySelector('.bnav')) {
@@ -65,17 +81,66 @@ window.sidebarReady = (async function () {
         const label = (a.querySelector('.label') ? a.querySelector('.label').textContent.trim() : a.title);
         const add = /add-report/.test(a.getAttribute('href'));
         const cur = a.getAttribute('aria-current') ? ' aria-current="page"' : '';
-        return `<a href="${a.getAttribute('href')}"${cur}${add ? ' class="bnav-add"' : ''}>${add ? `<i>${svg}</i>` : svg}<span>${short[label] || label}</span></a>`;
+        return `<a href="${a.getAttribute('href')}"${cur}${add ? ' class="bnav-add" aria-label="Add pet report"' : ''}>${add ? `<i>${svg}</i>` : svg}<span>${short[label] || label}</span></a>`;
       }).join('');
       document.body.append(bar);
+    }
+
+    /* ---------- Bottom bar: sliding highlight + tab switch animation ----------
+       Same idea as the sidebar: a tap slides the highlight to the tapped tab and fades the page,
+       then the next page loads with the highlight already under its tab. */
+    const bnav = document.querySelector('.bnav');
+    if (bnav && !bnav.querySelector('.bnav-ind')) {
+      const bInd = document.createElement('span');
+      bInd.className = 'bnav-ind';
+      bInd.setAttribute('aria-hidden', 'true');
+      bnav.prepend(bInd);
+      const bPlace = (a, animate) => {
+        if (!a || !a.offsetWidth) return;
+        const x = a.offsetLeft + 'px', w = a.offsetWidth + 'px';
+        bInd.style.transition = animate ? '' : 'none';
+        bInd.style.width = w;
+        bInd.style.transform = 'translateX(' + x + ')';
+        if (!animate) void bInd.offsetWidth;
+      };
+      const bCurrent = () => bnav.querySelector('a[aria-current="page"]');
+      bPlace(bCurrent(), false);
+      const bResync = () => bPlace(bCurrent(), false);
+      if (window.ResizeObserver) new ResizeObserver(bResync).observe(bnav);
+      window.addEventListener('load', bResync);
+      window.addEventListener('resize', bResync);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(bResync);
+
+      bnav.addEventListener('click', e => {
+        const a = e.target.closest('a[href]');
+        if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
+        const href = a.getAttribute('href');
+        if (pageName(new URL(a.href).pathname) === pageName(location.pathname)) {
+          e.preventDefault();
+          if (href === 'add-report.html' && document.querySelector('.done:not([hidden])')) location.href = href;
+          return;
+        }
+        if (reduce) return;
+        e.preventDefault();
+        bnav.classList.add('is-moving');
+        a.classList.add('is-target');
+        bPlace(a, true);
+        root.classList.add('is-leaving');
+        setTimeout(() => { location.href = a.href; }, 280);
+      });
+      window.addEventListener('pageshow', e => {
+        if (!e.persisted) return;
+        bnav.classList.remove('is-moving');
+        bnav.querySelectorAll('.is-target').forEach(n => n.classList.remove('is-target'));
+        bResync();
+      });
     }
 
     /* ---------- Tab switching animation ----------
        Every tab is its own page, so the sliding highlight is carried across the page load:
        a click saves where the highlight was, and the next page starts it there and slides it
        to the new tab. The page content fades out on click and fades in on arrival (layout.css). */
-    const nav = document.querySelector('.side-nav'), root = document.documentElement;
-    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const nav = document.querySelector('.side-nav');
     const current = () => nav.querySelector('a[aria-current="page"]');
     const NAV_KEY = 'tunton_nav';
     const ind = document.createElement('span');

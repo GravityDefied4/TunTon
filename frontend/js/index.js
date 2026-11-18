@@ -24,6 +24,13 @@ const closeMenu = () => {
   toggle.setAttribute('aria-expanded', 'false');
 };
 menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+/* tap outside the menu, or press Escape, to close it */
+document.addEventListener('click', e => {
+  if (menu.classList.contains('open') && !menu.contains(e.target) && !toggle.contains(e.target)) closeMenu();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && menu.classList.contains('open')) { closeMenu(); toggle.focus(); }
+});
 
 /* ---------- Header shadow + active section ---------- */
 const header = document.getElementById('header');

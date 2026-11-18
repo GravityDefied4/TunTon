@@ -95,7 +95,7 @@
   border-radius: 20px;
   background: var(--sk-base);
   overflow: hidden;
-  transition: opacity .3s ease;
+  transition: opacity .9s ease, filter .9s ease;
 }
 
 .map-skel::before {
@@ -128,7 +128,7 @@
   font-size: .95rem;
 }
 
-.map-skel.is-done { opacity: 0; pointer-events: none; }
+.map-skel.is-done { opacity: 0; filter: blur(6px); pointer-events: none; }   /* dissolves softly instead of cutting away */
 
 @media (prefers-reduced-motion: reduce) {
   .map-skel::after { animation: none; }

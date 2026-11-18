@@ -286,7 +286,7 @@
       renderPanel();
       refreshPush();
       /* on a phone the panel hangs from the top bar, on desktop from the sidebar */
-      panel.classList.toggle('from-top', !!anchor && !!anchor.closest('.dash-top'));
+      panel.classList.toggle('from-top', !!anchor && !!anchor.closest('.dash-top, .dash-bar'));
     }
     panel.hidden = !v;
     buttons.forEach(b => b.setAttribute('aria-expanded', String(v)));
@@ -330,10 +330,19 @@
   (window.sidebarReady || Promise.resolve(false)).then(ok => {
     if (!ok) return;
 
+    /* Each bell takes the place of a same-size placeholder from sidebar.html, so nothing shifts or flashes */
     const profile = document.querySelector('.side-profile');
-    if (profile) profile.insertBefore(makeButton('notif-btn--side'), profile.querySelector('.theme-toggle'));
+    if (profile) {
+      const slot = profile.querySelector('.notif-slot');
+      const b = makeButton('notif-btn--side');
+      if (slot) slot.replaceWith(b); else profile.insertBefore(b, profile.querySelector('.theme-toggle'));
+    }
     const topActions = document.querySelector('.dash-top-actions');
-    if (topActions) topActions.insertBefore(makeButton('notif-btn--top'), topActions.firstChild);
+    if (topActions) {
+      const slot = topActions.querySelector('.notif-slot');
+      const b = makeButton('notif-btn--top');
+      if (slot) slot.replaceWith(b); else topActions.insertBefore(b, topActions.firstChild);
+    }
     if (!buttons.length) return;
 
     /* first paint from the reports the page already loaded, then keep them fresh */

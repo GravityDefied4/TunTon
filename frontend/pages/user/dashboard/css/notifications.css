@@ -89,6 +89,10 @@
   top: 64px;
 }
 
+@media (min-width: 1001px) {
+  .notif-panel.from-top { right: clamp(1rem, 2.4vw, 2.75rem); top: 68px; }
+}
+
 @media (max-width: 1000px) {
   .notif-panel { left: auto; right: 12px; bottom: auto; top: 64px; }
 }
@@ -212,11 +216,12 @@
   margin: 0;
   padding: .65rem 1rem;
   border-bottom: 1px solid var(--line-soft, #e3eed8);
-  background: var(--soft, #f3f9ee);
-  color: var(--text, #24412f);
+  background: var(--mint, #d9f2c2);
+  color: var(--ink, #17342a);
   font: 600 .8rem/1.35 'Nunito', system-ui, sans-serif;
 }
 .notif-push--warn { color: #9a3412; background: #fff4ec; }
+:root[data-theme="dark"] .notif-push--warn { color: #f3d36b; background: #3b3110; }
 .notif-push-btn {
   flex: none;
   padding: .35rem .8rem;
@@ -233,8 +238,8 @@
 
 /* One-time "turn on alerts" prompt (offerPush in notifications.js) */
 .notif-ask { position: fixed; right: 16px; bottom: 16px; z-index: 9999; max-width: 320px;
-  background: #fff; color: #222; border-radius: 14px; padding: 14px 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.18); border: 1px solid #2fa05a; }
+  background: var(--mint, #d9f2c2); color: var(--ink, #17342a); border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.18); border: 1px solid var(--leaf, #2fa05a); }
 .notif-ask p { margin: 6px 0 10px; font-size: .9rem; }
 .notif-ask-yes { background: #0f6b3f; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
-.notif-ask-no { background: none; border: 0; color: #5b7a6c; cursor: pointer; margin-left: 8px; }
+.notif-ask-no { background: none; border: 0; color: var(--muted, #5b7a6c); cursor: pointer; margin-left: 8px; }

@@ -70,13 +70,13 @@ function cityRing(origin, radiusKm) {
   }
   if (area.length < 3) return null;
   const g = L.featureGroup().addTo(map);
-  L.polygon(area, { stroke: false, fillColor: '#0f6b3f', fillOpacity: .14, interactive: false }).addTo(g);
+  L.polygon(area, { stroke: false, fillColor: '#0f6b3f', fillOpacity: .07, interactive: false }).addTo(g);
   /* dashed edge: only the stretches of the circle that lie inside the city */
   const inside = circle.map(p => inDagupan(p[0], p[1]));
   const start = inside.indexOf(false);
   const order = start < 0 ? circle.concat([circle[0]]) : circle.slice(start).concat(circle.slice(0, start)).concat([circle[start]]);
   let run = [];
-  const flush = () => { if (run.length > 1) L.polyline(run, { color: '#0f6b3f', weight: 2.5, dashArray: '8 7', interactive: false }).addTo(g); run = []; };
+  const flush = () => { if (run.length > 1) L.polyline(run, { color: '#0f6b3f', weight: 2, opacity: .55, dashArray: '6 8', interactive: false }).addTo(g); run = []; };
   order.forEach(p => { if (inDagupan(p[0], p[1])) run.push(p); else flush(); });
   flush();
   return g;

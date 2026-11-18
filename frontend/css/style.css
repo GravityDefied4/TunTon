@@ -3604,3 +3604,498 @@ p {
         gap: .15rem;
     }
 }
+
+/* =========================================================
+   Mobile menu (burger): a floating card instead of a full-width strip.
+   Rounded panel inset from the screen edges, big tap rows with a soft highlight for the current
+   section, no divider lines, and Log in / Sign up set apart at the bottom. Opens with a short fade
+   and slide, and the page behind is dimmed.
+   ========================================================= */
+@media (max-width: 1000px) {
+    .menu {
+        top: calc(100% + 6px);
+        left: .75rem;
+        right: .75rem;
+        padding: .5rem;
+        gap: .15rem;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 22px;
+        background: linear-gradient(180deg, #0d5c36, var(--forest-dark));
+        box-shadow: 0 18px 40px rgba(4, 30, 18, .45);
+        max-height: calc(100dvh - 96px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        opacity: 0;
+        transform: translateY(-8px) scale(.98);
+        transform-origin: top right;
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity .2s ease, transform .25s cubic-bezier(.2, .7, .2, 1), visibility 0s linear .25s;
+    }
+
+    .menu.open {
+        max-height: calc(100dvh - 96px);
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+        visibility: visible;
+        transition-delay: 0s;
+    }
+
+    /* dim the page behind the open menu */
+    .header:has(.menu.open)::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: rgba(5, 36, 21, .5);
+        -webkit-backdrop-filter: blur(2px);
+        backdrop-filter: blur(2px);
+    }
+
+    /* link rows */
+    .menu>a,
+    .menu>a:hover,
+    .menu>a.active,
+    .header .menu>a,
+    .header:not(.scrolled) .menu>a {
+        border-bottom: 0;
+        text-shadow: none;
+    }
+
+    .menu>a {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 50px;
+        padding: .6rem .9rem;
+        border-radius: 14px;
+        font-size: 1.05rem;
+        color: #e9f6df;
+        transition: background-color .15s ease, color .15s ease;
+    }
+
+    .menu>a::after {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-top: 2px solid currentColor;
+        border-right: 2px solid currentColor;
+        transform: rotate(45deg);
+        opacity: .45;
+        flex: none;
+    }
+
+    .menu>a:hover,
+    .menu>a:active {
+        background: rgba(255, 255, 255, .08);
+    }
+
+    .menu>a.active {
+        background: rgba(143, 207, 90, .18);
+        color: var(--lime);
+    }
+
+    .menu>a.active::after { opacity: .9; }
+
+    /* links slide in one after another */
+    .menu.open>a { animation: menu-item-in .3s cubic-bezier(.2, .7, .2, 1) backwards; }
+    .menu.open>a:nth-of-type(1) { animation-delay: .03s; }
+    .menu.open>a:nth-of-type(2) { animation-delay: .06s; }
+    .menu.open>a:nth-of-type(3) { animation-delay: .09s; }
+    .menu.open>a:nth-of-type(4) { animation-delay: .12s; }
+    .menu.open>a:nth-of-type(5) { animation-delay: .15s; }
+
+    /* account area, separated from the links */
+    .auth {
+        margin-top: .35rem;
+        padding: .75rem .4rem .4rem;
+        border-top: 1px solid rgba(255, 255, 255, .14);
+    }
+
+    .auth>div { gap: .6rem; }
+
+    .auth-out .btn {
+        flex: 1;
+        min-height: 46px;
+        font-size: 1rem;
+    }
+
+    .auth-in {
+        flex-wrap: wrap;
+    }
+
+    .auth-in .user-name { flex: 1; min-width: 0; max-width: none; }
+    .auth-in .btn { min-height: 44px; }
+}
+
+@keyframes menu-item-in {
+    from { opacity: 0; transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .menu.open>a { animation: none; }
+    .menu { transition: none; }
+}
+
+
+/* =========================================================
+   Landing page: compact mobile layout (phones, <= 640px)
+   Smaller type and spacing, a tighter hero, and pet cards that switch from tall full-width
+   photos to compact side-by-side rows so more fits on one screen.
+   Kept at the end of the file so it overrides the earlier small-screen rules.
+   ========================================================= */
+@media (max-width: 640px) {
+    html {
+        scroll-padding-top: 60px;
+    }
+
+    body {
+        font-size: .92rem;
+        line-height: 1.5;
+    }
+
+    .container {
+        width: calc(100% - 2.5rem);
+    }
+
+    h3 {
+        font-size: 1.15rem;
+    }
+
+    /* --- Header --- */
+    .nav {
+        min-height: 60px;
+    }
+
+    .header-logo {
+        height: 36px;
+    }
+
+    .header-logo img {
+        height: 28px;
+    }
+
+    .nav-toggle,
+    .theme-toggle--mobile {
+        width: 38px;
+        height: 38px;
+    }
+
+    /* --- Hero --- */
+    .hero {
+        margin-top: -60px;
+        padding: calc(.9rem + 60px) 0 3.25rem;
+    }
+
+    .hero h1 {
+        margin-bottom: .6rem;
+        font-size: clamp(1.65rem, 7.4vw, 2.05rem);
+        line-height: 1.1;
+    }
+
+    .hero .lead {
+        margin-bottom: .9rem;
+        font-size: .95rem;
+        line-height: 1.4;
+    }
+
+    /* the old 5rem bottom margin only made room for the hero photo, which is hidden on phones */
+    .hero .actions {
+        gap: .5rem;
+        margin-bottom: 0;
+        flex-wrap: nowrap;
+    }
+
+    .hero .actions .btn {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 40px;
+        padding: .6em .5em;
+        font-size: .86rem;
+    }
+
+    .wave {
+        height: 44px;
+    }
+
+    /* --- Sections --- */
+    .section {
+        padding: 2.25rem 0;
+    }
+
+    h2,
+    .section-head h2,
+    .panel h2 {
+        font-size: 1.4rem;
+    }
+
+    .section>.container>.lead {
+        margin-bottom: .75rem;
+        font-size: .92rem;
+        line-height: 1.45;
+    }
+
+    .section-head h2::after,
+    .panel h2::after {
+        height: 4px;
+    }
+
+    .link-dark {
+        font-size: .85rem;
+    }
+
+    /* --- About --- */
+    .eyebrow {
+        margin-bottom: .6rem;
+        padding: .25em .85em;
+        font-size: .76rem;
+    }
+
+    #about .about-copy h2 {
+        font-size: 1.65rem;
+        margin-bottom: .5rem;
+    }
+
+    #about .about-copy h2::after {
+        height: 4px;
+    }
+
+    #about .about-copy .lead {
+        margin-bottom: .5rem;
+        font-size: .95rem;
+    }
+
+    #about .about-copy>p:last-child {
+        font-size: .88rem;
+    }
+
+    .two-col.about {
+        gap: 1.1rem;
+    }
+
+    #about .about-highlights {
+        padding: 1rem 1rem .9rem;
+        border-radius: 20px;
+    }
+
+    #about .about-highlights>h3 {
+        margin-bottom: .35rem;
+        font-size: 1.15rem;
+    }
+
+    #about .about-highlights__eyebrow {
+        font-size: .64rem;
+    }
+
+    .facts li {
+        gap: .7rem;
+        padding: .6rem 0;
+    }
+
+    .fact-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+    }
+
+    .fact-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .facts h4 {
+        font-size: .95rem;
+    }
+
+    .facts p {
+        font-size: .82rem;
+        line-height: 1.35;
+    }
+
+    /* --- How it works --- */
+    .panel {
+        --panel-pad: .85rem;
+    }
+
+    .panel .cards {
+        gap: .5rem;
+        margin-top: .8rem;
+    }
+
+    .panel .card {
+        width: 100%;
+        padding: .7rem .85rem .75rem;
+        border-radius: 14px;
+    }
+
+    .panel .card h3 {
+        margin-bottom: .2em;
+        font-size: 1rem;
+    }
+
+    .panel .card p {
+        font-size: .82rem;
+        line-height: 1.4;
+    }
+
+    /* --- Filter chips --- */
+    .filter-bar {
+        gap: .35rem;
+        margin-top: .6rem;
+    }
+
+    .filter-bar .btn {
+        min-height: 34px;
+        padding: .3em 1em;
+        font-size: .85rem;
+    }
+
+    /* --- Pet cards: compact side-by-side rows ---
+       Photo on the left (spans both rows), details top right, button bottom right. */
+    .pet-list,
+    .pet-list--grid {
+        grid-template-columns: 1fr;
+        gap: .6rem;
+        margin-top: .9rem;
+    }
+
+    .pet-card,
+    .pet-list--grid .pet-card,
+    .recovered-card {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        grid-template-rows: 1fr auto;
+        width: 100%;
+        margin-inline: 0;
+        border-radius: 16px;
+    }
+
+    .pet-card .pet-thumb,
+    .pet-list--grid .pet-thumb,
+    .recovered-card .pet-thumb {
+        position: relative;
+        grid-row: 1 / 3;
+        grid-column: 1;
+        width: 100%;
+        min-height: 124px;
+        aspect-ratio: auto;
+        overflow: hidden;
+    }
+
+    .pet-card .pet-thumb img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .pet-card .pet-body,
+    .pet-list--grid .pet-body,
+    .recovered-card .pet-body {
+        grid-column: 2;
+        grid-row: 1;
+        justify-content: center;
+        gap: .15rem;
+        padding: .6rem .75rem .1rem;
+    }
+
+    .pet-card .pet-body h3,
+    .pet-list--grid .pet-body h3,
+    .recovered-card .pet-body h3 {
+        font-size: 1rem;
+        line-height: 1.2;
+    }
+
+    .pet-list--grid .pet-info {
+        gap: .1rem;
+        font-size: .76rem;
+        line-height: 1.35;
+    }
+
+    .recovered-card .pet-meta {
+        font-size: .76rem;
+    }
+
+    .recovered-card .pet-story {
+        margin-top: .1rem;
+        font-size: .76rem;
+        line-height: 1.35;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    .badge {
+        font-size: .68rem;
+    }
+
+    .pet-card .btn,
+    .pet-list--grid .pet-card .btn,
+    .recovered-card .btn {
+        grid-column: 2;
+        grid-row: 2;
+        flex: none;
+        align-self: stretch;
+        min-height: 32px;
+        margin: .3rem .75rem .6rem;
+        padding: .3em 1em;
+        font-size: .8rem;
+    }
+
+    .tag-missing {
+        top: 6px;
+        left: 6px;
+        gap: .35em;
+        padding: .22em .55em .22em .45em;
+        font-size: .58rem;
+        letter-spacing: .05em;
+    }
+
+    .tag-dot {
+        width: 6px;
+        height: 6px;
+    }
+
+    /* --- Section spacing around the lists --- */
+    #pets {
+        padding-bottom: 2rem;
+    }
+
+    #recovered {
+        padding-top: 2rem;
+        padding-bottom: 5rem;
+    }
+
+    /* --- Footer --- */
+    .footer {
+        padding: 3.25rem 0 1rem;
+        font-size: .85rem;
+    }
+
+    .wave-top {
+        height: 40px;
+    }
+
+    .footer p {
+        margin-bottom: 0;
+    }
+
+    .footer-links {
+        margin-bottom: .6rem;
+        font-size: .85rem;
+    }
+}
+
+
+/* Hide the hairline seam between the hero wave and the About section (sub-pixel rounding on some
+   screens let a 1px strip of the hero show through). The section overlaps the hero by 1px, and the
+   wave bleeds 2px past the hero's bottom edge. */
+.hero .wave {
+    bottom: -2px;
+}
+
+#about {
+    position: relative;
+    margin-top: -1px;
+}

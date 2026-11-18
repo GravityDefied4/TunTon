@@ -139,7 +139,7 @@ const lockToDagupan = map => {
 /* Draws the Dagupan City land boundary on a map and softly dims everything outside it, so the eye stays on the city.
    (Use lockToDagupan(map) as well to stop people from panning away.) Returns { fit() } which zooms to the whole city. */
 const CITY_STYLE = { color: '#0f6b3f', weight: 3, opacity: .95, lineJoin: 'round', fillColor: '#2fa05a', fillOpacity: .06, interactive: false };
-const OUTSIDE_STYLE = { stroke: false, fillColor: '#0a2e1c', fillOpacity: .32, interactive: false };
+const OUTSIDE_STYLE = { stroke: false, fillColor: '#0a2e1c', fillOpacity: .18, interactive: false };
 const highlightDagupan = (map, { label = true } = {}) => {
   /* a big rectangle with the city cut out of it = a dim "mask" over everything that is not Dagupan */
   L.polygon([[[15.4, 119.7], [15.4, 121.0], [16.7, 121.0], [16.7, 119.7]], DAGUPAN_OUTLINE], OUTSIDE_STYLE).addTo(map);
@@ -251,7 +251,7 @@ const mapSkeleton = (wrap, layer) => {
   if (!wrap) return;
   let cover = wrap.querySelector('.map-skel');
   if (!cover) { cover = document.createElement('div'); cover.className = 'map-skel'; cover.innerHTML = '<span>Loading map…</span>'; wrap.appendChild(cover); }
-  const done = () => { cover.classList.add('is-done'); setTimeout(() => cover.remove(), 350); };
+  const done = () => { cover.classList.add('is-done'); setTimeout(() => cover.remove(), 950);   /* matches the .9s fade in skeleton.css */ };
   const stop = setTimeout(done, 8000);   // never leave the cover up if tiles are blocked or offline
   layer.once('load', () => { clearTimeout(stop); done(); });
 };

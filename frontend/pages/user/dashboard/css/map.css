@@ -416,3 +416,62 @@
 :root[data-theme="dark"] #map,
 :root[data-theme="dark"] .pick,
 :root[data-theme="dark"] #d-map { box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+
+/* ---------- Soft fade-in: the map eases in instead of snapping on ----------
+   The loading cover dissolves (skeleton.css); under it the basemap fades up first, then the city outline
+   and the pins a moment later, so nothing pops in sharply. */
+@keyframes map-soft-in { from { opacity: 0; } to { opacity: 1; } }
+#map .leaflet-tile-pane { animation: map-soft-in 1.1s ease both; }
+#map .leaflet-overlay-pane,
+#map .leaflet-shadow-pane,
+#map .leaflet-marker-pane { animation: map-soft-in .9s ease .45s both; }
+#map .leaflet-control-container { animation: map-soft-in .8s ease .6s both; }
+@media (prefers-reduced-motion: reduce) {
+  #map .leaflet-tile-pane, #map .leaflet-overlay-pane, #map .leaflet-shadow-pane,
+  #map .leaflet-marker-pane, #map .leaflet-control-container { animation: none; }
+}
+
+
+/* =========================================================
+   Calmer dashboard: fewer competing things to look at.
+   - the basemap is softened so the pins and the green city outline stand out, not the streets
+   - flat 1px borders instead of a shadow on every control
+   - no duplicate report count, no decorative underline under the title
+   ========================================================= */
+
+/* Softer basemap: less colour and contrast (pins, outline and your position are now what the eye finds) */
+#map .leaflet-tile-pane { filter: saturate(.4) contrast(.9) brightness(1.04); }
+:root[data-theme="dark"] #map .leaflet-tile-pane { filter: saturate(.55) contrast(.92) brightness(.95); }
+
+/* Header: just the greeting */
+.view-head--dashboard h1::after { display: none; }
+.view-head--dashboard { margin-bottom: 1.25rem; }
+.view-head--dashboard h1 { margin-bottom: .2rem; }
+
+/* Toolbar: same controls, quieter surfaces */
+.map-search, .chip-row, .radius-pick select {
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+.map-search { border-width: 1px; }
+.map-search:focus-within { border-color: var(--leaf); box-shadow: 0 0 0 3px color-mix(in srgb, var(--leaf) 20%, transparent); }
+.fchip.is-on { background: var(--forest); }
+
+/* Status line: one small muted line (the count is already shown in the list heading) */
+.map-status { margin: 0 .25rem .9rem; font-size: .82rem; font-weight: 600; }
+.map-status .dot-sep, .map-status #count { display: none; }
+
+/* Map and list panel: flat, same border, no heavy shadow */
+#map, .map-side { box-shadow: none; border: 1px solid var(--line); }
+:root[data-theme="dark"] #map { box-shadow: none; }
+.map-grid { gap: 1rem; }
+
+/* Legend: smaller and lighter */
+.legend { font-size: .74rem; padding: .3rem .65rem; gap: .15rem .75rem; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
+
+/* List: calmer cards */
+.map-side .side-title { font-size: 1.05rem; }
+.vlist { margin-top: .75rem; gap: .35rem; }
+.vcard { padding: .5rem; }
+.vthumb { border-radius: 10px; }
+.vtitle { font-size: .95rem; }
