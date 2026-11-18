@@ -118,7 +118,7 @@ main {
   margin: .5rem 0;
   padding: .7rem .9rem;
   border: 1px solid var(--danger-line);
-  border-radius: var(--radius-sm);
+  border-radius: 20px;
   background: var(--danger-bg);
   color: var(--danger-text);
   font-size: .9rem;

@@ -61,6 +61,12 @@ Statuses: `active`, `matched` (a claim was approved), `resolved`, `closed`, `rem
 
 Runs automatically after a report is created, edited, closed or removed. Hard filters: opposite type, same species, both active, found pin inside the lost report's radius, found date not earlier than lost date minus 2 days, never the same user. Score 0 to 100 (weights in `backend/services/matching.js` `CONFIG`); stored at 10+. Labels: 80+ Strong, 65 to 79 Likely, 50 to 64 Possible, 10 to 49 Weak. Re-running updates scores and never duplicates; dismissed matches stay dismissed; suggestions that stop qualifying are removed.
 
+### Claim e-mails
+When someone sends a claim (`POST /claims`), the owner of the claimed report is e-mailed (who claimed, what they say, a short message, link to the report). The claimant's contact details are never put in the e-mail. One e-mail per claim; a withdrawn claim removes its e-mail if it has not been sent yet. They use the same queue, batching and SMTP settings as match e-mails.
+
+### Match e-mails
+When a report is **created** (`POST /reports`) or edited and it is a **Strong** match (score 80+, `EMAIL_MIN_SCORE`) for another user's report, the owner of that other report is e-mailed (score label, short pet summary, link to the Matching tab with their report selected; the new reporter's contact details are never put in the e-mail). The percentage in the e-mail is the saved `matches.score`, and the Matching and report pages show that same saved score (they fall back to their own formula only for pairs with no saved match). One owner gets at most one e-mail per lost/found pair ever. E-mails are queued in the `email_notifications` table and sent by a background worker in batches (`EMAIL_BATCH_SIZE` every `EMAIL_BATCH_INTERVAL_SECONDS`, optional `EMAIL_DAILY_LIMIT`), so a burst of reports cannot exceed the mail provider's limits; unsent ones wait for the next batch. Configure SMTP in `.env` (see `.env.example`); with `SMTP_HOST` empty nothing is sent.
+
 ## P5 Matches
 | Method | Endpoint | Notes |
 |---|---|---|

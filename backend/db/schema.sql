@@ -152,7 +152,37 @@ CREATE TABLE claim_photos (
     CONSTRAINT fk_claim_photos_claim FOREIGN KEY (claim_id) REFERENCES claims (claim_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 7. AUDIT TRAIL (Weak Entity dependent on Users/Actions)
+-- 7. EMAIL NOTIFICATIONS (outbox: one row per e-mail; backend/services/notifier.js sends them in batches)
+-- kind 'match': a new report matches someone else's report; the OWNER of the existing report is the recipient.
+--   The unique key uq_notify_pair means a pair of reports notifies an owner only once, even if matching runs again.
+-- kind 'claim': someone sent a claim on a report; the OWNER of that report is the recipient (one e-mail per claim).
+CREATE TABLE email_notifications (
+    notification_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id          INT UNSIGNED NOT NULL,
+    kind             ENUM('match','claim') NOT NULL DEFAULT 'match',
+    lost_report_id   INT UNSIGNED NULL,
+    found_report_id  INT UNSIGNED NULL,
+    claim_id         INT UNSIGNED NULL,
+    to_email         VARCHAR(50)  NOT NULL,
+    subject          VARCHAR(200) NOT NULL,
+    body_text        TEXT         NOT NULL,
+    body_html        TEXT         NOT NULL,
+    status           ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
+    attempts         TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    last_error       VARCHAR(255) NULL,
+    created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at          TIMESTAMP    NULL,
+    PRIMARY KEY (notification_id),
+    UNIQUE KEY uq_notify_pair (user_id, lost_report_id, found_report_id),
+    UNIQUE KEY uq_notify_claim (user_id, claim_id),
+    KEY ix_notify_queue (status, notification_id),
+    CONSTRAINT fk_notify_user  FOREIGN KEY (user_id)         REFERENCES users (user_id)        ON DELETE CASCADE,
+    CONSTRAINT fk_notify_lost  FOREIGN KEY (lost_report_id)  REFERENCES pet_reports (report_id) ON DELETE CASCADE,
+    CONSTRAINT fk_notify_found FOREIGN KEY (found_report_id) REFERENCES pet_reports (report_id) ON DELETE CASCADE,
+    CONSTRAINT fk_notify_claim FOREIGN KEY (claim_id)        REFERENCES claims (claim_id)       ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 8. AUDIT TRAIL (Weak Entity dependent on Users/Actions)
 CREATE TABLE activity_logs (
     log_id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id       INT UNSIGNED NULL,

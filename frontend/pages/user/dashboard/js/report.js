@@ -393,7 +393,7 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
   if (!id) return notFound();
   host.innerHTML = skeletonDetail();   // placeholders until the report arrives
   try {
-    const [r, all] = await Promise.all([ReportsAPI.get(id), ReportsAPI.list({ kind: 'all' }).catch(() => [])]);
+    const [r, all] = await Promise.all([ReportsAPI.get(id), ReportsAPI.list({ kind: 'all' }).catch(() => []), SavedScores.load().catch(err => console.error(err))]);
     matchPool = all;
     if (!r) return notFound();
     /* Finds / claims on this report come from the database: the owner sees pending and approved ones with their

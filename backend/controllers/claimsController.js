@@ -14,6 +14,7 @@ const { checkFiles } = require('../middleware/upload');
 const v = require('../middleware/validate');
 const { isInsideDagupan } = require('../services/geofence');
 const { runQuietly } = require('../services/matchRunner');
+const { queueClaimEmail } = require('../services/notifier');
 
 const MAX_PHOTOS = 3;
 const SIZES = ['small', 'medium', 'large', 'extra_large'];
@@ -134,6 +135,8 @@ exports.create = wrap(async (req, res) => {
     const [r] = await conn.query(`INSERT INTO claims (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`, keys.map(k => cols[k]));
     if (files.length) await conn.query('INSERT INTO claim_photos (claim_id, file_path, image_data, mime_type) VALUES ?', [files.map(f => [r.insertId, f.filename, f.buffer, f.mimetype])]);
     await logActivity({ userId: req.user.user_id, action: 'claim_created', table: 'claims', id: r.insertId, details: { report_id: reportId, type } }, conn);
+    /* E-mail the owner of the report. A mail problem must never stop the claim from being sent, so it is only logged. */
+    try { await queueClaimEmail(conn, r.insertId); } catch (e) { console.error(`[email] could not queue claim ${r.insertId}:`, e.message); }
     return r.insertId;
   });
   res.status(201);

@@ -5,6 +5,7 @@ const pool = require('../db/pool');
 const { withTransaction, logActivity } = require('../db/activityLog');
 const { loadForMatching, pointWkt, POINT } = require('../db/reportQueries');
 const { CONFIG, isCandidate, scoreMatch } = require('./matching');
+const { queueMatchEmail } = require('./notifier');
 
 /* SQL pre-filter: same hard rules as isCandidate(), so we only load plausible rows.
    (isCandidate runs again in JS as the final word.) */
@@ -29,8 +30,9 @@ async function candidateIds(report, db) {
   return rows.map(r => r.report_id);
 }
 
-/* Recompute every match for one report. Returns { created, updated, removed, matches: [{match_id, lost, found, score, label}] }. */
-async function runForReport(reportId, actorId = null) {
+/* Recompute every match for one report. opts.notifyOwners (set when the report was just created) queues an e-mail to the
+   owner of each report that newly matches it. Returns { created, updated, removed, matches: [{match_id, lost, found, score, label}] }. */
+async function runForReport(reportId, actorId = null, opts = {}) {
   return withTransaction(async conn => {
     const report = await loadForMatching(reportId, conn);
     if (!report) return null;
@@ -63,6 +65,14 @@ async function runForReport(reportId, actorId = null) {
           await logActivity({ userId: actorId, action: 'match_created', table: 'matches', id: matchId,
             details: { lost_report_id: lost.report_id, found_report_id: found.report_id, score, label } }, conn);
         } else out.updated++;
+        /* Owners are only e-mailed for strong matches (notifier.CFG.minScore). Checked for updated matches too, so a pair that
+           climbs to Strong after an edit is e-mailed; the unique key in email_notifications stops any repeat. */
+        if (opts.notifyOwners) {
+          try {
+            await queueMatchEmail(conn, { ownerReportId: other.report_id, newReportId: report.report_id,
+              lostId: lost.report_id, foundId: found.report_id, score, label });
+          } catch (e) { console.error(`[email] could not queue match ${matchId}:`, e.message); }   // never break matching
+        }
         out.matches.push({ match_id: matchId, lost_report_id: lost.report_id, found_report_id: found.report_id, score, label });
       }
     }
@@ -77,8 +87,8 @@ async function runForReport(reportId, actorId = null) {
 }
 
 /* Fire-and-forget safe wrapper for report create/edit: a matching hiccup must not fail the request. */
-async function runQuietly(reportId, actorId) {
-  try { return await runForReport(reportId, actorId); }
+async function runQuietly(reportId, actorId, opts) {
+  try { return await runForReport(reportId, actorId, opts); }
   catch (e) { console.error(`[matching] report ${reportId} failed:`, e.message); return null; }
 }
 

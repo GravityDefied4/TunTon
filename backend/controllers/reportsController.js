@@ -147,7 +147,7 @@ exports.create = wrap(async (req, res) => {
       return r.insertId;
     });
 
-    const matching = await runQuietly(id, req.user.user_id);
+    const matching = await runQuietly(id, req.user.user_id, { notifyOwners: true });   // new report: e-mail the owners it matches
     res.status(201);
     res.ok({ report: await rq.findReportById(id, { viewerId: req.user.user_id }), matches: matching?.matches ?? [] }, 'Report created.');
   } catch (e) { await discardFiles(files); throw e; }
@@ -289,7 +289,7 @@ exports.update = wrap(async (req, res) => {
     });
 
     await Promise.all(removedFiles.map(name => fs.unlink(path.join(UPLOAD_ROOT, 'reports', name)).catch(() => {})));
-    const matching = await runQuietly(id, req.user.user_id);
+    const matching = await runQuietly(id, req.user.user_id, { notifyOwners: true });   // an edit can create new matches; each pair is e-mailed only once
     res.ok({ report: await rq.findReportById(id, { viewerId: req.user.user_id }), matches: matching?.matches ?? [] }, 'Report updated.');
   } catch (e) { await discardFiles(files); throw e; }
 });

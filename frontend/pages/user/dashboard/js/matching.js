@@ -118,6 +118,7 @@ async function init() {
   listEl.innerHTML = skeletonCards(3);
   try {
     pool = await ReportsAPI.list({ kind: 'all' });
+    await SavedScores.load().catch(err => console.error(err));   // saved server scores; if this fails the page falls back to its own formula
     mine = pool.filter(isOwner).filter(r => r.status !== 'reunited' && !(r.kind === 'lost' && reportState(r) === 'found'));
   } catch (err) { console.error(err); listEl.innerHTML = '<p class="rempty">Could not load reports. Please try again.</p>'; return; }
 

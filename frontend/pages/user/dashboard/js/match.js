@@ -9,6 +9,10 @@
    A different species is never a match, so those reports are left out. Species is a filter,
    not a score, so every same-species report does not start with free points.
    Reports below MIN_PERCENT are not listed.
+
+   The percentage SHOWN is the score the server saved for the pair (matches.score, the same number used in the
+   match e-mails) whenever there is one; see SavedScores. The formula above is only the fallback for pairs the
+   server has no saved match for (for example reports that were never run through matching).
    ========================================================= */
 
 const WEIGHTS = { color: 30, breed: 25, size: 15, markings: 15, location: 15 };   // adds up to 100
@@ -122,6 +126,30 @@ const COMPARE = {
   }
 };
 
+/* ---------- Saved (server) scores ----------
+   The backend scores every lost/found pair when a report is created or edited and stores it in matches.score. The e-mails
+   use that number, so the pages use it too: one score everywhere. load() reads all of my matches once per page. */
+const SavedScores = (() => {
+  const map = new Map(), key = (lost, found) => lost + '-' + found;
+  return {
+    async load() {
+      map.clear();
+      for (let offset = 0; ; offset += 100) {
+        const res = await authFetch(`/matches/mine?status=all&limit=100&offset=${offset}`);
+        if (!res.ok) throw new Error('Could not load saved match scores');
+        const { items = [], total = 0 } = (await res.json()).data || {};
+        items.forEach(m => { if (m.lost && m.found) map.set(key(m.lost.id, m.found.id), Number(m.score)); });
+        if (offset + 100 >= total) break;
+      }
+    },
+    /* Saved score (0 to 100) for this lost/found pair, or undefined when the server has none. */
+    get(mine, other) {
+      const [lost, found] = mine.kind === 'lost' ? [mine, other] : [other, mine];
+      return map.get(key(lost.id, found.id));
+    }
+  };
+})();
+
 /* Compare my report with one candidate. Returns null when the species differ. */
 function scoreReport(mine, other) {
   if (!sameSpecies(mine, other)) return null;          // a dog is never a match for a cat
@@ -133,7 +161,9 @@ function scoreReport(mine, other) {
     earned += WEIGHTS[key] * res.score; possible += WEIGHTS[key];
   }
   const basis = possible + missing * MISSING_WEIGHT;
-  return { report: other, parts, earned, possible, missing, percent: basis ? Math.round(earned / basis * 100) : 0 };
+  const saved = SavedScores.get(mine, other);   // the server's score wins over the formula above
+  const own = basis ? Math.round(earned / basis * 100) : 0;
+  return { report: other, parts, earned, possible, missing, percent: saved === undefined ? own : Math.round(saved), saved: saved !== undefined };
 }
 
 
@@ -148,7 +178,8 @@ const STATUS_ICON = {
 };
 /* status colour: green 80+, yellow 60-79, orange 40-59, red below 40 */
 const tier = p => p >= 80 ? 'high' : p >= 60 ? 'mid' : p >= 40 ? 'fair' : 'low';
-const verdict = p => p >= 90 ? 'Excellent match' : p >= 75 ? 'Strong match' : p >= 60 ? 'Good match' : p >= 40 ? 'Possible match' : 'Weak match';
+/* Same cut-offs as the server's labels (matches.label), so the page and the e-mail use the same words. */
+const verdict = p => p >= 80 ? 'Strong match' : p >= 65 ? 'Likely match' : p >= 50 ? 'Possible match' : 'Weak match';
 const matchKeys = m => Object.keys(WEIGHTS).filter(k => status(m.parts[k].score) === 'yes');
 const comparedKeys = m => Object.keys(WEIGHTS).filter(k => m.parts[k].score !== null && m.parts[k].score !== undefined);
 
@@ -299,6 +330,6 @@ function matchPanelHTML(m, mine, pool) {
       <thead><tr><th scope="col">Attribute</th><th scope="col">Your report</th><th scope="col">This report</th><th scope="col">Match</th><th scope="col">Result</th></tr></thead>
       <tbody>${Object.keys(WEIGHTS).map(k => attrRow(k, m.parts[k], a.thinMarks)).join('')}</tbody>
     </table>
-    <p class="hint m-why-foot">${p}% overall: ${fmtPts(a.earned)} of ${a.possible} compared points &middot; ${hit.length} of ${compared.length} attributes match.${a.skipped.length ? ' Blank on a report, so not scored (counts half against the percentage): ' + a.skipped.map(k => LABELS[k].toLowerCase()).join(', ') + '.' : ''} Only reports of the same species are compared. Color and breed count the most.</p>
+    <p class="hint m-why-foot">${m.saved ? `${p}% is the match score TunTon saved for these two reports (the same one in your match e-mails). The table compares each detail side by side to show why; its points are a guide and are not added up to that score. ${hit.length} of ${compared.length} compared attributes match.` : `${p}% overall: ${fmtPts(a.earned)} of ${a.possible} compared points &middot; ${hit.length} of ${compared.length} attributes match.`}${m.saved ? '' : a.skipped.length ? ' Blank on a report, so not scored (counts half against the percentage): ' + a.skipped.map(k => LABELS[k].toLowerCase()).join(', ') + '.' : ''} Only reports of the same species are compared. Color and breed count the most.</p>
   </section>`;
 }
