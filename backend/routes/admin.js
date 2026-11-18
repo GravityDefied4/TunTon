@@ -8,7 +8,8 @@ router.use(requireAuth, requireRole('admin'));   // every admin endpoint: logged
 router.get('/stats', ctrl.stats);                          // Dashboard numbers
 router.get('/users', ctrl.users);                          // ?q=&role=&status=
 router.patch('/users/:id/status', ctrl.setUserStatus);     // { status: 'active' | 'suspended', reason? }
-router.get('/reports', ctrl.reports);                      // All reports incl. removed (must stay above /reports/:id)
+router.patch('/users/:id/role', ctrl.setUserRole);         // { role: 'admin' | 'user' }  promote / demote
+router.get('/reports', ctrl.reports);                     // All reports incl. removed (must stay above /reports/:id)
 router.get('/reports/:id', ctrl.reportDetail);             // Full read-only moderation view
 router.patch('/reports/:id/flag', ctrl.flagReport);        // { type: 'fraud' | 'ai_generated', reason }
 router.patch('/reports/:id/remove', ctrl.removeReport);    // { reason }

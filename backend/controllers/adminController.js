@@ -99,6 +99,30 @@ exports.setUserStatus = wrap(async (req, res) => {
     : 'User reactivated. Their reports and claims are back.');
 });
 
+/* PATCH /api/admin/users/:id/role  { role: 'admin' | 'user' }
+   Promotes a user to admin or demotes an admin back to a regular user. Rules:
+   - you cannot change your own role (so the platform can never be left without an admin);
+   - only active accounts can be promoted (a suspended user is reactivated first);
+   - the change is saved together with its audit-log entry in one transaction.
+   The user's own session picks the new role up on its next /auth/me check (the token is re-issued from the database). */
+exports.setUserRole = wrap(async (req, res) => {
+  const id = v.id(req.params.id, 'user id');
+  const role = v.oneOf(req.body?.role, ['user', 'admin'], 'role');
+  if (id === req.user.user_id) throw v.bad('You cannot change your own role.');
+
+  const user = await withTransaction(async conn => {
+    const [[u]] = await conn.query('SELECT user_id, role, status, full_name, email FROM users WHERE user_id = ? FOR UPDATE', [id]);
+    if (!u) throw Object.assign(new Error('User not found.'), { status: 404 });
+    if (u.role === role) throw Object.assign(new Error(`This account is already ${role === 'admin' ? 'an admin' : 'a regular user'}.`), { status: 409 });
+    if (role === 'admin' && u.status !== 'active') throw Object.assign(new Error('Suspended accounts cannot be made admin. Reactivate the account first.'), { status: 409 });
+    await conn.query('UPDATE users SET role = ? WHERE user_id = ?', [role, id]);
+    await logActivity({ userId: req.user.user_id, action: role === 'admin' ? 'user_promoted_admin' : 'user_demoted_user', table: 'users', id,
+      details: { previous_role: u.role, new_role: role, target_email: u.email } }, conn);
+    return { id, role, name: u.full_name };
+  });
+  res.ok({ user }, role === 'admin' ? `${user.name} is now an admin.` : `${user.name} is now a regular user.`);
+});
+
 /* GET /api/admin/reports  ?type=&status=&species=&q=&barangay_id=&user_id=&limit=&offset=  (includes removed, with reporter name/email) */
 exports.reports = wrap(async (req, res) => {
   const where = [], params = [];
