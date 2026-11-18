@@ -178,7 +178,7 @@ CREATE TABLE email_notifications (
     CONSTRAINT fk_notify_claim FOREIGN KEY (claim_id)        REFERENCES claims (claim_id)       ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 8. AUDIT TRAIL (Weak Entity dependent on Users/Actions)
+-- 8. AUDIT TRAIL (weak Entity dependent on Users/Actions)
 CREATE TABLE activity_logs (
     log_id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id       INT UNSIGNED NULL,
