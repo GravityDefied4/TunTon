@@ -92,10 +92,10 @@ const EMAIL = {
     footer:   FOOTER,
     /* Table of details from the CLAIM (the claimant's contact details are shown inside TunTon, never here). */
     details: [
-      ['Markings',           c => shorten(c.markings, 150)],
-      ['Pet location',       c => remapPetLocation(c.pet_location)],
-      ['Details', c => shorten(c.description, 250)],
-      ['Date',               c => c.event_date]
+      ['Markings',			c => shorten(c.markings, 150)],
+      ['Pet location',		c => remapPetLocation(c.pet_location)],
+      ['Details', 			c => shorten(c.description, 250)],
+      ['Date',				c => c.event_date]
     ]
   },
 
