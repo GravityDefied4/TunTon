@@ -158,10 +158,11 @@ CREATE TABLE claim_photos (
 -- unique key 'uq_notify_pair': a pair of reports notifies an owner only once, even if matching runs again.
 -- kind 'claim': someone sent a claim on a report; the OWNER of that report is the recipient (one e-mail per claim).
 -- kind 'suspension': an admin suspended the user's account; the suspended user is the recipient.
+-- kind 'reactivation': the suspension ended (an admin reactivated the account, or the time ran out); the user is the recipient.
 CREATE TABLE email_notifications (
     notification_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id          INT UNSIGNED NOT NULL,
-    kind             ENUM('match','claim','suspension') NOT NULL DEFAULT 'match',
+    kind             ENUM('match','claim','suspension','reactivation') NOT NULL DEFAULT 'match',
     lost_report_id   INT UNSIGNED NULL,
     found_report_id  INT UNSIGNED NULL,
     claim_id         INT UNSIGNED NULL,

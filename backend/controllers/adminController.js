@@ -7,7 +7,7 @@ const rq = require('../db/reportQueries');
 const { wrap } = require('../middleware/errorHandler');
 const v = require('../middleware/validate');
 const { runQuietly } = require('../services/matchRunner');
-const { queueSuspensionEmail } = require('../services/notifier');
+const { queueSuspensionEmail, queueReactivationEmail } = require('../services/notifier');
 const { DURATIONS, hideReports, restoreReports } = require('../services/suspensions');
 
 const like = s => '%' + String(s).trim().slice(0, 100).replace(/[\\%_]/g, '\\$&') + '%';
@@ -85,6 +85,8 @@ exports.setUserStatus = wrap(async (req, res) => {
       if (u.status !== 'active') {
         await conn.query("UPDATE users SET status = 'active', suspension_reason = NULL, suspended_at = NULL, suspended_until = NULL WHERE user_id = ?", [id]);
         await logActivity({ userId: req.user.user_id, action: 'user_reactivated', table: 'users', id, details: { reason } }, conn);
+        /* Tell the user by e-mail (queued here, sent later in batches). Only when the account really was suspended. */
+        await queueReactivationEmail(conn, { userId: id, email: u.email, fullName: u.full_name, auto: false });
       }
       restored = await restoreReports(conn, id, req.user.user_id);
     }

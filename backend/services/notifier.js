@@ -1,5 +1,5 @@
 /* E-mail notifications: (1) a new report strongly matches yours, (2) someone sent a claim on your report,
-   (3) an admin suspended your account.
+   (3) an admin suspended your account, (4) your suspension ended (an admin reactivated you, or the time ran out).
    Match e-mails: when someone creates a report and it STRONGLY matches (score 80+) another user's report, the OWNER of that other report gets an e-mail.
 
    How it works (outbox pattern):
@@ -33,12 +33,14 @@ const firstName = full => String(full || '').trim().split(/\s+/)[0] || 'there';
 
 /* =====================================================================
    EMAIL TEMPLATES: edit this block to change what the e-mails say and look like.
-   There are three e-mails, EMAIL.match, EMAIL.claim and EMAIL.suspension. Placeholders in {braces} are filled in for each e-mail.
+   There are four e-mails, EMAIL.match, EMAIL.claim, EMAIL.suspension and EMAIL.reactivation. Placeholders in {braces} are filled in for each e-mail.
      both:   {ownerName} first name of the person being e-mailed   {petName} name of THEIR report's pet
              {mine} "lost" or "found" (their report's type)
      match:  {theirs} type of the new report   {label} Strong / Likely / ...   {labelLower}   {percent} score, rounded
      claim:  {claimantName} first name of the person who sent the claim   {claimMeaning} what the claim says
      suspension: {ownerName} first name of the suspended user (no pet placeholders), {reason} the admin's reason
+     reactivation: {ownerName} first name of the user; the text differs for an admin (intro/outro) and for an automatic
+                   lift when the time ended (introAuto/outroAuto)
    Put **double asterisks** around words to make them bold.
    The sender name/address is not here: it is MAIL_FROM in .env.
    ===================================================================== */
@@ -120,6 +122,25 @@ const EMAIL = {
       ['Length',   s => s.length],
       ['Ends on',  s => s.ends],
       ['Date',     s => s.date]
+    ]
+  },
+
+  /* 4. Your suspension is over: an admin reactivated the account, or the suspension time ended (introAuto/outroAuto). */
+  reactivation: {
+    subject:  'Your TunTon account is active again',
+    title:    'Welcome back',
+    subtitle: 'Your TunTon account has been reactivated',
+    greeting: 'Hi {ownerName},',
+    intro:    'An administrator **reactivated your TunTon account**. You can log in again, and the pet reports and claims that were hidden during the suspension are back.',
+    introAuto: 'Your **suspension has ended**, so your TunTon account is active again. You can log in again, and the pet reports and claims that were hidden during the suspension are back.',
+    outro:    'Please keep to the TunTon community rules so your account stays in good standing.',
+    outroAuto: 'You do not need to do anything. Please keep to the TunTon community rules so your account stays in good standing.',
+    button:   'Log in to TunTon',
+    footer:   ACCOUNT_FOOTER,
+    details: [
+      ['Status',         r => 'Active'],
+      ['Reactivated by', r => r.by],
+      ['Date',           r => r.date]
     ]
   }
 };
@@ -239,6 +260,14 @@ function buildSuspensionMessage({ ownerName, reason, date, durationLabel = '', e
   return compose(tpl, vars, { reason, length: durationLabel, ends: endsText, date }, url);
 }
 
+/* Reactivation e-mail. auto = true when the suspension time ended by itself, false when an admin reactivated the account. */
+function buildReactivationMessage({ ownerName, auto = false, date, url }) {
+  const t = EMAIL.reactivation;
+  const tpl = auto ? { ...t, intro: t.introAuto, outro: t.outroAuto } : t;
+  const vars = { ownerName };
+  return compose(tpl, vars, { by: auto ? 'Automatically (suspension time ended)' : 'An administrator', date }, url);
+}
+
 /* ---- Queue (called inside matchRunner's transaction) ----
    ownerReportId = the existing report whose owner is told; newReportId = the report that was just created. */
 async function queueMatchEmail(conn, { ownerReportId, newReportId, lostId, foundId, score, label }) {
@@ -296,6 +325,21 @@ async function queueSuspensionEmail(conn, { userId, email, fullName, reason, dur
   const [r] = await conn.query(
     `INSERT INTO email_notifications (user_id, kind, to_email, subject, body_text, body_html)
      VALUES (?, 'suspension', ?, ?, ?, ?)`,
+    [userId, email, msg.subject.slice(0, 200), msg.text, msg.html]);
+  return r.affectedRows === 1;
+}
+
+/* ---- Queue a reactivation e-mail (called inside the transaction that reactivates the account) ----
+   Used by adminController.setUserStatus (an admin pressed Reactivate, auto = false) and by suspensions.liftExpired
+   (the suspension time ended, auto = true). Same outbox, so the batch worker sends it (EMAIL_BATCH_SIZE every
+   EMAIL_BATCH_INTERVAL_SECONDS) and many suspensions ending at once never exceed the mail provider's limit.
+   Skipped when the user has no e-mail address. If the transaction rolls back, the e-mail disappears with it. */
+async function queueReactivationEmail(conn, { userId, email, fullName, auto = false }) {
+  if (!email) return false;
+  const msg = buildReactivationMessage({ ownerName: firstName(fullName), auto, date: fmtDate(Date.now()), url: baseUrl() });
+  const [r] = await conn.query(
+    `INSERT INTO email_notifications (user_id, kind, to_email, subject, body_text, body_html)
+     VALUES (?, 'reactivation', ?, ?, ?, ?)`,
     [userId, email, msg.subject.slice(0, 200), msg.text, msg.html]);
   return r.affectedRows === 1;
 }
@@ -361,7 +405,7 @@ async function sendBatch() {
 /* Called once from server.js. Does nothing (and says so) when SMTP_HOST is not set; queued e-mails then just wait. */
 function startWorker() {
   if (!process.env.SMTP_HOST) {
-    console.warn('[email] SMTP_HOST is not set: e-mails (matches, claims, suspensions) are queued but not sent. See .env.example.');
+    console.warn('[email] SMTP_HOST is not set: e-mails (matches, claims, suspensions, reactivations) are queued but not sent. See .env.example.');
     return null;
   }
   console.log(`[email] sending up to ${CFG.batchSize} e-mails every ${CFG.intervalMs / 1000}s${CFG.dailyLimit ? `, max ${CFG.dailyLimit}/day` : ''}`);
@@ -370,4 +414,4 @@ function startWorker() {
   return timer;
 }
 
-module.exports = { CFG, buildMessage, buildClaimMessage, buildSuspensionMessage, queueMatchEmail, queueClaimEmail, queueSuspensionEmail, sendBatch, startWorker };
+module.exports = { CFG, buildMessage, buildClaimMessage, buildSuspensionMessage, buildReactivationMessage, queueMatchEmail, queueClaimEmail, queueSuspensionEmail, queueReactivationEmail, sendBatch, startWorker };

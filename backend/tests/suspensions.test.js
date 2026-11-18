@@ -30,3 +30,28 @@ test('lifting brings back only the reports the suspension hid', async () => {
   assert.equal(updates.length, 1);
   assert.deepEqual(updates[0][1], ['active', 1]);
 });
+
+/* liftExpired(): the auto-lift queues one reactivation e-mail per account, inside the same transaction. */
+test('an expired suspension is lifted and the user is e-mailed once', async () => {
+  const pool = require('../db/pool');
+  const activityLog = require('../db/activityLog');
+  const inserted = [];
+  const conn = {
+    query: async (sql, p) => {
+      if (sql.includes('SELECT user_id, email, full_name FROM users')) return [[{ user_id: 5, email: 'ana@example.com', full_name: 'Ana Cruz' }]];
+      if (sql.includes('INSERT INTO email_notifications')) { inserted.push(p); return [{ affectedRows: 1 }]; }
+      if (sql.startsWith('SELECT report_id FROM pet_reports')) return [[]];
+      return [{}];
+    }
+  };
+  const origQuery = pool.query, origTx = activityLog.withTransaction;
+  pool.query = async () => [[{ user_id: 5 }]];
+  activityLog.withTransaction = async fn => fn(conn);
+  delete require.cache[require.resolve('../services/suspensions')];
+  try {
+    const { liftExpired } = require('../services/suspensions');
+    assert.equal(await liftExpired(), 1);
+  } finally { pool.query = origQuery; activityLog.withTransaction = origTx; delete require.cache[require.resolve('../services/suspensions')]; }
+  assert.equal(inserted.length, 1);
+  assert.deepEqual(inserted[0].slice(0, 2), [5, 'ana@example.com']);
+});

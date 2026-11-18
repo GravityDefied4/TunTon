@@ -1,7 +1,7 @@
 /* Unit tests for match e-mails: message text and queueing rules (no database or SMTP needed). Run: npm test */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildMessage, buildClaimMessage, buildSuspensionMessage, queueMatchEmail, queueClaimEmail, queueSuspensionEmail } = require('../services/notifier');
+const { buildMessage, buildClaimMessage, buildSuspensionMessage, buildReactivationMessage, queueMatchEmail, queueClaimEmail, queueSuspensionEmail, queueReactivationEmail } = require('../services/notifier');
 
 const owner = { report_id: 5, user_id: 1, type: 'lost', pet_name: 'Bantay', species: 'Dog', breed: 'Aspin', color: 'Brown', size: 'medium', event_date: '2026-10-01', barangay: 'Pantal', email: 'owner@example.com', full_name: 'Ana Cruz', user_status: 'active' };
 const fresh = { report_id: 9, user_id: 2, type: 'found', pet_name: 'Unknown', species: 'Dog', breed: 'Aspin', color: 'Brown', size: 'medium', event_date: '2026-10-02', barangay: 'Lucao', email: 'finder@example.com', phone: '09171234567', full_name: 'Ben Lim', user_status: 'active' };
@@ -135,4 +135,31 @@ test('queueSuspensionEmail puts the end date in a timed suspension e-mail', asyn
   await queueSuspensionEmail(conn, { userId: 7, email: 'ana@example.com', fullName: 'Ana', reason: 'Spam', durationLabel: '7 days', untilMs: until });
   assert.match(calls[0][3], /Ends on: November 25, 2026,? (at )?10:45 AM GMT\+8/);
   assert.match(calls[0][1], /ana@example.com/);
+});
+
+/* ---- Reactivation e-mails ---- */
+test('reactivation message differs for an admin and for an automatic lift, with no leftovers', () => {
+  const byAdmin = buildReactivationMessage({ ownerName: 'Ana', auto: false, date: 'November 18, 2026', url: 'http://x' });
+  assert.equal(byAdmin.subject, 'Your TunTon account is active again');
+  assert.match(byAdmin.text, /Hi Ana,/);
+  assert.match(byAdmin.text, /administrator reactivated your TunTon account/);
+  assert.match(byAdmin.text, /Reactivated by: An administrator/);
+  const auto = buildReactivationMessage({ ownerName: 'Ana', auto: true, date: 'November 18, 2026', url: 'http://x' });
+  assert.match(auto.text, /suspension has ended/);
+  assert.match(auto.text, /Reactivated by: Automatically \(suspension time ended\)/);
+  assert.match(auto.text, /Status: Active/);
+  for (const m of [byAdmin, auto]) assert.ok(!/\{\w+\}/.test(m.text) && !m.text.includes('**') && !m.html.includes('**'));
+});
+
+test('queues one reactivation e-mail into the outbox, and none when the user has no e-mail', async () => {
+  const calls = [];
+  const conn = { query: async (sql, p) => (calls.push([sql, p]), [{ affectedRows: 1 }]) };
+  assert.equal(await queueReactivationEmail(conn, { userId: 7, email: 'ana@example.com', fullName: 'Ana Cruz', auto: true }), true);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0][0], /'reactivation'/);
+  assert.match(calls[0][0], /email_notifications/);
+  assert.deepEqual(calls[0][1].slice(0, 2), [7, 'ana@example.com']);
+  assert.match(calls[0][1][3], /suspension has ended/);
+  assert.equal(await queueReactivationEmail(conn, { userId: 7, email: '', fullName: 'Ana' }), false);
+  assert.equal(calls.length, 1);
 });

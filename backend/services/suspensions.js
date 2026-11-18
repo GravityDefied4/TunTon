@@ -4,10 +4,11 @@
    users.suspended_until (NULL = permanent). It is lifted automatically by:
      1. liftExpired() on a timer (startSweeper, started from server.js), and
      2. liftExpired(userId) the moment that user tries to log in or use their token (userStore), so nobody waits for the timer.
-   Lifting does exactly what an admin pressing "Reactivate" does: the account is active again and the reports that were
-   hidden BY the suspension come back. Reports an admin hid on their own stay hidden. */
+   Lifting does exactly what an admin pressing "Reactivate" does: the account is active again, the reports that were
+   hidden BY the suspension come back, and the user is e-mailed (queued in the same transaction, sent later in batches). Reports an admin hid on their own stay hidden. */
 const pool = require('../db/pool');
 const { withTransaction, logActivity } = require('../db/activityLog');
+const { queueReactivationEmail } = require('./notifier');
 
 /* Log action for a report hidden because its owner was suspended (kept apart from 'report_removed', an admin hiding it). */
 const HOLD_ACTION = 'report_hidden_owner_suspended';
@@ -58,10 +59,11 @@ async function liftExpired(userId = null) {
   for (const { user_id } of due) {
     const restored = await withTransaction(async conn => {
       const [[u]] = await conn.query(
-        "SELECT user_id FROM users WHERE user_id = ? AND status = 'suspended' AND suspended_until IS NOT NULL AND suspended_until <= NOW() FOR UPDATE", [user_id]);
+        "SELECT user_id, email, full_name FROM users WHERE user_id = ? AND status = 'suspended' AND suspended_until IS NOT NULL AND suspended_until <= NOW() FOR UPDATE", [user_id]);
       if (!u) return null;   // an admin changed it in the meantime
       await conn.query("UPDATE users SET status = 'active', suspension_reason = NULL, suspended_at = NULL, suspended_until = NULL WHERE user_id = ?", [user_id]);
       await logActivity({ userId: null, action: 'user_reactivated', table: 'users', id: user_id, details: { auto: true, reason: 'Suspension time ended' } }, conn);
+      await queueReactivationEmail(conn, { userId: user_id, email: u.email, fullName: u.full_name, auto: true });
       return restoreReports(conn, user_id, null);
     });
     if (!restored) continue;

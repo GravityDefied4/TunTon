@@ -30,6 +30,8 @@ Or open MySQL Workbench, then File > Open SQL Script, and run `schema.sql` follo
 
 `006_suspension_reason.sql` is only needed on a database built before suspension reasons existed: it adds the `suspension_reason` and `suspended_at` columns to `users` (a fresh `schema.sql` already has them). Run it once, then restart the server. Accounts suspended before this show "No reason was recorded" in the login popup.
 
+`reactivation_email.sql` is only needed on a database built before reactivation e-mails existed (a fresh `schema.sql` already has it): it adds the `reactivation` value to `email_notifications.kind`. Run it once with the same `-e "source backend/db/reactivation_email.sql"` form, then restart the server. Without it, reactivating a user fails when the e-mail is queued.
+
 `003_report_claims.sql` is only needed on a database built before claims moved onto reports (it drops the old claims tables). A fresh `schema.sql` already includes it.
 
 `push_subscriptions.sql` is only needed on a database built before web push was added (a fresh `schema.sql`
