@@ -48,7 +48,7 @@
     const sc = document.createElement('script');
     sc.src = here.replace(/pages\/user\/dashboard\/js\/notifications\.js.*$/, 'js/push.js');
     sc.dataset.pushJs = '';
-    sc.onload = () => refreshPush();
+    sc.onload = () => { refreshPush(); offerPush(); };
     document.head.appendChild(sc);
   }
 
@@ -142,6 +142,51 @@
   async function refreshPush() {
     pushState = window.TuntonPush ? await window.TuntonPush.status() : 'unsupported';
     if (open) renderPanel();
+  }
+
+  /* Asks for notification permission by itself after login.
+     1. Waits for the location popup to finish, so two browser popups never stack.
+     2. Calls the browser's real permission popup directly (Chrome and Edge allow this without a click).
+     3. If the browser did not show it (Firefox, Safari and quiet-mode Chrome need a click), shows a small
+        "Turn on alerts" card whose button makes the click.
+     It tries once per 7 days per account, so a person who ignores it is not nagged on every page. */
+  async function offerPush() {
+    try {
+      const P = window.TuntonPush;
+      if (!P || !P.supported || (await P.status()) !== 'off') return;   /* already on, blocked, or unsupported */
+
+      /* Allowed earlier but this browser is not subscribed yet: no popup needed, just subscribe. */
+      if (Notification.permission === 'granted') { await P.enable().catch(() => {}); refreshPush(); return; }
+
+      const KEY = 'tunton_push_asked:' + myId;
+      if (Date.now() - Number(localStorage.getItem(KEY) || 0) < 7 * 864e5) return;
+      try { localStorage.setItem(KEY, Date.now()); } catch (e) { /* ignore */ }
+
+      await whereAmI().catch(() => null);
+      if (document.querySelector('.notif-ask')) return;
+
+      /* Step 2: ask the browser directly. Resolves once the person answers (or throws if it cannot ask without a click). */
+      try { await P.enable(); refreshPush(); return; } catch (e) { /* fall through */ }
+      refreshPush();
+      if (Notification.permission !== 'default') return;   /* blocked: the bell panel explains how to unblock */
+
+      /* Step 3: the browser did not ask, so offer a button. */
+      const box = document.createElement('div');
+      box.className = 'notif-ask';
+      box.setAttribute('role', 'dialog');
+      box.innerHTML = `
+        <strong>Get alerts when a pet is found</strong>
+        <p>Turn on notifications so TunTon can tell you right away, even when the site is closed.</p>
+        <div><button type="button" class="notif-ask-yes">Turn on alerts</button>
+        <button type="button" class="notif-ask-no">Not now</button></div>`;
+      document.body.appendChild(box);
+      box.querySelector('.notif-ask-no').onclick = () => box.remove();
+      box.querySelector('.notif-ask-yes').onclick = async () => {
+        try { await P.enable(); } catch (e) { /* denied or failed: the bell panel shows the state */ }
+        box.remove();
+        refreshPush();
+      };
+    } catch (e) { /* never break the page */ }
   }
   function pushRow() {
     if (pushError) return `<p class="notif-push notif-push--warn" role="alert">${esc(pushError)}</p>`;
@@ -304,4 +349,6 @@
     /* sw.js tells open pages when a push arrives, so the bell updates at once instead of at the next 2-minute check */
     if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'push-received') poll(); });
   });
+
+  if (window.TuntonPush) offerPush();
 })();

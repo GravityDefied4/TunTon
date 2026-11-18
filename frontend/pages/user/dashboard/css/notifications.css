@@ -230,3 +230,11 @@
 .notif-push-btn:hover:not(:disabled) { background: var(--forest-dark, #0a4f2e); }
 .notif-push-btn:disabled { opacity: .6; cursor: default; }
 .notif-push-btn:focus-visible { outline: 2px solid var(--leaf, #2fa05a); outline-offset: 2px; }
+
+/* One-time "turn on alerts" prompt (offerPush in notifications.js) */
+.notif-ask { position: fixed; right: 16px; bottom: 16px; z-index: 9999; max-width: 320px;
+  background: #fff; color: #222; border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.18); border: 1px solid #2fa05a; }
+.notif-ask p { margin: 6px 0 10px; font-size: .9rem; }
+.notif-ask-yes { background: #0f6b3f; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.notif-ask-no { background: none; border: 0; color: #5b7a6c; cursor: pointer; margin-left: 8px; }
