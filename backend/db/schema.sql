@@ -5,7 +5,7 @@ USE tunton;
 -- 1. BARANGAYS (strong entity: geofencing)
 CREATE TABLE barangays (
     barangay_id  SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name         VARCHAR(60)       NOT NULL,
+    name         VARCHAR(30)       NOT NULL,
     center       POINT             NOT NULL SRID 4326,
     boundary     POLYGON           NULL SRID 4326,
     PRIMARY KEY (barangay_id),
@@ -17,7 +17,7 @@ CREATE TABLE barangays (
 CREATE TABLE users (
     user_id        INT UNSIGNED               NOT NULL AUTO_INCREMENT,
     google_sub     VARCHAR(255)               NULL,
-    full_name      VARCHAR(100)               NOT NULL,
+    full_name      VARCHAR(60)               NOT NULL,
     email          VARCHAR(50)                NOT NULL,
     phone          VARCHAR(15)                NULL,
     facebook_profile_link   VARCHAR(255)      NULL,
@@ -27,12 +27,13 @@ CREATE TABLE users (
     picture_url    VARCHAR(255)               NULL,
     role           ENUM('user','admin')       NOT NULL DEFAULT 'user',
     status         ENUM('active','suspended') NOT NULL DEFAULT 'active',
-    suspension_reason VARCHAR(300) NULL,          -- why an admin suspended the account (shown to the user at login)
+    suspension_reason VARCHAR(100) NULL,          -- why an admin suspended the account (shown to the user at login)
     suspended_at   TIMESTAMP    NULL,
     suspended_until DATETIME    NULL,          -- when a timed suspension ends and is lifted automatically; NULL = permanent (while status = 'suspended')
     created_at     TIMESTAMP                  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at  TIMESTAMP                  NULL,
     PRIMARY KEY (user_id),
+    UNIQUE KEY uq_users_fullname (full_name),
     UNIQUE KEY uq_users_email (email),
     UNIQUE KEY uq_users_google_sub (google_sub),
     CONSTRAINT fk_users_barangay FOREIGN KEY (barangay_id) REFERENCES barangays (barangay_id),
@@ -46,9 +47,9 @@ CREATE TABLE pet_reports (
     report_id         INT UNSIGNED      NOT NULL AUTO_INCREMENT,
     user_id           INT UNSIGNED      NOT NULL,
     report_type       ENUM('lost','found') NOT NULL,
-    pet_name          VARCHAR(60)       NOT NULL,
-    species           VARCHAR(50)       NOT NULL,
-    breed             VARCHAR(50)       NOT NULL,
+    pet_name          VARCHAR(60)       NULL,
+    species           VARCHAR(30)       NOT NULL,
+    breed             VARCHAR(30)       NOT NULL,
     color             VARCHAR(50)       NOT NULL,
     size              ENUM('small','medium','large','extra_large') NOT NULL,
     sex               ENUM('male','female','unknown') NOT NULL DEFAULT 'unknown',
@@ -60,9 +61,10 @@ CREATE TABLE pet_reports (
     lng               DECIMAL(9,6) GENERATED ALWAYS AS (ST_Longitude(location)) STORED,
     barangay_id       SMALLINT UNSIGNED NULL,
     search_radius_km  TINYINT UNSIGNED  NULL,
-    phone             VARCHAR(15)       NULL, -- reminder: change phone to contact
+    contact           VARCHAR(50)       NULL,
     facebook_profile_link  VARCHAR(255) NULL,
     status            ENUM('active','matched','resolved','closed','removed') NOT NULL DEFAULT 'active',
+    flag_reason       VARCHAR(200)      NULL,
     created_at        TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (report_id),
@@ -119,14 +121,14 @@ CREATE TABLE claims (
     status            ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
     color             VARCHAR(40)   NOT NULL,
     description       TEXT          NULL,
-    markings          VARCHAR(500)  NULL,
+    markings          VARCHAR(100)  NULL,
     pet_location      VARCHAR(255)  NULL,
     event_date        DATE          NULL,
     lat               DECIMAL(9,6)  NULL,
     lng               DECIMAL(9,6)  NULL,
     barangay_id       SMALLINT UNSIGNED NULL,
     pet               JSON          NULL,
-    contact           VARCHAR(255)  NULL,
+    contact           VARCHAR(50)  NULL,
     facebook          VARCHAR(255)  NULL,
     decided_at        TIMESTAMP     NULL,
     created_at        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -153,10 +155,9 @@ CREATE TABLE claim_photos (
 
 -- 7. EMAIL NOTIFICATIONS (outbox: one row per e-mail; backend/services/notifier.js sends them in batches)
 -- kind 'match': a new report matches someone else's report; the OWNER of the existing report is the recipient.
---   The unique key uq_notify_pair means a pair of reports notifies an owner only once, even if matching runs again.
+-- unique key 'uq_notify_pair': a pair of reports notifies an owner only once, even if matching runs again.
 -- kind 'claim': someone sent a claim on a report; the OWNER of that report is the recipient (one e-mail per claim).
 -- kind 'suspension': an admin suspended the user's account; the suspended user is the recipient.
---   Existing database? Run once: ALTER TABLE email_notifications MODIFY kind ENUM('match','claim','suspension') NOT NULL DEFAULT 'match';
 CREATE TABLE email_notifications (
     notification_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id          INT UNSIGNED NOT NULL,
