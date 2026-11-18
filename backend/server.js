@@ -35,6 +35,7 @@ app.use('/tiles', require('./routes/tiles'));          // map tiles, proxied so 
 app.use('/api/geo', require('./routes/geo'));          // approximate location fallback when browser GPS is blocked
 app.use('/api', require('./routes/matches'));          // /api/matching/run/:id and /api/matches/*
 app.use('/api/claims', require('./routes/claims'));
+app.use('/api/push', require('./routes/push'));      // web push: public key, subscribe, unsubscribe
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api', notFound);
 
@@ -70,6 +71,9 @@ app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avat
   { index: false, dotfiles: 'deny', maxAge: '1h', setHeaders: res => res.set('X-Content-Type-Options', 'nosniff') }));
 
 /* ---- Frontend ---- */
+/* The push service worker must be served from the site root and must never be cached for long,
+   or a fixed version would not reach users. (Its scope is "/", so it also covers /pages/...) */
+app.get('/sw.js', (req, res) => res.set('Cache-Control', 'no-cache').type('application/javascript').sendFile(path.join(__dirname, '..', 'frontend', 'sw.js')));
 /* Clean URLs: /pages/user/dashboard/add-report?match=1 instead of add-report.html?match=1.
    An old .html address is redirected to the clean one (query string kept), and the clean one serves the .html file.
    index.html is the home page, so it becomes '/'. */
@@ -98,6 +102,7 @@ server.listen(port, () => {
   console.log(`TunTon running at ${scheme}://localhost:${port}`);
   require('./services/notifier').startWorker();   // sends queued match e-mails in batches
   require('./services/suspensions').startSweeper();   // lifts timed suspensions when their time is up
+  require('./services/push').announce();              // says whether web push is on (needs the VAPID keys in .env)
   if (PUBLIC_URL) {
     console.log(`Public address: ${PUBLIC_URL}`);
     console.log(`  Google sign-in: add exactly this under "Authorized JavaScript origins": ${PUBLIC_URL.replace(/\/+$/, '')}`);

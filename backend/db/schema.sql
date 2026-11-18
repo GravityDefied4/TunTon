@@ -184,6 +184,26 @@ CREATE TABLE email_notifications (
     CONSTRAINT fk_notify_claim FOREIGN KEY (claim_id)        REFERENCES claims (claim_id)       ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- 7b. PUSH SUBSCRIPTIONS (web push: one row per browser/device that turned on alerts; backend/services/push.js sends to them)
+--   endpoint_hash (SHA-256 of the endpoint URL) is the unique key, because a long URL cannot be indexed directly.
+--   A device that logs in as another user is moved to that user (same endpoint, new user_id). Deleted with the user.
+--   Existing database? Run backend/db/push_subscriptions.sql once.
+CREATE TABLE push_subscriptions (
+    subscription_id  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    user_id          INT UNSIGNED  NOT NULL,
+    endpoint         VARCHAR(1000) NOT NULL,
+    endpoint_hash    CHAR(64)      NOT NULL,
+    p256dh           VARCHAR(255)  NOT NULL,
+    auth             VARCHAR(255)  NOT NULL,
+    user_agent       VARCHAR(255)  NULL,
+    created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (subscription_id),
+    UNIQUE KEY uq_push_endpoint (endpoint_hash),
+    KEY ix_push_user (user_id, updated_at),
+    CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- 8. AUDIT TRAIL (weak Entity dependent on Users/Actions)
 CREATE TABLE activity_logs (
     log_id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

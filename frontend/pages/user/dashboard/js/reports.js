@@ -44,14 +44,14 @@ function card(r) {
       <span class="tag-missing${labelFound ? ' tag-found' : ''}"><span class="tag-dot" aria-hidden="true"></span>${labelFound ? 'Found' : 'Missing'}</span>
     </div>
     <div class="pet-body">
-      <h3>${esc(title)}</h3>
+      <h3>${short(title, 28, 8)}</h3>
       ${flagChipHTML(r)}
       <ul class="pet-info">
         <li>${ICON.pin}<span>${verb} in ${esc(r.brgy)}${here ? ' &middot; ' + esc(awayText(here, r)) : ''}</span></li>
-        <li>${ICON.calendar}<span>${verb} <time datetime="${esc(r.date)}">${esc(niceDate(r.date))}</time> &middot; ${esc(ago(r.date))}</span></li>
+        <li>${ICON.calendar}<span><time datetime="${esc(r.date)}" title="${esc(niceDate(r.date))}">${esc(ago(r.date))}</time></span></li>
         ${isFound ? `<li>${ICON.check}<span>Found in ${esc(confirmedFind(r).brgy)} &middot; ${esc(niceDate(confirmedFind(r).date))}</span></li>` : lost && findsOf(r).length ? `<li>${ICON.bell}<span>${findsOf(r).length} found ${findsOf(r).length === 1 ? 'report' : 'reports'} &middot; waiting for the owner</span></li>` : !lost && confirmedClaim(r) ? `<li>${ICON.check}<span>Owner confirmed</span></li>` : !lost && claimsOf(r).length ? `<li>${ICON.bell}<span>${claimsOf(r).length} lost ${claimsOf(r).length === 1 ? 'report' : 'reports'} &middot; waiting for the finder</span></li>` : ''}
       </ul>
-      <p class="pet-by"><span class="pet-by-av" aria-hidden="true">${esc(who.initial)}${who.picture ? `<img src="${esc(who.picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><span class="pet-by-text">Posted by <b>${esc(who.name)}</b></span></p>
+      <p class="pet-by"><span class="pet-by-av" aria-hidden="true">${esc(who.initial)}${who.picture ? `<img src="${esc(who.picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><span class="pet-by-text">${short(who.name, 22, 7)}</span></p>
     </div>
     <div class="pet-actions">
       <a class="btn btn-plain" href="report.html?id=${encodeURIComponent(r.id)}">View details</a>

@@ -18,7 +18,10 @@ const DAGUPAN = [16.0433, 120.3339];
 const DAGUPAN_BOUNDS = [[16.005, 120.290], [16.125, 120.395]];
 /* Outline of Dagupan City [lat, lng]: LAND ONLY (it follows the coast, not the Lingayen Gulf).
    Source: OpenStreetMap city boundary (relation 13001749), simplified to 74 points. Data (c) OpenStreetMap contributors, ODbL. */
-const DAGUPAN_OUTLINE = [[16.108713,120.373904],[16.098833,120.375877],[16.090192,120.371005],[16.089918,120.369268],[16.086719,120.364111],[16.080542,120.362541],[16.071495,120.367873],[16.067055,120.357617],[16.063304,120.355135],[16.058774,120.35533],[16.051914,120.360844],[16.050346,120.366864],[16.04972,120.367463],[16.047185,120.370305],[16.046678,120.371358],[16.041286,120.377326],[16.041266,120.37737],[16.041116,120.377536],[16.023202,120.377899],[16.022426,120.377139],[16.019752,120.370356],[16.019731,120.369971],[16.02002,120.367089],[16.022002,120.361194],[16.021314,120.35864],[16.020994,120.356296],[16.020995,120.356086],[16.021247,120.354533],[16.018139,120.346593],[16.014487,120.343284],[16.014363,120.340826],[16.017043,120.331529],[16.016955,120.329396],[16.009353,120.322529],[16.008933,120.319265],[16.016487,120.314592],[16.022726,120.313578],[16.026501,120.314928],[16.029096,120.311144],[16.03445,120.308035],[16.037113,120.307596],[16.042249,120.304292],[16.042356,120.304265],[16.046226,120.301464],[16.046665,120.301454],[16.050121,120.299982],[16.051681,120.299605],[16.059238,120.29875],[16.059555,120.300026],[16.061251,120.301666],[16.061195,120.303337],[16.062889,120.305862],[16.063749,120.309998],[16.06539,120.312469],[16.06625,120.316666],[16.069555,120.323303],[16.06875,120.328308],[16.070833,120.33036],[16.0725,120.329559],[16.076666,120.329582],[16.078306,120.330391],[16.080389,120.332497],[16.082111,120.336609],[16.089556,120.349976],[16.089556,120.350807],[16.091249,120.352531],[16.091249,120.354111],[16.097918,120.362503],[16.097918,120.363281],[16.108305,120.373779]];
+/* Bonuan Binloc (north-east tip, centre 16.1018, 120.3798) lies partly beyond the original boundary line, so the
+   five points after the first vertex below widen the outline to include the whole barangay. They are an approximation
+   built around the barangay's published centre: swap in the official boundary if you have it. */
+const DAGUPAN_OUTLINE = [[16.108713,120.373904],[16.1100,120.3800],[16.1085,120.3865],[16.1030,120.3890],[16.0965,120.3860],[16.0930,120.3800],[16.090192,120.371005],[16.089918,120.369268],[16.086719,120.364111],[16.080542,120.362541],[16.071495,120.367873],[16.067055,120.357617],[16.063304,120.355135],[16.058774,120.35533],[16.051914,120.360844],[16.050346,120.366864],[16.04972,120.367463],[16.047185,120.370305],[16.046678,120.371358],[16.041286,120.377326],[16.041266,120.37737],[16.041116,120.377536],[16.023202,120.377899],[16.022426,120.377139],[16.019752,120.370356],[16.019731,120.369971],[16.02002,120.367089],[16.022002,120.361194],[16.021314,120.35864],[16.020994,120.356296],[16.020995,120.356086],[16.021247,120.354533],[16.018139,120.346593],[16.014487,120.343284],[16.014363,120.340826],[16.017043,120.331529],[16.016955,120.329396],[16.009353,120.322529],[16.008933,120.319265],[16.016487,120.314592],[16.022726,120.313578],[16.026501,120.314928],[16.029096,120.311144],[16.03445,120.308035],[16.037113,120.307596],[16.042249,120.304292],[16.042356,120.304265],[16.046226,120.301464],[16.046665,120.301454],[16.050121,120.299982],[16.051681,120.299605],[16.059238,120.29875],[16.059555,120.300026],[16.061251,120.301666],[16.061195,120.303337],[16.062889,120.305862],[16.063749,120.309998],[16.06539,120.312469],[16.06625,120.316666],[16.069555,120.323303],[16.06875,120.328308],[16.070833,120.33036],[16.0725,120.329559],[16.076666,120.329582],[16.078306,120.330391],[16.080389,120.332497],[16.082111,120.336609],[16.089556,120.349976],[16.089556,120.350807],[16.091249,120.352531],[16.091249,120.354111],[16.097918,120.362503],[16.097918,120.363281],[16.108305,120.373779]];
 /* Is this point on Dagupan's land? (point-in-polygon test; the sea is NOT inside, so reports cannot be filed on water.) */
 const inDagupan = (lat, lng) => {
   let inside = false;
@@ -33,6 +36,19 @@ const BRGY = ['Bacayao Norte','Bacayao Sur','Barangay I (T. Bugallon)','Barangay
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* Long text on a card: keep the start and the END, with "..." in the middle (photo_of_my_dog_at_the_beach.jpg -> photo_of_my_d...beach.jpg).
+   A file's extension is always kept. midEllipsis() returns plain text; short() returns safe HTML whose title shows the full text on hover. */
+const midEllipsis = (s, max = 24, tail = 8) => {
+  const t = String(s ?? '');
+  if (t.length <= max) return t;
+  const ext = (t.match(/\.[A-Za-z0-9]{1,5}$/) || [''])[0];
+  const keep = Math.min(Math.max(tail, ext ? ext.length + 4 : 0), max - 4);
+  return t.slice(0, max - keep - 3).trimEnd() + '...' + t.slice(-keep).trimStart();
+};
+const short = (s, max, tail) => {
+  const t = String(s ?? ''), m = midEllipsis(t, max, tail);
+  return m === t ? esc(t) : `<span class=\"trunc\" title=\"${esc(t)}\">${esc(m)}</span>`;
+};
 /* Species shown to people: for "Other" pets this is the animal the user typed (e.g. Rabbit). */
 const speciesOf = r => (r.species === 'Other' && r.otherSpecies) ? r.otherSpecies : (r.species || '');
 const petSexLabel = sex => ({ male: 'Male', female: 'Female', unknown: 'Unknown' }[String(sex || '').toLowerCase()] || '');
@@ -120,13 +136,16 @@ const lockToDagupan = map => {
   const fit = () => { const sz = map.getSize(); if (sz.x && sz.y) map.setMinZoom(map.getBoundsZoom(DAGUPAN_BOUNDS)); };
   fit(); map.on('resize', fit);
 };
-/* Draws the Dagupan City land boundary on a map (it does NOT restrict the map: people can look anywhere).
-   Returns { fit() } which zooms the map to the whole city. */
-const CITY_STYLE = { color: '#0f6b3f', weight: 3, opacity: .95, lineJoin: 'round', fillColor: '#2fa05a', fillOpacity: .1, interactive: false };
-const highlightDagupan = map => {
+/* Draws the Dagupan City land boundary on a map and softly dims everything outside it, so the eye stays on the city.
+   (Use lockToDagupan(map) as well to stop people from panning away.) Returns { fit() } which zooms to the whole city. */
+const CITY_STYLE = { color: '#0f6b3f', weight: 3, opacity: .95, lineJoin: 'round', fillColor: '#2fa05a', fillOpacity: .06, interactive: false };
+const OUTSIDE_STYLE = { stroke: false, fillColor: '#0a2e1c', fillOpacity: .32, interactive: false };
+const highlightDagupan = (map, { label = true } = {}) => {
+  /* a big rectangle with the city cut out of it = a dim "mask" over everything that is not Dagupan */
+  L.polygon([[[15.4, 119.7], [15.4, 121.0], [16.7, 121.0], [16.7, 119.7]], DAGUPAN_OUTLINE], OUTSIDE_STYLE).addTo(map);
   const layer = L.polygon(DAGUPAN_OUTLINE, CITY_STYLE).addTo(map);
-  layer.bindTooltip('Dagupan City', { permanent: true, direction: 'center', className: 'city-label' });
-  return { fit: () => map.fitBounds(layer.getBounds(), { padding: [24, 24] }) };
+  if (label) layer.bindTooltip('Dagupan City', { permanent: true, direction: 'center', className: 'city-label' });
+  return { fit: (pad = 24) => map.fitBounds(layer.getBounds(), { padding: [pad, pad] }) };
 };
 /* Small line icons used instead of emoji (decorative, so hidden from screen readers). */
 const ico = d => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -175,7 +194,7 @@ const facebookLink = v => {
 const facebookHTML = v => {
   const fb = facebookLink(v);
   if (!fb) return '';
-  return fb.url ? `<a class="cc-link" href="${esc(fb.url)}" target="_blank" rel="noopener noreferrer" title="Open Facebook profile">${esc(fb.text)}</a>` : esc(fb.text);
+  return fb.url ? `<a class="cc-link" href="${esc(fb.url)}" target="_blank" rel="noopener noreferrer" title="Open Facebook profile">${short(fb.text, 34, 12)}</a>` : short(fb.text, 34, 12);
 };
 
 /* Owner / finder card, at the TOP of a report because it is the most important detail.
@@ -186,16 +205,11 @@ const contactCardHTML = (r, role) => {
   const name = r.ownerName || userInfo(r.owner).name || '';
   const picture = r.ownerPicture || userInfo(r.owner).picture || '';
   const posted = r.created ? new Date(r.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-  const row = (icon, label, html) => `<div class="cc-row"><dt>${icon}<span>${label}</span></dt><dd class="${html ? '' : 'cc-missing'}">${html || 'Not provided'}</dd></div>`;
+  const row = (icon, label, html) => html ? `<div class="cc-row"><dt>${icon}<span>${label}</span></dt><dd>${html}</dd></div>` : '';   // only fields that were provided
+  const rows = [row(ICON.phone, 'Contact no.', esc(phone)), row(ICON.mail, 'Email', short(email, 30, 14)), row(ICON.facebook, 'Facebook', facebookHTML(r.facebook)), other ? row(ICON.info, 'Other contact', short(other, 30, 8)) : ''].join('');
   return `<section class="contact-card" aria-label="${esc(role)} details">
-    <header class="cc-head"><span class="cc-avatar" aria-hidden="true">${esc((name || role)[0].toUpperCase())}${picture ? `<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><div><h2 class="cc-title">${esc(name || role)}</h2><p class="cc-note">${esc(role)}${posted ? ' &middot; Posted ' + esc(posted) : ''}</p></div></header>
-    <dl class="cc-list">
-      ${row(ICON.phone, 'Contact no.', esc(phone))}
-      ${row(ICON.mail, 'Email', esc(email))}
-      ${row(ICON.facebook, 'Facebook', facebookHTML(r.facebook))}
-      ${row(ICON.pin, 'Barangay', esc(r.brgy || ''))}
-      ${other ? row(ICON.info, 'Other contact', esc(other)) : ''}
-    </dl></section>`;
+    <header class="cc-head"><span class="cc-avatar" aria-hidden="true">${esc((name || role)[0].toUpperCase())}${picture ? `<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><div><h2 class="cc-title">${short(name || role, 28, 8)}</h2><p class="cc-note">${esc(role)}${posted ? ' &middot; Posted ' + esc(posted) : ''}</p></div></header>
+    ${rows ? `<dl class="cc-list">${rows}</dl>` : '<p class="cc-empty">No contact details were provided.</p>'}</section>`;
 };
 
 const pinIcon = k => L.divIcon({ className: '', html: `<div class="pin pin--${k}"><span>${k === 'lost' ? ICON.paw : ICON.search}</span></div>`, iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -34] });
@@ -243,7 +257,7 @@ const mapSkeleton = (wrap, layer) => {
 };
 
 /* ---------- Session / profile ---------- */
-const logout = () => { localStorage.removeItem(SESSION_KEY); location.replace(HOME); };
+const logout = () => { try { window.TuntonPush?.forgetOnLogout(); } catch { /* push not loaded */ } localStorage.removeItem(SESSION_KEY); location.replace(HOME); };
 const readSession = () => {
   const s = read(SESSION_KEY, null);
   if (!s?.token) return null;

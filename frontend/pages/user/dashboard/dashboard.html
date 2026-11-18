@@ -23,24 +23,16 @@
       <section class="view" id="view-map">
         <div class="view-head view-head--dashboard">
           <div>
-            <h1>Dashboard</h1>
-            <p>See the latest pet reports around your community and help bring pets home.</p>
-            <p class="dashboard-greeting">Welcome back, <span id="dashboard-name">there</span>!</p>
+            <h1>Welcome back, <span id="dashboard-name">there</span>!</h1>
+            <p>See the latest pet reports near you and help bring pets home.</p>
           </div>
           <div class="dashboard-actions" aria-label="Quick actions">
             <a class="btn btn-small" href="add-report.html">Add a pet report</a>
-            <a class="dashboard-link" href="reports.html">Browse all reports <span aria-hidden="true">&rarr;</span></a>
+            <a class="dashboard-link" href="reports.html">All reports <span aria-hidden="true">&rarr;</span></a>
           </div>
         </div>
 
-        <div class="dashboard-section-head">
-          <div>
-            <h2>Explore nearby reports</h2>
-            <p>Search, filter, and select a report to see it on the map.</p>
-          </div>
-        </div>
-
-        <!-- Top bar: search + filter chips (YouTube chip row, Google Maps search pill) -->
+        <!-- One toolbar row: search, filter, radius, location -->
         <div class="map-bar">
           <label class="map-search">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -49,12 +41,12 @@
           <div class="chip-row" role="group" aria-label="Filter reports">
             <button type="button" class="fchip is-on" data-filter="all" aria-pressed="true">All</button>
             <button type="button" class="fchip" data-filter="lost" aria-pressed="false">Missing</button>
-            <button type="button" class="fchip" data-filter="found" aria-pressed="false">Potentially found</button>
+            <button type="button" class="fchip" data-filter="found" aria-pressed="false">Found</button>
           </div>
           <div class="map-actions">
-            <label class="radius-pick">Within
+            <label class="radius-pick">
               <select id="radius" aria-label="Show reports within">
-                <option value="0.25">250 m</option><option value="0.5">500 m</option><option value="1">1 km</option><option value="2" selected>2 km</option><option value="3">3 km</option><option value="all">All of Dagupan</option>
+                <option value="0.25">Within 250 m</option><option value="0.5">Within 500 m</option><option value="1">Within 1 km</option><option value="2" selected>Within 2 km</option><option value="3">Within 3 km</option><option value="all">All of Dagupan</option>
               </select>
             </label>
             <button type="button" class="btn btn-small" id="locate">My location</button>
@@ -82,7 +74,6 @@
               <span><i style="background:var(--alert)"></i>Lost</span>
               <span><i style="background:var(--leaf)"></i>Potentially found</span>
               <span><i style="background:#2f7bf0"></i>You</span>
-              <span><i class="legend-city"></i>Dagupan City</span>
             </div>
           </div>
         </div>
@@ -94,6 +85,7 @@
 <script src="js/sidebar.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="js/common.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
 </html>

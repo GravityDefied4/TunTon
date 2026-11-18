@@ -1,0 +1,232 @@
+/* =========================================================
+   Notifications: bell button + dropdown panel.
+   Loaded by js/notifications.js. Uses the theme tokens, so it follows light / dark.
+   ========================================================= */
+
+/* ---------- Bell button (same square look as the theme / collapse buttons) ---------- */
+.notif-btn {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--side-r-sm, 10px);
+  background: var(--side-hover, rgba(255, 255, 255, .09));
+  color: var(--white, #fff);
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.notif-btn:hover { background: var(--side-fill, rgba(255, 255, 255, .15)); }
+.notif-btn:active { transform: scale(.94); }
+.notif-btn:focus-visible { outline: 3px solid var(--lime, #8fcf5a); outline-offset: 2px; }
+
+.notif-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notif-btn--top { width: 42px; height: 42px; background: rgba(255, 255, 255, .14); }
+.notif-btn--top:hover { background: rgba(255, 255, 255, .26); }
+
+.notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--alert, #d93636);
+  color: #fff;
+  font: 700 .7rem/18px 'Nunito', system-ui, sans-serif;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--forest-dark, #0a4f2e);
+}
+
+.notif-badge[hidden] { display: none; }
+
+/* The sidebar one is for desktop, the top-bar one for the phone layout */
+@media (max-width: 1000px) {
+  .notif-btn--side { display: none; }
+}
+
+/* ---------- Panel ---------- */
+.notif-panel {
+  position: fixed;
+  z-index: 1300;
+  left: 272px;
+  bottom: 16px;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line, #cfe8b8);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  color: var(--ink, #17342a);
+  box-shadow: 0 18px 40px rgba(10, 46, 28, .28);
+  animation: notif-in .18s ease-out;
+}
+
+.notif-panel[hidden] { display: none; }
+.side-min .notif-panel { left: 92px; }
+
+.notif-panel.from-top,
+.notif-panel.from-top-mobile {
+  left: auto;
+  right: 12px;
+  bottom: auto;
+  top: 64px;
+}
+
+@media (max-width: 1000px) {
+  .notif-panel { left: auto; right: 12px; bottom: auto; top: 64px; }
+}
+
+@keyframes notif-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--line-soft, #e3eed8);
+}
+
+.notif-head h2 {
+  margin: 0;
+  font: 600 1.05rem 'Fredoka', system-ui, sans-serif;
+  color: var(--heading, #0f6b3f);
+}
+
+.notif-tools { display: flex; gap: .75rem; }
+
+.notif-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--heading, #0f6b3f);
+  font: 700 .8rem 'Nunito', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.notif-link:hover:not(:disabled) { text-decoration: underline; }
+.notif-link:disabled { opacity: .4; cursor: default; }
+.notif-link:focus-visible { outline: 2px solid var(--leaf, #2fa05a); outline-offset: 2px; border-radius: 4px; }
+
+.notif-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.notif-list li + li { border-top: 1px solid var(--line-soft, #e3eed8); }
+
+.notif-item {
+  display: flex;
+  gap: .75rem;
+  padding: .8rem 1rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.notif-item:hover,
+.notif-item:focus-visible { background: var(--surface-hover, #eef9e2); outline: none; }
+
+/* unread rows get a tint and a dot */
+.notif-item.is-new { background: var(--surface-tint, #f6fcf0); }
+.notif-item.is-new .notif-body b::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: .45rem;
+  border-radius: 50%;
+  background: var(--alert, #d93636);
+  vertical-align: middle;
+}
+
+.notif-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--mint, #d9f2c2);
+  color: var(--heading, #0f6b3f);
+}
+
+.notif-ico svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notif-response .notif-ico { background: var(--sun, #ffc61a); color: #17342a; }
+
+.notif-body { display: grid; gap: .15rem; min-width: 0; font-size: .88rem; line-height: 1.35; }
+.notif-body b { font-weight: 700; }
+.notif-body span { color: var(--muted, #5b7a6c); }
+.notif-body small { color: var(--muted, #5b7a6c); font-size: .75rem; }
+
+.notif-empty {
+  margin: 0;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: var(--muted, #5b7a6c);
+}
+
+.notif-empty small { display: block; margin-top: .4rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-panel { animation: none; }
+  .notif-btn { transition: none; }
+}
+
+/* ---------- Push row ---------- */
+.notif-push {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin: 0;
+  padding: .65rem 1rem;
+  border-bottom: 1px solid var(--line-soft, #e3eed8);
+  background: var(--soft, #f3f9ee);
+  color: var(--text, #24412f);
+  font: 600 .8rem/1.35 'Nunito', system-ui, sans-serif;
+}
+.notif-push--warn { color: #9a3412; background: #fff4ec; }
+.notif-push-btn {
+  flex: none;
+  padding: .35rem .8rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--forest, #0f6b3f);
+  color: #fff;
+  font: 700 .8rem 'Nunito', system-ui, sans-serif;
+  cursor: pointer;
+}
+.notif-push-btn:hover:not(:disabled) { background: var(--forest-dark, #0a4f2e); }
+.notif-push-btn:disabled { opacity: .6; cursor: default; }
+.notif-push-btn:focus-visible { outline: 2px solid var(--leaf, #2fa05a); outline-offset: 2px; }

@@ -6,6 +6,7 @@ const { withTransaction, logActivity } = require('../db/activityLog');
 const { loadForMatching, pointWkt, POINT } = require('../db/reportQueries');
 const { CONFIG, isCandidate, scoreMatch } = require('./matching');
 const { queueMatchEmail } = require('./notifier');
+const push = require('./push');
 
 /* SQL pre-filter: same hard rules as isCandidate(), so we only load plausible rows.
    (isCandidate runs again in JS as the final word.) */
@@ -33,7 +34,8 @@ async function candidateIds(report, db) {
 /* Recompute every match for one report. opts.notifyOwners (set when the report was just created) queues an e-mail to the
    owner of each report that newly matches it. Returns { created, updated, removed, matches: [{match_id, lost, found, score, label}] }. */
 async function runForReport(reportId, actorId = null, opts = {}) {
-  return withTransaction(async conn => {
+  const alerts = [];   // strong new matches: phone alerts are sent AFTER the transaction commits
+  const out = await withTransaction(async conn => {
     const report = await loadForMatching(reportId, conn);
     if (!report) return null;
 
@@ -69,8 +71,10 @@ async function runForReport(reportId, actorId = null, opts = {}) {
            climbs to Strong after an edit is e-mailed; the unique key in email_notifications stops any repeat. */
         if (opts.notifyOwners) {
           try {
-            await queueMatchEmail(conn, { ownerReportId: other.report_id, newReportId: report.report_id,
-              lostId: lost.report_id, foundId: found.report_id, score, label });
+            const args = { ownerReportId: other.report_id, newReportId: report.report_id,
+              lostId: lost.report_id, foundId: found.report_id, score, label };
+            /* true only for a strong match that was not e-mailed before, so the phone alert follows the same once-per-pair rule */
+            if (await queueMatchEmail(conn, args)) alerts.push(args);
           } catch (e) { console.error(`[email] could not queue match ${matchId}:`, e.message); }   // never break matching
         }
         out.matches.push({ match_id: matchId, lost_report_id: lost.report_id, found_report_id: found.report_id, score, label });
@@ -84,6 +88,8 @@ async function runForReport(reportId, actorId = null, opts = {}) {
     out.removed = del.affectedRows;
     return out;
   });
+  for (const a of alerts) push.notifyMatch(a);   // not awaited, never throws
+  return out;
 }
 
 /* Fire-and-forget safe wrapper for report create/edit: a matching hiccup must not fail the request. */

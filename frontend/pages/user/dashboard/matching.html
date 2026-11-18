@@ -22,21 +22,25 @@
       <section class="view" id="view-matching">
         <div class="view-head">
           <h1>Attribute matching</h1>
-          <p id="match-lead">Reports that look like yours, ranked from the best match to the weakest.</p>
+          <p id="match-lead">We compare your report with others and rank the closest matches first.</p>
         </div>
 
         <section class="match-pick" id="match-controls" aria-label="Report being matched" hidden>
           <span class="ms-label">Matching for</span>
-          <div class="ms" id="ms">
-            <button type="button" class="ms-trigger" id="ms-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="ms-panel"></button>
-            <div class="ms-panel" id="ms-panel" hidden></div>
+          <div class="ms-row">
+            <div class="ms" id="ms">
+              <button type="button" class="ms-trigger" id="ms-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="ms-panel"></button>
+              <div class="ms-panel" id="ms-panel" hidden></div>
+            </div>
+            <a class="btn btn-small ms-view" id="ms-view" href="reports.html">View details</a>
           </div>
+          <p class="mp-how"><b>How matching works</b>We look at color, breed, size, markings and where each pet was seen. The higher the percentage, the more they have in common.</p>
         </section>
 
         <div class="mr-head" id="mr-head" hidden>
           <div class="match-head" id="match-head"></div>
-          <div class="mr-filter">
-            <span class="mr-filter-label" id="mc-l2">Match percentage</span>
+          <div class="mr-filter" id="mr-filter">
+            <span class="mr-filter-label" id="mc-l2">Show</span>
             <div class="mc-chips" id="pct-chips" role="radiogroup" aria-labelledby="mc-l2"></div>
           </div>
         </div>
@@ -49,6 +53,7 @@
 
 <script src="js/sidebar.js"></script>
 <script src="js/common.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/api.js"></script>
 <script src="js/match.js"></script>
 <script src="js/matching.js"></script>

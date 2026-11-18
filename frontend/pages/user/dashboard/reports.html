@@ -20,16 +20,18 @@
   <div class="dash-main">
     <main>
       <section class="view" id="view-reports">
-        <div class="view-head"><h1>All reports</h1><p>Every active lost and found report, without the map.</p></div>
-        <div class="toolbar">
+        <div class="view-head view-head--reports">
+          <div><h1>All reports</h1><p>Every active lost and found pet report.</p></div>
+          <span class="rcount" id="rcount" aria-live="polite"></span>
+        </div>
+        <div class="toolbar toolbar--reports">
+          <input type="search" id="rq" class="rsearch" placeholder="Search color, breed, barangay&hellip;" aria-label="Search reports">
           <div class="chips" role="radiogroup" aria-label="Report type">
             <label><input type="radio" name="rk" value="all" checked><span>All</span></label>
             <label><input type="radio" name="rk" value="lost"><span>Lost</span></label>
             <label><input type="radio" name="rk" value="found"><span>Found</span></label>
           </div>
-          <select id="rsp" class="btn btn-small btn-plain" style="padding:.4em .8em" aria-label="Species"><option value="">All species</option><option>Dog</option><option>Cat</option><option>Other</option></select>
-          <input type="search" id="rq" class="rsearch" placeholder="Search color, breed, barangay&hellip;" aria-label="Search reports">
-          <span class="chip" id="rcount"></span>
+          <select id="rsp" class="rselect" aria-label="Species"><option value="">All species</option><option>Dog</option><option>Cat</option><option>Other</option></select>
         </div>
         <div class="pet-list pet-list--grid" id="all-list"></div>
       </section>
@@ -39,6 +41,7 @@
 
 <script src="js/sidebar.js"></script>
 <script src="js/common.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/api.js"></script>
 <script src="js/reports.js"></script>
 </body>

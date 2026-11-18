@@ -11,10 +11,12 @@ if (typeof L === 'undefined') {
 }
 
 let me = null;
-/* The map can be viewed anywhere (only FILING a report is limited to Dagupan City). */
-const map = L.map('map', { minZoom: 6 }).setView(DAGUPAN, 13);
+/* The site is for Dagupan City only: the map is locked to the city and opens on it. */
+const map = L.map('map').setView(DAGUPAN, 13);
+lockToDagupan(map);
 mapSkeleton($('#map').parentElement, tiles(map));   // the static cover in dashboard.html goes away once tiles draw
-const city = highlightDagupan(map);   // green outline of the city, no restriction
+const city = highlightDagupan(map);   // green outline of the city, the rest is dimmed
+city.fit();
 const CityControl = L.Control.extend({
   options: { position: 'topleft' },
   onAdd() {
@@ -46,13 +48,47 @@ const matches = r => {
   return [r.name, speciesOf(r), r.breed, r.color, r.brgy, r.markings].filter(Boolean).join(' ').toLowerCase().includes(query);
 };
 
+/* ---------- Search radius, limited to Dagupan ----------
+   A plain circle spills over the sea and the next towns, which suggests reports from there are included.
+   So the radius is drawn as "the part of Dagupan City inside the circle": a soft fill for that area and a
+   dashed edge only where the circle really runs through the city. */
+function cityRing(origin, radiusKm) {
+  const N = 180, dLat = radiusKm / 111.32, dLng = radiusKm / (111.32 * Math.cos(origin[0] * Math.PI / 180));
+  const circle = Array.from({ length: N }, (_, i) => { const a = 2 * Math.PI * i / N; return [origin[0] + dLat * Math.sin(a), origin[1] + dLng * Math.cos(a)]; });   // [lat, lng], counter-clockwise
+  /* Sutherland-Hodgman: clip the city outline (any shape) against the circle (convex) */
+  const side = (p, a, b) => (b[1] - a[1]) * (p[0] - a[0]) - (b[0] - a[0]) * (p[1] - a[1]);   // >= 0: inside (left of a to b)
+  const cross = (p, q, a, b) => { const t = side(p, a, b) / (side(p, a, b) - side(q, a, b)); return [p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]; };
+  let area = DAGUPAN_OUTLINE.slice();
+  for (let i = 0; i < N && area.length; i++) {
+    const a = circle[i], b = circle[(i + 1) % N], next = [];
+    area.forEach((p, j) => {
+      const q = area[(j + 1) % area.length], pin = side(p, a, b) >= 0, qin = side(q, a, b) >= 0;
+      if (pin) next.push(p);
+      if (pin !== qin) next.push(cross(p, q, a, b));
+    });
+    area = next;
+  }
+  if (area.length < 3) return null;
+  const g = L.featureGroup().addTo(map);
+  L.polygon(area, { stroke: false, fillColor: '#0f6b3f', fillOpacity: .14, interactive: false }).addTo(g);
+  /* dashed edge: only the stretches of the circle that lie inside the city */
+  const inside = circle.map(p => inDagupan(p[0], p[1]));
+  const start = inside.indexOf(false);
+  const order = start < 0 ? circle.concat([circle[0]]) : circle.slice(start).concat(circle.slice(0, start)).concat([circle[start]]);
+  let run = [];
+  const flush = () => { if (run.length > 1) L.polyline(run, { color: '#0f6b3f', weight: 2.5, dashArray: '8 7', interactive: false }).addTo(g); run = []; };
+  order.forEach(p => { if (inDagupan(p[0], p[1])) run.push(p); else flush(); });
+  flush();
+  return g;
+}
+
 function render(fit) {
   group.clearLayers();
   visible = [];
   Object.keys(markers).forEach(k => delete markers[k]);
   const val = $('#radius').value, origin = me || DAGUPAN, lim = val === 'all' ? Infinity : +val;
   if (ring) { map.removeLayer(ring); ring = null; }
-  if (lim !== Infinity) ring = L.circle(origin, { radius: lim * 1000, color: '#0f6b3f', weight: 2, fillOpacity: .06, interactive: false }).addTo(map);
+  if (lim !== Infinity) ring = cityRing(origin, lim);
   const pts = [];
   allReports().forEach(r => {
     if (km(origin, [r.lat, r.lng]) > lim || !matches(r)) return;
@@ -67,7 +103,7 @@ function render(fit) {
   if (fit) {
     if (lim === Infinity && pts.length) map.fitBounds(L.latLngBounds(inDagupan(...origin) ? pts.concat([origin]) : pts).pad(.2));
     else if (ring) map.fitBounds(ring.getBounds(), { padding: [20, 20] });   // zoom so the whole circle is on screen
-    else map.setView(origin, 13);
+    else city.fit();
   }
 }
 
@@ -79,10 +115,9 @@ function listHTML() {
     const st = reportState(r), meta = [speciesOf(r), r.breed, r.color].filter(Boolean).join(' · ');
     return `<li><button type="button" class="vcard" data-id="${esc(r.id)}">
       <span class="vthumb"><img src="${esc(r.photo)}" alt=""><em class="vbadge vbadge--${st}">${stateText(r)}</em></span>
-      <span class="vinfo"><b class="vtitle">${esc(titleOf(r))}</b>
+      <span class="vinfo"><b class="vtitle">${short(titleOf(r), 28, 8)}</b>
         <span class="vmeta">${esc(meta)}</span>
-        <span class="vmeta">${esc(r.brgy)}${me ? ' · ' + distText(d) : ''}</span>
-        <span class="vmeta">${esc(ago(r.date))}</span></span></button></li>`;
+        <span class="vmeta">${esc([r.brgy, me ? distText(d) : '', ago(r.date)].filter(Boolean).join(' · '))}</span></span></button></li>`;
   }).join('');
   return `<h2 class="side-title">Reports <small>${visible.length}</small></h2>
     <ul class="vlist">${cards}</ul>`;
@@ -98,7 +133,7 @@ function detailHTML(r) {
     <div class="side-photo"><img id="side-img" src="${esc(pics[0])}" alt="Photo of ${esc(titleOf(r))}"></div>
     ${pics.length > 1 ? `<div class="side-thumbs">${pics.map((p, i) => `<button type="button" data-pic="${esc(p)}" aria-label="Photo ${i + 1}"><img src="${esc(p)}" alt=""></button>`).join('')}</div>` : ''}
     <span class="badge ${lost ? 'badge--lost' : 'badge--home'}">${lost ? 'Lost pet' : r.kind === 'lost' ? 'Pet found' : 'Found pet'}</span>
-    <h2 class="side-name">${esc(titleOf(r))}</h2>
+    <h2 class="side-name">${short(titleOf(r), 32, 8)}</h2>
     ${flagChipHTML(r)}
     <p class="d-sub">${esc([speciesOf(r), r.breed, r.color].filter(Boolean).join(' · '))}</p>
     ${contactCardHTML(r, r.kind === 'lost' ? 'Owner' : 'Finder')}
@@ -169,12 +204,16 @@ function locate() {
   $('#status').textContent = 'Finding your location…';
   getPosition({ enableHighAccuracy: true, timeout: 10000 }).then(p => {
     if (!p) return fallback('Location unavailable. Showing Dagupan City.');
+    if (!inDagupan(p.lat, p.lng)) {   // outside the city: the map stays on Dagupan and shows every report
+      me = null;
+      if (meMarker) { map.removeLayer(meMarker); meMarker = null; }
+      $('#radius').value = 'all'; $('#status').textContent = 'You are outside Dagupan City. Showing all of Dagupan.';
+      return render(true);
+    }
     me = [p.lat, p.lng];
     if (meMarker) meMarker.setLatLng(me);
     else meMarker = L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18] }), interactive: false, zIndexOffset: 1000 }).addTo(map);
-    if (!inDagupan(...me)) {   // you can still look around, but all reports are in Dagupan City
-      $('#radius').value = 'all'; $('#status').textContent = 'You are outside Dagupan City. Showing all reports.';
-    } else $('#status').textContent = p.approx ? 'Using your approximate location (GPS needs https)' : 'Using your current location';
+    $('#status').textContent = p.approx ? 'Using your approximate location (GPS needs https)' : 'Using your current location';
     render(true);
   });
 }

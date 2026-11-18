@@ -21,7 +21,7 @@ function matchCard(m, rank, me, top) {
     </a>
     <div class="m-body">
       ${top ? `<p class="m-top-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9Z"/></svg>Most compatible</p>` : ''}
-      <h3>${top ? '' : `<span class="m-rank">#${rank}</span>`}<a href="${href}">${esc(titleOf(r))}</a></h3>
+      <h3>${top ? '' : `<span class="m-rank">#${rank}</span>`}<a href="${href}">${short(titleOf(r), 28, 8)}</a></h3>
       <p class="m-facts">${facts}</p>
       <p class="m-meta"><span>${ICON.pin}${lost ? 'Last seen' : 'Found'} in ${esc(r.brgy)}</span><span>${ICON.calendar}${esc(ago(r.date))}</span></p>
       ${hit.length ? `<p class="m-chips" aria-label="Matching attributes">${hit.map(k => `<span class="m-chip">${STATUS_ICON.yes}${LABELS[k]}</span>`).join('')}</p>` : ''}
@@ -43,10 +43,10 @@ const ms = $('#ms'), trigger = $('#ms-trigger'), panel = $('#ms-panel'), pctEl =
    Anything below MIN_PERCENT (10%, set in match.js) is not listed at all. */
 const BANDS = [
   { key: 'all', label: 'All', lo: MIN_PERCENT, hi: 100 },
-  { key: 'high', label: '80%\u2013100%', lo: 80, hi: 100 },
-  { key: 'mid', label: '60%\u201379%', lo: 60, hi: 79 },
-  { key: 'fair', label: '40%\u201359%', lo: 40, hi: 59 },
-  { key: 'low', label: MIN_PERCENT + '%\u201339%', lo: MIN_PERCENT, hi: 39 }
+  { key: 'high', label: 'Strong', range: '80\u2013100%', lo: 80, hi: 100 },
+  { key: 'mid', label: 'Good', range: '60\u201379%', lo: 60, hi: 79 },
+  { key: 'fair', label: 'Fair', range: '40\u201359%', lo: 40, hi: 59 },
+  { key: 'low', label: 'Weak', range: MIN_PERCENT + '\u201339%', lo: MIN_PERCENT, hi: 39 }
 ];
 let mine = [];              // my active reports (newest first)
 let pool = [];              // everyone else's reports
@@ -69,12 +69,12 @@ function drawPicker() {
   const me = selected(), many = mine.length > 1;
   trigger.classList.toggle('is-static', !many);
   trigger.setAttribute('aria-haspopup', many ? 'true' : 'false');
-  trigger.innerHTML = `${thumb(me)}<span class="ms-text"><b>${esc(titleOf(me))}</b>${sub(me)}</span>${many ? `<span class="ms-arrow">${CHEVRON}<span class="sr-only">Change report</span></span>` : ''}`;
+  trigger.innerHTML = `${thumb(me)}<span class="ms-text"><b>${short(titleOf(me), 26, 8)}</b>${sub(me)}</span>${many ? `<span class="ms-arrow">${CHEVRON}<span class="sr-only">Change report</span></span>` : ''}`;
   panel.innerHTML = ['lost', 'found'].filter(k => inKind(k).length).map(k => `<fieldset class="ms-group">
       <legend>${KIND[k]} reports<span>${inKind(k).length}</span></legend>
       ${inKind(k).map(r => `<label class="ms-option">
         <input type="radio" name="myreport" value="${esc(r.id)}" ${r.id === me.id ? 'checked' : ''}>
-        ${thumb(r)}<span class="ms-text"><b>${esc(titleOf(r))}</b>${sub(r)}</span>
+        ${thumb(r)}<span class="ms-text"><b>${short(titleOf(r), 26, 8)}</b>${sub(r)}</span>
         <span class="ms-tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></span>
       </label>`).join('')}
     </fieldset>`).join('');
@@ -88,8 +88,8 @@ const setOpen = open => {
 /* Percentage chips, with how many reports each one shows */
 function drawChips(all) {
   pctEl.innerHTML = BANDS.map(x => {
-    const n = all.filter(m => m.percent >= x.lo && m.percent <= x.hi).length;
-    return `<label class="mc-chip"><input type="radio" name="pct" value="${x.key}" ${x.key === band.key ? 'checked' : ''}><span>${x.key === 'all' ? '' : `<i class="t-${x.key}" aria-hidden="true"></i>`}${x.label}<b>${n}</b></span></label>`;
+    const n = all.filter(m => m.percent >= x.lo && m.percent <= x.hi).length, off = !n && x.key !== 'all';
+    return `<label class="mc-chip${off ? ' is-empty' : ''}" title="${x.key === 'all' ? 'Every possible match' : x.label + ' matches, ' + x.range}"><input type="radio" name="pct" value="${x.key}" ${x.key === band.key ? 'checked' : ''} ${off ? 'disabled' : ''}><span>${x.key === 'all' ? '' : `<i class="t-${x.key}" aria-hidden="true"></i>`}${x.label}${x.range ? `<em>${x.range}</em>` : ''}<b>${n}</b></span></label>`;
   }).join('');
 }
 
@@ -98,13 +98,19 @@ function draw() {
   const all = scoredFor(me), shown = all.filter(m => m.percent >= band.lo && m.percent <= band.hi);
   drawPicker(); drawChips(all);
 
-  headEl.innerHTML = `<h2>Matches for &ldquo;${esc(titleOf(me))}&rdquo;</h2>
-    <p>Comparing with <b>${want}</b> reports &middot; showing ${shown.length} of ${all.length}</p>`;
+  const same = shown.length === all.length;
+  $('#ms-view').href = 'report.html?id=' + encodeURIComponent(me.id);
+  $('#mr-filter').hidden = !all.length;
+  headEl.innerHTML = all.length
+    ? `<h2>${shown.length} possible ${shown.length === 1 ? 'match' : 'matches'}</h2>
+       <p>Comparing <b>${esc(titleOf(me))}</b> with ${want} reports${same ? '' : ' &middot; showing ' + shown.length + ' of ' + all.length}</p>`
+    : `<h2>No matches yet</h2><p>Comparing <b>${esc(titleOf(me))}</b> with ${want} reports</p>`;
 
   if (shown.length) { listEl.innerHTML = shown.map((m, i) => matchCard(m, i + 1, me, i === 0)).join(''); return; }
-  listEl.innerHTML = `<p class="rempty">${all.length
-    ? `No ${want} reports are between ${band.lo}% and ${band.hi}%. Choose &ldquo;All&rdquo; to see every ${want} report that could match.`
-    : `No ${want} reports of a ${esc(speciesOf(me).toLowerCase() || 'similar')} are at least ${MIN_PERCENT}% similar yet. We will list them here as soon as one is.`}</p>`;
+  const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+  listEl.innerHTML = all.length
+    ? `<div class="box m-none">${icon}<h3>Nothing in this range</h3><p>No ${want} reports are between ${band.lo}% and ${band.hi}%.</p><button type="button" class="btn btn-small" id="m-showall">Show all matches</button></div>`
+    : `<div class="box m-none">${icon}<h3>No ${want} reports look like yours yet</h3><p>We'll list ${want === 'found' ? 'found pets' : 'lost pets'} here as soon as one is at least ${MIN_PERCENT}% similar. You can also look through every report yourself.</p><div class="m-none-actions"><a class="btn btn-small" href="reports.html">Browse all reports</a><a class="btn btn-small btn-plain" href="report.html?id=${encodeURIComponent(me.id)}">View my report</a></div></div>`;
 }
 
 function choose(id) {
@@ -134,6 +140,7 @@ async function init() {
   panel.addEventListener('change', e => { if (e.target.name === 'myreport') { choose(e.target.value); setOpen(false); trigger.focus(); } });
   document.addEventListener('click', e => { if (!panel.hidden && !ms.contains(e.target)) setOpen(false); });
   ms.addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) { setOpen(false); trigger.focus(); } });
+  listEl.addEventListener('click', e => { if (e.target.closest('#m-showall')) { band = BANDS[0]; draw(); } });
   pctEl.addEventListener('change', e => { if (e.target.name === 'pct') { band = BANDS.find(x => x.key === e.target.value) || BANDS[0]; draw(); } });
 
   const want = new URLSearchParams(location.search).get('report');   // matching.html?report=<id>

@@ -15,6 +15,7 @@ const v = require('../middleware/validate');
 const { isInsideDagupan } = require('../services/geofence');
 const { runQuietly } = require('../services/matchRunner');
 const { queueClaimEmail } = require('../services/notifier');
+const push = require('../services/push');
 
 const MAX_PHOTOS = 3;
 const SIZES = ['small', 'medium', 'large', 'extra_large'];
@@ -139,6 +140,7 @@ exports.create = wrap(async (req, res) => {
     try { await queueClaimEmail(conn, r.insertId); } catch (e) { console.error(`[email] could not queue claim ${r.insertId}:`, e.message); }
     return r.insertId;
   });
+  push.notifyClaim(claimId);   // phone alert for the owner (after the commit; not awaited, never throws)
   res.status(201);
   res.ok({ claim: await loadOne(claimId, req.user) }, 'Claim sent. The owner of the report will review it.');
 });
@@ -243,6 +245,7 @@ exports.decide = wrap(async (req, res) => {
   const decision = v.oneOf(req.body?.decision, ['approve', 'reject'], 'decision');
   const reason = v.text(req.body?.reason, 'reason', { max: 500 });
   let reportId;
+  let decided = [];   // claims whose status changed: they get a phone alert after the commit
 
   await withTransaction(async conn => {
     const [[c]] = await conn.query(
@@ -265,11 +268,14 @@ exports.decide = wrap(async (req, res) => {
         details: { report_id: reportId, type: c.claim_type, reason, other_claims_rejected: others.length } }, conn);
       for (const o of others) await logActivity({ userId: req.user.user_id, action: 'claim_rejected', table: 'claims', id: o.claim_id,
         details: { report_id: reportId, type: c.claim_type, reason: 'Another claim on this report was approved.' } }, conn);
+      decided = [claimId, ...others.map(o => o.claim_id)];
     } else {
       await conn.query("UPDATE claims SET status = 'rejected', decided_at = NOW() WHERE claim_id = ?", [claimId]);
       await logActivity({ userId: req.user.user_id, action: 'claim_rejected', table: 'claims', id: claimId, details: { report_id: reportId, type: c.claim_type, reason } }, conn);
+      decided = [claimId];
     }
   });
+  push.notifyDecisions(decided);   // not awaited, never throws
   if (decision === 'approve') await runQuietly(reportId, req.user.user_id);   // a matched report keeps no open match suggestions
   res.ok({ claim: await loadOne(claimId, req.user) }, decision === 'approve' ? 'Claim approved. The report is marked as found.' : 'Claim rejected.');
 });

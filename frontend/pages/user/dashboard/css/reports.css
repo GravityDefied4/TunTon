@@ -1,19 +1,71 @@
 /* All reports view */
+/* Header: title on the left, result count on the right */
+.view-head--reports {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.view-head--reports h1 { margin-bottom: .35rem; }
+.view-head--reports p { margin: 0; }
+.rcount { flex: none; font-weight: 700; color: var(--muted); }
+
+/* One tidy row: search, type, species */
+.toolbar--reports {
+  gap: .75rem 1rem;
+  margin: 0 0 1.5rem;
+}
+
 .rsearch {
-  flex: 1 1 220px;
+  flex: 1 1 280px;
   min-width: 0;
-  padding: .5em 1em;
-  border: 2px solid var(--line);
+  padding: .7em 1.2em;
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   font: inherit;
+  font-weight: 600;
   background: var(--surface);
   color: var(--ink);
+  box-shadow: var(--shadow);
 }
 
 .rsearch:focus {
-  outline: 3px solid var(--leaf);
-  outline-offset: 1px;
+  outline: 0;
   border-color: var(--leaf);
+}
+
+/* Type filter: one soft pill with the active option filled in */
+.toolbar--reports .chips {
+  flex-wrap: nowrap;
+  gap: .25rem;
+  padding: .25rem;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.toolbar--reports .chips span {
+  padding: .45em 1.1em;
+  border: 0;
+  background: transparent;
+  font-size: .92rem;
+}
+
+.toolbar--reports .chips label:hover span { background: var(--surface-hover); }
+.toolbar--reports .chips input:checked+span { background: var(--forest-dark); color: var(--white); }
+
+.rselect {
+  padding: .65em 1em;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: .92rem;
+  box-shadow: var(--shadow);
 }
 
 .rempty {

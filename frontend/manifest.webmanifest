@@ -1,0 +1,14 @@
+{
+  "name": "TunTon",
+  "short_name": "TunTon",
+  "description": "Lost and found pets, reunited.",
+  "start_url": "/pages/user/dashboard/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f6b3f",
+  "icons": [
+    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

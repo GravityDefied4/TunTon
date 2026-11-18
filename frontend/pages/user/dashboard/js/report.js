@@ -13,7 +13,7 @@ const zoneText = m => m >= 1000 ? (m / 1000) + ' km' : m + ' m';
 function contactHTML(c, fb) {
   if (!c && !fb) return '<p class="hint">The reporter did not leave contact details.</p>';
   const { phone, email, other } = splitContact(c);
-  return [phone && ICON.phone + esc(phone), email && ICON.mail + esc(email), other && esc(other), fb && ICON.facebook + facebookHTML(fb)].filter(Boolean).map(x => `<span class="d-contact">${x}</span>`).join('');
+  return [phone && ICON.phone + esc(phone), email && ICON.mail + short(email, 30, 14), other && short(other, 30, 8), fb && ICON.facebook + facebookHTML(fb)].filter(Boolean).map(x => `<span class="d-contact">${x}</span>`).join('');
 }
 
 function notFound() {
@@ -77,7 +77,7 @@ function responseCard(f, kind) {
     <header class="d-find-head">
       <span class="cc-avatar d-find-avatar" aria-hidden="true">${esc(person[0].toUpperCase())}${picture ? `<img src="${esc(picture)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
       <div class="d-find-who">
-        <h3>${esc(person)}</h3>
+        <h3>${short(person, 26, 8)}</h3>
         <p>${role}${posted ? ' &middot; Posted ' + esc(posted) : ''}${f.by === myId ? ' &middot; <b>Your report</b>' : ''}</p>
       </div>
       <span class="d-status d-status--${esc(f.status)}">${f.status === 'confirmed' ? ICON.check : f.status === 'pending' ? ICON.bell : ''}${esc(RESP_LABEL[kind][f.status] || f.status)}</span>
@@ -130,7 +130,7 @@ function show(r) {
   ].filter(x => x && x[1]);
 
   const place = [
-    [lost ? 'Last seen in' : 'Found in', 'Barangay ' + r.brgy + ', Dagupan City'],
+    [lost ? 'Last seen in' : 'Found in', (/^barangay/i.test(r.brgy) ? r.brgy : 'Barangay ' + r.brgy) + ', Dagupan City'],
     [lost ? 'Last seen on' : 'Found on', niceDate(r.date) + ' (' + ago(r.date).toLowerCase() + ')'],
     lost && r.zone ? ['Search zone', 'Within ' + zoneText(r.zone) + ' of the pin'] : null,
     !lost && r.where ? ['Pet is now', r.where] : null
@@ -164,7 +164,7 @@ function show(r) {
         <span class="tag-missing${lost && !isFound && !home ? '' : ' tag-found'}"><span class="tag-dot" aria-hidden="true"></span>${home ? 'Reunited' : !lost && confirmed ? 'Owner found' : isFound ? 'Found' : lost ? 'Missing' : 'Found'}</span>
         ${pics.length > 1 ? `<button type="button" class="d-nav d-prev" aria-label="Previous photo">&lsaquo;</button><button type="button" class="d-nav d-next" aria-label="Next photo">&rsaquo;</button><span class="d-count" id="d-count"></span>` : ''}
       </div>
-      <div class="d-thumbs" id="d-thumbs">${pics.length > 1 ? pics.map((p, i) => `<button type="button" data-i="${i}" aria-label="Photo ${i + 1}"><img src="${esc(p)}" alt=""></button>`).join('') : ''}</div>
+      <div class="d-thumbs" id="d-thumbs">${pics.length > 1 ? pics.map((p, i) => `<button type="button" data-i="${i}" aria-label="Photo ${i + 1} of ${pics.length}"><img src="${esc(p)}" alt="" loading="lazy" decoding="async"></button>`).join('') : ''}</div>
     </div>
 
     <aside class="box d-summary">
@@ -207,17 +207,15 @@ function show(r) {
     <section class="box d-card d-wide d-split">
       <div class="d-split-text">
         <h2>${ICON.pin}${lost ? 'Where it was last seen' : 'Where it was found'}</h2>
-        <dl class="d-list">${place.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+        <dl class="d-facts">${place.map(([k, v]) => `<div class="d-fact"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
         <p class="hint">Pin location is approximate.${lost && r.zone ? ' The circle is the search zone set by the owner.' : ''}${visible.length ? (lost ? ' Red pin: last seen. Green pin: found.' : ' Green pin: found. Red pin: where an owner says it was last seen.') : ''}</p>
       </div>
       <div id="d-map" class="d-map" role="img" aria-label="Map showing where the pet was ${lost ? 'last seen' : 'found'}"></div>
     </section>
 
-    <section class="box d-card d-wide d-split">
-      <div class="d-split-text">
-        <h2>${ICON.paw}About this pet</h2>
-        <dl class="d-list">${facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-      </div>
+    <section class="box d-card d-wide d-about">
+      <h2>${ICON.paw}About this pet</h2>
+      <dl class="d-facts">${facts.map(([k, v]) => `<div class="d-fact"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
       <div class="d-about-text">
         <h3>${lost ? 'Description' : 'How it was found'}</h3>
         <p class="d-text">${desc ? esc(desc) : 'No extra description was provided.'}</p>
@@ -324,11 +322,22 @@ document.addEventListener('click', e => { if (!e.target.closest('.d-options')) s
     i = (n + pics.length) % pics.length;
     img.src = pics[i];
     img.alt = (lost ? 'Missing ' : 'Found ') + title + (pics.length > 1 ? ` (photo ${i + 1} of ${pics.length})` : '');
-    document.querySelectorAll('#d-thumbs button').forEach((b, j) => b.classList.toggle('on', j === i));
+    const strip = $('#d-thumbs');
+    strip.querySelectorAll('button').forEach((b, j) => { b.classList.toggle('on', j === i); b.setAttribute('aria-current', j === i ? 'true' : 'false'); });
+    /* keep the current thumbnail in view when the row scrolls sideways (only moves the row, never the page) */
+    const cur = strip.children[i];
+    if (cur && strip.scrollWidth > strip.clientWidth) strip.scrollTo({ left: cur.offsetLeft - (strip.clientWidth - cur.offsetWidth) / 2, behavior: 'smooth' });
     const c = $('#d-count'); if (c) c.textContent = (i + 1) + ' / ' + pics.length;
   };
   showPic(0);
   $('#d-thumbs').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) showPic(+b.dataset.i); });
+  /* Left / Right arrows move between photos while a thumbnail has focus */
+  $('#d-thumbs').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    showPic(i + (e.key === 'ArrowRight' ? 1 : -1));
+    $('#d-thumbs').children[i]?.focus();
+  });
   host.querySelector('.d-prev')?.addEventListener('click', () => showPic(i - 1));
   host.querySelector('.d-next')?.addEventListener('click', () => showPic(i + 1));
   const openPreview = (src, alt) => {

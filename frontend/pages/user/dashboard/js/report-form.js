@@ -339,9 +339,10 @@ function setupForm(k, host) {
   const form = host.querySelector('form'), err = host.querySelector('.err');
   const pickEl = host.querySelector('.pick');
   pickEl.dataset.field = 'location';
-  const m = L.map(pickEl).setView(DAGUPAN, 15);
+  const m = L.map(pickEl, { zoomSnap: .25, zoomDelta: .5 }).setView(DAGUPAN, 15);   // quarter-zoom steps, so the city can fill the box
   tiles(m);
   lockToDagupan(m);
+  const city = highlightDagupan(m, { label: false });   // green city border, everything outside is dimmed
   setupPills(form);
 
   /* Species drives the form: "Other" asks for the animal, and the breed box only works once a species is chosen,
@@ -437,6 +438,11 @@ function setupForm(k, host) {
 
   const zone = form.elements.zone;
   let pin = null, circle = null, lastOk = null;
+  /* Open on the whole city (until a pin is placed). The map is built while hidden, so this runs again when its step shows. */
+  let touched = false;   // true once the person pans or zooms by hand: then we stop re-centring
+  ['pointerdown', 'wheel', 'keydown'].forEach(ev => pickEl.addEventListener(ev, () => { touched = true; }, { passive: true }));
+  const fitCity = () => { const sz = m.getSize(); if (sz.x && sz.y && !pin && !claimTarget && !touched) city.fit(6); };
+  fitCity();
   const draw = () => {
     const ll = pin.getLatLng();
     form.elements.lat.value = ll.lat; form.elements.lng.value = ll.lng;
@@ -474,7 +480,7 @@ function setupForm(k, host) {
       <li class="file">
         <button type="button" class="file-open" data-i="${i}" title="Preview ${esc(p.name)}">
           <img class="file-thumb" src="${p.data}" alt="">
-          <span class="file-name">${esc(p.name)}</span><span class="file-size">${kb(p.size)}</span>
+          <span class="file-name">${short(p.name, 26, 10)}</span><span class="file-size">${kb(p.size)}</span>
         </button>
         ${i === 0 ? '<span class="file-main">Main photo</span>' : ''}
         <button type="button" class="file-remove" data-i="${i}" aria-label="Remove ${esc(p.name)}">&times;</button>
@@ -667,6 +673,7 @@ function setupForm(k, host) {
     });
     err.textContent = '';
     m.invalidateSize();                       // the map is created while hidden: re-measure when its step appears
+    fitCity();
     if (scroll) {
       const h = steps[cur].querySelector('h2');
       h.tabIndex = -1; h.focus({ preventScroll: true });
@@ -780,7 +787,7 @@ function setupForm(k, host) {
     window.scrollTo(0, 0);
   });
 
-  new ResizeObserver(() => m.invalidateSize()).observe(host.querySelector('.pick'));
+  new ResizeObserver(() => { m.invalidateSize(); fitCity(); }).observe(host.querySelector('.pick'));
   m.invalidateSize();
   return { map: m, form, host };
 }
