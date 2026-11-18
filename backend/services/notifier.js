@@ -92,10 +92,10 @@ const EMAIL = {
     footer:   FOOTER,
     /* Table of details from the CLAIM (the claimant's contact details are shown inside TunTon, never here). */
     details: [
-      ['Markings', c => shorten(c.markings, 150)],
-      ['Seen at',  c => shorten(c.pet_location, 150)],
-      ['Date',     c => c.event_date],
-      ['Message',  c => shorten(c.description, 250)]
+      ['Markings',           c => shorten(c.markings, 150)],
+      ['Pet location',       c => remapPetLocation(c.pet_location)],
+      ['Details', c => shorten(c.description, 250)],
+      ['Date',               c => c.event_date]
     ]
   },
 
@@ -129,6 +129,17 @@ const CLAIM_MEANING = { found_it: 'they say they found this pet', my_pet: 'they 
 
 /* ---- Small helpers ---- */
 const shorten = (t, n) => { const x = String(t == null ? '' : t).replace(/\s+/g, ' ').trim(); return x.length > n ? x.slice(0, n - 1) + '\u2026' : x; };
+
+/* Remaps first-person pet_location values (chosen by the claimant) to third-person for the owner's e-mail. */
+const PET_LOCATION_REMAP = {
+  'with me':               'With them',
+  'at a shelter or vet':   'At a shelter or vet',
+  'left where i found it': 'Left where they found it'
+};
+const remapPetLocation = loc => {
+  const raw = shorten(loc, 150);
+  return PET_LOCATION_REMAP[raw.toLowerCase()] ?? raw;
+};
 
 /* Replaces {name} with vars.name. Unknown placeholders are left as they are so a typo is easy to spot. */
 const fill = (template, vars) => String(template).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
