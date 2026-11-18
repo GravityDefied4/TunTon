@@ -22,6 +22,45 @@ const getLookups = () => _lookups || (_lookups = (async () => {
   return data;
 })().catch(e => { _lookups = null; throw e; }));
 
+/* ---------- Barangay <-> map pin ----------
+   Barangay centres [lat, lng] (same data as backend/db/seed.sql). The barangay polygons are not loaded in the
+   database yet, so a pin belongs to the barangay whose centre is nearest, the same rule the server uses
+   (nearestBarangayId in db/reportQueries.js) when no barangay is sent. */
+const BRGY_POINTS = {
+  'Bacayao Norte': [16.0322, 120.3444], 'Bacayao Sur': [16.0224, 120.3449], 'Barangay I (T. Bugallon)': [16.044, 120.3364],
+  'Barangay II (Nueva)': [16.0425, 120.3394], 'Barangay IV (Zamora)': [16.0408, 120.336], 'Bolosan': [16.0467, 120.3646],
+  'Bonuan Binloc': [16.1018, 120.3798], 'Bonuan Boquig': [16.0764, 120.3565], 'Bonuan Gueset': [16.0696, 120.3339],
+  'Calmay': [16.0451, 120.3257], 'Carael': [16.0387, 120.3163], 'Caranglaan': [16.0315, 120.3496],
+  'Herrero-Perez': [16.0421, 120.3422], 'Lasip Chico': [16.0217, 120.3402], 'Lasip Grande': [16.0285, 120.3433],
+  'Lomboy': [16.0548, 120.3248], 'Lucao': [16.0141, 120.3241], 'Malued': [16.0289, 120.3354],
+  'Mamalingling': [16.0522, 120.3621], 'Mangin': [16.0361, 120.3678], 'Mayombo': [16.0384, 120.3468],
+  'Pantal': [16.0461, 120.3389], 'Poblacion Oeste': [16.0436, 120.3293], 'Pogo Chico': [16.0374, 120.3374],
+  'Pogo Grande': [16.0337, 120.3379], 'Pugaro Suit': [16.0655, 120.3227], 'Salapingao': [16.059, 120.3216],
+  'Salisay': [16.0414, 120.3716], 'Tambac': [16.0459, 120.3563], 'Tapuac': [16.0334, 120.3308], 'Tebeng': [16.0345, 120.3601]
+};
+/* Name of the barangay whose centre is closest to the point (flat-earth distance is plenty at city scale). */
+const barangayAt = (lat, lng) => {
+  const cos = Math.cos(lat * Math.PI / 180);
+  let best = '', bestD = Infinity;
+  for (const [name, [la, ln]] of Object.entries(BRGY_POINTS)) {
+    const d = (la - lat) ** 2 + ((ln - lng) * cos) ** 2;
+    if (d < bestD) { bestD = d; best = name; }
+  }
+  return best;
+};
+/* A spot on land for a barangay: its centre, or when the centre falls just outside the city outline
+   (Mamalingling), the nearest point inside, found by stepping towards the middle of the city. */
+const barangayPin = name => {
+  const c = BRGY_POINTS[name];
+  if (!c) return null;
+  if (inDagupan(c[0], c[1])) return L.latLng(c[0], c[1]);
+  for (let t = .05; t <= 1; t += .05) {
+    const la = c[0] + (DAGUPAN[0] - c[0]) * t, ln = c[1] + (DAGUPAN[1] - c[1]) * t;
+    if (inDagupan(la, ln)) return L.latLng(la, ln);
+  }
+  return L.latLng(DAGUPAN[0], DAGUPAN[1]);
+};
+
 const COLOR_ALIASES = { grey: 'gray' };
 const plainName = t => String(t || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
 
@@ -449,15 +488,48 @@ function setupForm(k, host) {
     if (zone) { if (circle) circle.setLatLng(ll).setRadius(+zone.value); else circle = L.circle(ll, { radius: +zone.value, color: '#d93636', weight: 2, fillOpacity: .1, interactive: false }).addTo(m); }
   };
   const OUTSIDE = 'TunTon only covers Dagupan City. Please choose a spot on land inside the city.';
-  const put = (ll, pan) => {
+  /* The barangay box and the pin follow each other: a pin (tap, drag, "use my location") selects the barangay
+     it is in, and choosing a barangay moves the pin to that barangay. */
+  const brgySelect = form.elements.brgy;
+  const brgyTag = L.control({ position: 'topleft' });   // small label on the map showing the barangay of the pin
+  let brgyTagEl = null;
+  brgyTag.onAdd = () => {
+    brgyTagEl = L.DomUtil.create('div', 'brgy-tag');
+    brgyTagEl.style.cssText = 'background:rgba(255,255,255,.95);color:#12301f;padding:4px 10px;border-radius:999px;font:600 12px/1.4 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3);pointer-events:none';
+    brgyTagEl.hidden = true;
+    return brgyTagEl;
+  };
+  brgyTag.addTo(m);
+  const showBrgyTag = name => { if (brgyTagEl) { brgyTagEl.hidden = !name; brgyTagEl.textContent = name ? 'Barangay: ' + name : ''; } };
+  const syncBrgyFromPin = ll => {
+    const name = barangayAt(ll.lat, ll.lng);
+    if (name && [...brgySelect.options].some(o => o.value === name || o.text === name)) {
+      brgySelect.value = name;
+      setFieldError(brgySelect, false);
+    }
+    showBrgyTag(name);
+  };
+  const put = (ll, pan, keepBrgy) => {
     if (!inDagupan(ll.lat, ll.lng)) { setFieldError(pickEl, true, OUTSIDE); return; }
     setFieldError(pickEl, false);
     if (!pin) { pin = L.marker(ll, { draggable: true, icon: pinIcon(k) }).addTo(m); pin.on('drag', draw);
+      /* the barangay updates live while the pin is being dragged */
+      pin.on('drag', () => { const at = pin.getLatLng(); if (inDagupan(at.lat, at.lng)) syncBrgyFromPin(at); });
       /* A pin dragged out of the city snaps back to its last valid spot. */
-      pin.on('dragend', () => { const at = pin.getLatLng(); if (inDagupan(at.lat, at.lng)) lastOk = at; else { pin.setLatLng(lastOk); draw(); setFieldError(pickEl, true, OUTSIDE); } }); }
+      pin.on('dragend', () => { const at = pin.getLatLng(); if (inDagupan(at.lat, at.lng)) { lastOk = at; syncBrgyFromPin(at); } else { pin.setLatLng(lastOk); draw(); syncBrgyFromPin(lastOk); setFieldError(pickEl, true, OUTSIDE); } }); }
     else pin.setLatLng(ll);
     lastOk = pin.getLatLng(); draw(); if (pan) m.setView(ll, 16);
+    if (keepBrgy) showBrgyTag(brgySelect.value); else syncBrgyFromPin(lastOk);
   };
+  brgySelect.addEventListener('change', () => {
+    const name = brgySelect.value, at = barangayPin(name);
+    if (!at) { showBrgyTag(''); return; }
+    /* a pin already inside the chosen barangay stays where it is */
+    if (pin && barangayAt(pin.getLatLng().lat, pin.getLatLng().lng) === name) { showBrgyTag(name); return; }
+    touched = true;
+    put(at, true, true);
+  });
+  form.addEventListener('reset', () => setTimeout(() => { showBrgyTag(''); if (pin) { pin.remove(); pin = null; } if (circle) { circle.remove(); circle = null; } }));
   if (claimTarget) m.setView([claimTarget.lat, claimTarget.lng], 16);
   m.on('click', e => put(e.latlng));
   zone?.addEventListener('change', () => pin && draw());
@@ -546,7 +618,7 @@ function setupForm(k, host) {
     if ('color' in r) form.querySelector('.pills[data-pills="color"]').pills.set(r.color || '');
     photos = (r.photos && r.photos.length ? r.photos : [r.photo]).filter(Boolean).map((d, i) => ({ name: 'Photo ' + (i + 1), size: r.photoIds ? 0 : Math.round(d.length * .75), data: d, pid: r.photoIds?.[i] }));   // pid = photo already saved on the server (editing a claim)
     drawFiles();
-    put(L.latLng(r.lat, r.lng), true);
+    put(L.latLng(r.lat, r.lng), true, !!r.brgy);   // a saved barangay is kept, otherwise it is worked out from the pin
     setupAutoGrowTextareas?.(form);
   };
   form.fillFrom = fillFrom;
