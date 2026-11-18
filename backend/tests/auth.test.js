@@ -81,10 +81,30 @@ test('login gives one identical message for wrong password, unknown email and Go
 });
 
 test('login blocks suspended accounts and rejects non-string fields', async () => {
-  rows.push({ user_id: 100, email: 's@example.com', full_name: 'Suspended', password_hash: await bcrypt.hash('password123', 4), role: 'user', status: 'suspended' });
-  assert.equal((await post('/login', { email: 's@example.com', password: 'password123' })).status, 403);
+  rows.push({ user_id: 100, email: 's@example.com', full_name: 'Suspended', password_hash: await bcrypt.hash('password123', 4), role: 'user', status: 'suspended', suspension_reason: 'Posted false reports' });
+  const blocked = await post('/login', { email: 's@example.com', password: 'password123' });
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.body.data.code, 'ACCOUNT_SUSPENDED');            // lets the website show the popup
+  assert.equal(blocked.body.data.reason, 'Posted false reports');       // the admin's reason, shown to this user only
+  assert.ok(!blocked.body.data.token, 'no session is created');
+  const wrongPw = await post('/login', { email: 's@example.com', password: 'wrong-password' });
+  assert.equal(wrongPw.status, 401, 'the reason is not revealed without the right password');
+  assert.ok(!JSON.stringify(wrongPw.body).includes('false reports'));
   assert.equal((await post('/login', { email: { $ne: '' }, password: 'x' })).status, 400);
   assert.equal((await post('/login', { email: 'juan@example.com', password: { a: 1 } })).status, 400);
+});
+
+test('GET /me re-issues the token with the role that is in the database now (a promotion needs no new login)', async () => {
+  const reg = await post('/register', { name: 'Promo Tee', email: 'promo@example.com', password: 'password123' });
+  assert.equal(jwt.verify(reg.body.data.token, process.env.JWT_SECRET).role, 'user');
+  rows.find(r => r.email === 'promo@example.com').role = 'admin';   // what UPDATE users SET role = 'admin' does
+  const res = await fetch(base + '/me', { headers: { Authorization: 'Bearer ' + reg.body.data.token } });
+  const body = await res.json();
+  assert.equal(res.status, 200);
+  assert.equal(body.data.user.role, 'admin');
+  const fresh = jwt.verify(body.data.token, process.env.JWT_SECRET);
+  assert.equal(fresh.role, 'admin');
+  assert.equal(fresh.sub, String(reg.body.data.user.id));
 });
 
 test('seed.sql password hash really is password123', () => {

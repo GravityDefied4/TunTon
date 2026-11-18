@@ -1038,6 +1038,36 @@ body.adm {
   border-color: var(--leaf)
 }
 
+/* Suspend popup: length options */
+#dlg-body .a-duration { border: 0; margin: 14px 0 4px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px }
+#dlg-body .a-duration legend { padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 800 }
+.a-duration__opt { cursor: pointer }
+.a-duration__opt input { position: absolute; opacity: 0; pointer-events: none }
+.a-duration__opt span { display: inline-block; padding: 8px 14px; border: 1.5px solid var(--line, #d5e2da); border-radius: 999px; font-size: 13px; font-weight: 800 }
+.a-duration__opt input:checked + span { background: var(--leaf); border-color: var(--leaf); color: #fff }
+.a-duration__opt input:focus-visible + span { outline: 2px solid var(--leaf); outline-offset: 2px }
+#dlg-body .a-duration__note { margin: 6px 0 14px; color: var(--muted); font-size: 12px }
+.a-susp-until { display: block; margin-top: 2px; color: var(--muted); font-size: 11px }
+
+/* Suspend popup: reason box, counter and the "reason required" message */
+#dlg-body textarea[aria-invalid="true"] { border-color: #c0392b }
+
+.a-reason-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px
+}
+
+#dlg-body .a-reason-error {
+  margin: 8px 0 0;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 800
+}
+
 @media(max-width:760px) {
 
   .a-report-preview-grid,

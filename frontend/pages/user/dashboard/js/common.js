@@ -273,7 +273,15 @@ const authFetch = async (path, opts = {}) => {
 
 /* Confirm the session with the server (a suspended or deleted account is signed out).
    If the server can't be reached the page keeps working with the stored session. */
-if (sess) authFetch('/auth/me').catch(() => {});
+/* The server also sends a fresh token carrying the role that is in the database now. If it differs from the one stored at
+   login (e.g. promoted to admin in MySQL), swap it in and move to the right dashboard: no log out / log in needed. */
+if (sess) authFetch('/auth/me').then(async res => {
+  if (!res.ok) return;
+  const d = (await res.json().catch(() => null))?.data;
+  if (!d?.token || !d.user || d.user.role === tokenRole()) return;
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ ...read(SESSION_KEY, sess), token: d.token, role: d.user.role })); } catch { /* storage full */ }
+  if (d.user.role === 'admin') location.replace(ADMIN_DASHBOARD);
+}).catch(() => {});
 /* The profile (display name, picture, phone...) belongs to ONE account, so it is stored
    under that account's id. (The old shared key 'tunton_profile' is no longer read.) */
 const profileKey = id => PROFILE_KEY + ':' + id;

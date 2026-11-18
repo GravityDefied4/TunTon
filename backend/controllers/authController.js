@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const users = require('../db/userStore');
 const { verifyGoogleCredential } = require('../services/google');
+const { accountSuspended } = require('../middleware/auth');   // 403 + { code: 'ACCOUNT_SUSPENDED', reason }
 
 /* Roles are never decided here. Every new account is a 'user'; promoting someone to 'admin' (or demoting) is done
    directly in the MySQL database only (UPDATE users SET role = 'admin' WHERE email = ...). Not via .env, not via the API. */
@@ -48,7 +49,7 @@ exports.google = async (req, res, next) => {
     }
     if (!user) user = await users.create(profile);
     else {
-      if (user.status !== 'active') return res.fail(403, 'This account is suspended.');
+      if (user.status !== 'active') return accountSuspended(res, user);
       user = await users.touchLogin(user.user_id, profile);
     }
     res.ok({ token: signToken(user), user: publicUser(user) }, 'Signed in.');
@@ -88,7 +89,7 @@ exports.login = async (req, res, next) => {
     const cred = await users.findCredentials(email);
     const ok = await bcrypt.compare(password, cred?.password_hash || DUMMY_HASH);
     if (!cred || !cred.password_hash || !ok) return res.fail(401, 'Incorrect email or password.');
-    if (cred.status !== 'active') return res.fail(403, 'This account is suspended.');
+    if (cred.status !== 'active') return accountSuspended(res, cred);
 
     const user = await users.markLogin(cred.user_id);
     res.ok({ token: signToken(user), user: publicUser(user) }, 'Signed in.');
@@ -96,7 +97,10 @@ exports.login = async (req, res, next) => {
 };
 
 /* GET /api/auth/me: who am I (also used to validate a stored token) */
-exports.me = (req, res) => res.ok({ user: publicUser(req.user) });
+/* The role lives inside the signed token, so a role changed in MySQL (promoted to admin, or demoted) would not show until the
+   person logged in again. requireAuth has just loaded the account from the database, so the token is re-issued from that:
+   the pages swap it in and move to the right dashboard. */
+exports.me = (req, res) => res.ok({ token: signToken(req.user), user: publicUser(req.user) });
 
 /* POST /api/auth/logout: JWTs are stateless, so the browser just discards it. */
 exports.logout = (req, res) => res.ok(null, 'Logged out.');

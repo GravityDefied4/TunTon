@@ -1,4 +1,5 @@
-/* E-mail notifications: (1) a new report strongly matches yours, (2) someone sent a claim on your report.
+/* E-mail notifications: (1) a new report strongly matches yours, (2) someone sent a claim on your report,
+   (3) an admin suspended your account.
    Match e-mails: when someone creates a report and it STRONGLY matches (score 80+) another user's report, the OWNER of that other report gets an e-mail.
 
    How it works (outbox pattern):
@@ -32,11 +33,12 @@ const firstName = full => String(full || '').trim().split(/\s+/)[0] || 'there';
 
 /* =====================================================================
    EMAIL TEMPLATES: edit this block to change what the e-mails say and look like.
-   There are two e-mails, EMAIL.match and EMAIL.claim. Placeholders in {braces} are filled in for each e-mail.
+   There are three e-mails, EMAIL.match, EMAIL.claim and EMAIL.suspension. Placeholders in {braces} are filled in for each e-mail.
      both:   {ownerName} first name of the person being e-mailed   {petName} name of THEIR report's pet
              {mine} "lost" or "found" (their report's type)
      match:  {theirs} type of the new report   {label} Strong / Likely / ...   {labelLower}   {percent} score, rounded
      claim:  {claimantName} first name of the person who sent the claim   {claimMeaning} what the claim says
+     suspension: {ownerName} first name of the suspended user (no pet placeholders), {reason} the admin's reason
    Put **double asterisks** around words to make them bold.
    The sender name/address is not here: it is MAIL_FROM in .env.
    ===================================================================== */
@@ -54,6 +56,7 @@ const EMAIL_STYLE = {   // look of the HTML version (inline styles, because e-ma
 };
 const LOGO_CID = 'tunton-logo';
 const FOOTER = 'You received this because you have an active report on TunTon.';
+const ACCOUNT_FOOTER = 'You received this because you have an account on TunTon.';
 
 const EMAIL = {
   /* 1. A new report strongly matches one of yours. */
@@ -93,6 +96,30 @@ const EMAIL = {
       ['Seen at',  c => shorten(c.pet_location, 150)],
       ['Date',     c => c.event_date],
       ['Message',  c => shorten(c.description, 250)]
+    ]
+  },
+
+  /* 3. An admin suspended your account. {reason} is the one the admin typed (it is also shown at login).
+     Permanent suspensions use intro/outro; timed ones use introTimed/outroTimed, where {length} is "3 days" etc. and
+     {ends} is the date and time the suspension is lifted automatically. */
+  suspension: {
+    subject:  'Your TunTon account has been suspended',
+    subjectTimed: 'Your TunTon account is suspended for {length}',
+    title:    'Account suspended',
+    subtitle: 'Your TunTon account is on hold',
+    subtitleTimed: 'Suspended for {length}, until {ends}',
+    greeting: 'Hi {ownerName},',
+    intro:    'An administrator **suspended your TunTon account**. While it is suspended you cannot log in, and your pet reports and claims are hidden.',
+    introTimed: 'An administrator **suspended your TunTon account for {length}**. The suspension ends on **{ends}**. Until then you cannot log in, and your pet reports and claims are hidden.',
+    outro:    'If you think this was a mistake, please contact the TunTon administrators. Your reports will come back if your account is reactivated.',
+    outroTimed: 'You do not need to do anything: your account is reactivated automatically on {ends} and your reports come back. If you think this was a mistake, please contact the TunTon administrators.',
+    button:   'Visit TunTon',
+    footer:   ACCOUNT_FOOTER,
+    details: [
+      ['Reason',   s => shorten(s.reason, 300)],
+      ['Length',   s => s.length],
+      ['Ends on',  s => s.ends],
+      ['Date',     s => s.date]
     ]
   }
 };
@@ -184,6 +211,23 @@ function buildClaimMessage({ ownerName, report, claim, url }) {
   return compose(EMAIL.claim, vars, claim, url);
 }
 
+/* Date and time as shown in e-mails, e.g. "November 21, 2026, 10:45 AM GMT+8". MAIL_TIMEZONE (default Asia/Manila)
+   decides the time zone, because the server may run in UTC. */
+const MAIL_TZ = () => process.env.MAIL_TIMEZONE || 'Asia/Manila';
+const fmtDateTime = ms => new Intl.DateTimeFormat('en-US', { timeZone: MAIL_TZ(), year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(ms));
+const fmtDate = ms => new Intl.DateTimeFormat('en-US', { timeZone: MAIL_TZ(), year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(ms));
+
+/* Suspension e-mail. reason = the admin's reason, date = text for the "Date" row, durationLabel = "3 days" / "Permanent",
+   endsText = when a timed suspension is lifted (empty for a permanent one). */
+function buildSuspensionMessage({ ownerName, reason, date, durationLabel = '', endsText = '', url }) {
+  const t = EMAIL.suspension, timed = Boolean(endsText);
+  const vars = { ownerName, reason, length: durationLabel, ends: endsText };
+  const tpl = timed
+    ? { ...t, subject: t.subjectTimed, subtitle: t.subtitleTimed, intro: t.introTimed, outro: t.outroTimed }
+    : t;
+  return compose(tpl, vars, { reason, length: durationLabel, ends: endsText, date }, url);
+}
+
 /* ---- Queue (called inside matchRunner's transaction) ----
    ownerReportId = the existing report whose owner is told; newReportId = the report that was just created. */
 async function queueMatchEmail(conn, { ownerReportId, newReportId, lostId, foundId, score, label }) {
@@ -224,6 +268,24 @@ async function queueClaimEmail(conn, claimId) {
     `INSERT IGNORE INTO email_notifications (user_id, kind, claim_id, to_email, subject, body_text, body_html)
      VALUES (?, 'claim', ?, ?, ?, ?, ?)`,
     [c.owner_id, claimId, c.email, msg.subject.slice(0, 200), msg.text, msg.html]);
+  return r.affectedRows === 1;
+}
+
+/* ---- Queue a suspension e-mail (called inside adminController.setUserStatus's transaction) ----
+   Goes into the same outbox as the other e-mails, so the batch worker sends it (EMAIL_BATCH_SIZE every
+   EMAIL_BATCH_INTERVAL_SECONDS) and a burst of suspensions never exceeds the mail provider's limit.
+   Called when the account is suspended, or suspended again with a new reason or length; repeating the same permanent suspension sends nothing new.
+   If the transaction rolls back, the e-mail disappears with it. */
+async function queueSuspensionEmail(conn, { userId, email, fullName, reason, durationLabel = 'Permanent', untilMs = null }) {
+  if (!email) return false;
+  const msg = buildSuspensionMessage({
+    ownerName: firstName(fullName), reason, date: fmtDate(Date.now()), durationLabel,
+    endsText: untilMs ? fmtDateTime(untilMs) : '', url: baseUrl()
+  });
+  const [r] = await conn.query(
+    `INSERT INTO email_notifications (user_id, kind, to_email, subject, body_text, body_html)
+     VALUES (?, 'suspension', ?, ?, ?, ?)`,
+    [userId, email, msg.subject.slice(0, 200), msg.text, msg.html]);
   return r.affectedRows === 1;
 }
 
@@ -288,7 +350,7 @@ async function sendBatch() {
 /* Called once from server.js. Does nothing (and says so) when SMTP_HOST is not set; queued e-mails then just wait. */
 function startWorker() {
   if (!process.env.SMTP_HOST) {
-    console.warn('[email] SMTP_HOST is not set: match e-mails are queued but not sent. See .env.example.');
+    console.warn('[email] SMTP_HOST is not set: e-mails (matches, claims, suspensions) are queued but not sent. See .env.example.');
     return null;
   }
   console.log(`[email] sending up to ${CFG.batchSize} e-mails every ${CFG.intervalMs / 1000}s${CFG.dailyLimit ? `, max ${CFG.dailyLimit}/day` : ''}`);
@@ -297,4 +359,4 @@ function startWorker() {
   return timer;
 }
 
-module.exports = { CFG, buildMessage, buildClaimMessage, queueMatchEmail, queueClaimEmail, sendBatch, startWorker };
+module.exports = { CFG, buildMessage, buildClaimMessage, buildSuspensionMessage, queueMatchEmail, queueClaimEmail, queueSuspensionEmail, sendBatch, startWorker };

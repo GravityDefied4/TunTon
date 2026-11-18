@@ -1025,6 +1025,53 @@ p {
     color: var(--danger-text);
 }
 
+/* ---------- Suspended-account popup (shown over the login form) ---------- */
+.suspended-dialog {
+  width: min(calc(100vw - 2rem), 440px);
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgba(5, 24, 16, .35);
+}
+.suspended-dialog::backdrop { background: rgba(5, 24, 16, .62); backdrop-filter: blur(4px); }
+.suspended-dialog[open] { animation: suspended-pop .2s ease-out; }
+@keyframes suspended-pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+.suspended-dialog__content { padding: 2rem 1.8rem 1.6rem; text-align: center; }
+.suspended-dialog__icon {
+  display: grid; place-items: center;
+  width: 60px; height: 60px; margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: var(--danger-bg); color: var(--danger-text);
+}
+.suspended-dialog__icon svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.suspended-dialog h2 { margin: 0 0 .4rem; font-size: 1.35rem; line-height: 1.25; color: var(--heading-strong); }
+.suspended-dialog__lead { margin: 0 0 1.1rem; color: var(--muted); }
+.suspended-dialog__reason {
+  padding: .9rem 1rem; text-align: left;
+  border: 1px solid var(--danger-line); border-radius: 12px;
+  background: var(--danger-bg);
+}
+.suspended-dialog__label {
+  display: block; margin-bottom: .25rem;
+  font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--danger-text);
+}
+.suspended-dialog__reason p { margin: 0; color: var(--ink); overflow-wrap: anywhere; white-space: pre-line; }
+.suspended-dialog__until { margin-top: .8rem }
+.suspended-dialog__left { margin-top: .25rem !important; color: var(--muted) !important; font-size: .9rem }
+.suspended-dialog__ok {
+  width: 100%; margin-top: 1.3rem; padding: .8rem 1rem;
+  border: 0; border-radius: 999px;
+  background: var(--forest); color: #fff;
+  font: inherit; font-weight: 800; cursor: pointer;
+}
+.suspended-dialog__ok:hover { background: var(--forest-dark); }
+.suspended-dialog__ok:focus-visible { outline: 3px solid var(--leaf); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .suspended-dialog[open] { animation: none; } }
+
 /* ---------- Auth dialog ---------- */
 .dialog {
     border: 0;
@@ -2119,6 +2166,7 @@ p {
         line-height: 1.4;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
+        line-clamp: 2;
     }
     .recovered-card .btn {
         flex: none;

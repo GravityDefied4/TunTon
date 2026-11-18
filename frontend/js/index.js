@@ -165,6 +165,30 @@ function finishLogin(body) {
 }
 
 /* POST to an auth endpoint. Returns the response body when it worked, otherwise shows the error and returns null. */
+/* A suspended account gets this popup (with the reason the admin wrote) instead of a red line under the form. */
+const suspendedDialog = document.getElementById('suspended-dialog');
+/* `until` is when a timed suspension is lifted (ISO date); null means permanent. */
+function timeLeft(ms) {
+  const mins = Math.max(1, Math.ceil(ms / 60000)), d = Math.floor(mins / 1440), h = Math.floor(mins % 1440 / 60), m = mins % 60;
+  return d ? `${d} day${d > 1 ? 's' : ''}${h ? ` ${h} hr` : ''} left` : h ? `${h} hr${m ? ` ${m} min` : ''} left` : `${m} min left`;
+}
+let untilTimer;
+function showSuspended(reason, until) {
+  document.getElementById('suspended-reason').textContent = reason || 'No reason was recorded. Please contact TunTon support.';
+  const box = document.getElementById('suspended-until-box'), end = until ? new Date(until) : null;
+  clearInterval(untilTimer);
+  box.hidden = !end;
+  if (end) {
+    document.getElementById('suspended-until').textContent = end.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+    const left = document.getElementById('suspended-left');
+    const tick = () => { const ms = end - Date.now(); left.textContent = ms > 0 ? timeLeft(ms) : 'Ending now. You can try logging in again.'; };
+    tick(); untilTimer = setInterval(tick, 30000);
+  }
+  if (!suspendedDialog.open) suspendedDialog.showModal();
+}
+document.getElementById('suspended-ok').addEventListener('click', () => suspendedDialog.close());
+suspendedDialog.addEventListener('close', () => clearInterval(untilTimer));
+
 async function postAuth(path, payload) {
   let res, body;
   try {
@@ -175,6 +199,7 @@ async function postAuth(path, payload) {
     return null;
   }
   if (!res.ok || !body.success) {
+    if (body?.data?.code === 'ACCOUNT_SUSPENDED') { showMessage(''); showSuspended(body.data.reason, body.data.until); return null; }   // email and Google logins
     if (body?.data?.code === 'NO_ACCOUNT') setTab('signup');
     showMessage(body?.message || 'Something went wrong. Please try again.', true);
     return null;
@@ -537,5 +562,22 @@ renderReports();   // placeholder text until the database answers
 loadReports().then(renderReports);
 
 renderSession();
+
+/* Pick up a role changed in the database (e.g. promoted to admin) without logging out and back in:
+   the server's /auth/me sends a fresh token, and the Dashboard button then points to the right dashboard. */
+async function refreshRole() {
+  const s = getSession();
+  if (!s) return;
+  try {
+    const res = await fetch(`${API}/auth/me`, { headers: { Authorization: 'Bearer ' + s.token } });
+    if (!res.ok) return;
+    const d = (await res.json()).data;
+    if (!d?.token || !d.user || d.user.role === s.role) return;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...s, token: d.token, role: d.user.role }));
+    renderSession();
+  } catch { /* offline: keep the stored session */ }
+}
+refreshRole();
+
 /* The Google script is async: wait for it, then set up the buttons. */
 window.addEventListener('load', initGoogle);

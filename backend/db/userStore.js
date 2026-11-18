@@ -12,7 +12,9 @@ const pool = require('./pool');
 
 const COLS = `user_id, google_sub, full_name, email, phone, facebook_profile_link, messenger_profile_link, barangay_id,
   (SELECT b.name FROM barangays b WHERE b.barangay_id = users.barangay_id) AS barangay,
-  picture_url AS picture, role, status, created_at, last_login_at`;
+  picture_url AS picture, role, status, suspension_reason,
+  IF(suspended_until IS NULL, NULL, UNIX_TIMESTAMP(suspended_until) * 1000) AS suspended_until_ms,
+  (status = 'suspended' AND suspended_until IS NOT NULL AND suspended_until <= NOW()) AS suspension_over, created_at, last_login_at`;
 
 const withGivenName = u => u && { ...u, given_name: (u.full_name || u.email).split(' ')[0] };
 
@@ -29,9 +31,16 @@ function fit({ email, full_name, picture }) {
   };
 }
 
-async function findOne(where, params) {
+/* A timed suspension whose time is up is lifted right here, so the person can log in the moment it ends
+   (the timer in services/suspensions.js would get to it within a minute anyway). */
+async function findOne(where, params, retry = true) {
   const [rows] = await pool.query(`SELECT ${COLS} FROM users WHERE ${where} LIMIT 1`, params);
-  return withGivenName(rows[0]) || null;
+  const row = rows[0];
+  if (row && row.suspension_over && retry) {
+    await require('../services/suspensions').liftExpired(row.user_id);
+    return findOne(where, params, false);
+  }
+  return withGivenName(row) || null;
 }
 
 module.exports = {
@@ -41,7 +50,15 @@ module.exports = {
 
   /* Login only: the one place password_hash is read. It is never part of COLS, so it cannot leak into API output. */
   async findCredentials(email) {
-    const [rows] = await pool.query('SELECT user_id, password_hash, status FROM users WHERE email = ? LIMIT 1', [email]);
+    const sql = `SELECT user_id, password_hash, status, suspension_reason,
+        IF(suspended_until IS NULL, NULL, UNIX_TIMESTAMP(suspended_until) * 1000) AS suspended_until_ms,
+        (status = 'suspended' AND suspended_until IS NOT NULL AND suspended_until <= NOW()) AS suspension_over
+      FROM users WHERE email = ? LIMIT 1`;
+    let [rows] = await pool.query(sql, [email]);
+    if (rows[0]?.suspension_over) {   // time is up: lift it now and read again
+      await require('../services/suspensions').liftExpired(rows[0].user_id);
+      [rows] = await pool.query(sql, [email]);
+    }
     return rows[0] || null;
   },
 

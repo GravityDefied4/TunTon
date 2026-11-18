@@ -22,6 +22,8 @@ The password should be your root MySQL password
 
 Or open MySQL Workbench, then File > Open SQL Script, and run `schema.sql` followed by `seed.sql`.
 
+`006_suspension_reason.sql` is only needed on a database built before suspension reasons existed: it adds the `suspension_reason` and `suspended_at` columns to `users` (a fresh `schema.sql` already has them). Run it once, then restart the server. Accounts suspended before this show "No reason was recorded" in the login popup.
+
 `003_report_claims.sql` is only needed on a database built before claims moved onto reports (it drops the old claims tables). A fresh `schema.sql` already includes it.
 
 What this does:

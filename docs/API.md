@@ -27,7 +27,7 @@ Errors keep the same shape (`success: false`, `data: null`, `message` = text saf
 |---|---|---|
 | GET | /health | `{ status: "ok" }` |
 | POST | /auth/google | `{ credential, mode: "login"\|"signup" }` (see AUTH.md) |
-| GET | /auth/me, POST /auth/logout | |
+| GET | /auth/me, POST /auth/logout | `/auth/me` returns `{ token, user }`: the token is re-issued with the role stored in the database, so a role changed in MySQL takes effect on the next page load without logging in again |
 | GET | /users/me | `data.user = { id, name, given_name, email, picture, role, phone }` |
 | PUT | /users/me | `{ full_name?, phone? }` send only what changes. `phone` like `09171234567` or `+63 917 123 4567` (spaces/hyphens ignored, stored as `09...`); `""` clears it |
 | POST | /users/me/picture | multipart, field `picture` (JPG/PNG/WebP, max 5 MB, content checked). The file goes in `backend/uploads/avatars/`; `users.picture_url` stores only the file name (Google pictures keep their full URL). The API returns the full `/uploads/avatars/<name>` path in `picture`. The old file is deleted. Returns `data.user` |
@@ -67,6 +67,8 @@ When someone sends a claim (`POST /claims`), the owner of the claimed report is 
 ### Match e-mails
 When a report is **created** (`POST /reports`) or edited and it is a **Strong** match (score 80+, `EMAIL_MIN_SCORE`) for another user's report, the owner of that other report is e-mailed (score label, short pet summary, link to the Matching tab with their report selected; the new reporter's contact details are never put in the e-mail). The percentage in the e-mail is the saved `matches.score`, and the Matching and report pages show that same saved score (they fall back to their own formula only for pairs with no saved match). One owner gets at most one e-mail per lost/found pair ever. E-mails are queued in the `email_notifications` table and sent by a background worker in batches (`EMAIL_BATCH_SIZE` every `EMAIL_BATCH_INTERVAL_SECONDS`, optional `EMAIL_DAILY_LIMIT`), so a burst of reports cannot exceed the mail provider's limits; unsent ones wait for the next batch. Configure SMTP in `.env` (see `.env.example`); with `SMTP_HOST` empty nothing is sent.
 
+When an admin suspends an account (`PATCH /admin/users/:id/status` with `suspended`), the user is also e-mailed a suspension notice with the admin's reason and, for a timed suspension, the length and the date it ends (shown in `MAIL_TIMEZONE`, default `Asia/Manila`). It goes through the same queue and batches as the e-mails above (`kind = 'suspension'`), is queued when the account is suspended or suspended again with a new reason or length (repeating the same permanent suspension sends nothing new), and is skipped when the user has no e-mail address. Existing databases need: `ALTER TABLE email_notifications MODIFY kind ENUM('match','claim','suspension') NOT NULL DEFAULT 'match';` and `ALTER TABLE users ADD COLUMN suspended_until DATETIME NULL AFTER suspended_at;`
+
 ## P5 Matches
 | Method | Endpoint | Notes |
 |---|---|---|
@@ -96,7 +98,7 @@ Claim flow: `pending` -> `approved` \| `rejected`. There is no proof upload step
 | Method | Endpoint | Notes |
 |---|---|---|
 | GET | /admin/users | `q`, `role`, `status`. Item: `{ id, name, email, role, status, created_at, last_login_at, report_count, claim_count }` (no phone) |
-| PATCH | /admin/users/:id/status | `{ status: "active"\|"suspended", reason? }`. Not yourself, not other admins. Suspended users get 403 on their next request |
+| PATCH | /admin/users/:id/status | `{ status: "active"\|"suspended", reason, duration }`. **`reason` is required when suspending** (max 300 characters, saved on the user as `suspension_reason`, cleared on reactivation). Not yourself, not other admins. Suspended users get 403 on their next request. Both logins (`POST /auth/login`, `POST /auth/google`) answer a suspended account with `403 { success: false, message: "This account is suspended.", data: { code: "ACCOUNT_SUSPENDED", reason } }` (`reason` is `null` for accounts suspended before reasons were saved); the website shows `reason` in a popup **`duration`** (only when suspending): `"3d"`, `"7d"`, `"30d"` or `"permanent"` (default). A timed suspension is lifted automatically when its time is up (a timer checks every minute, and the user's own login or request lifts it at once); their reports come back like a manual reactivation, and the audit log gets `user_reactivated` with `auto: true`. The 403 for a suspended login carries `data.until` (ISO date, `null` = permanent). |
 | GET | /admin/reports | All reports including `removed`, plus `reporter_name`, `reporter_email`, `claims_count`. Filters `type`, `status`, `species`, `barangay_id`, `user_id`, `q` |
 | PATCH | /admin/reports/:id/remove | `{ reason }` required. Hidden from users, kept in the database |
 | GET | /admin/reports/:id/claims | Every claim on one report, **including rejected ones**; existing rows only (empty list when nobody claimed it). Item: `{ id, type, status, created_at, claimant_name, claimant_email, message, photo_count, decision_reason }` (no phone) |

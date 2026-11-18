@@ -32,7 +32,7 @@ The frontend never trusts the decoded Google token by itself; only the server's 
 | POST | /api/auth/register | `{ name, email, password }` | Email sign-up. `data: { token, user }`, 201. Duplicate email: 409. Always role `user`. Password 8 to 72 chars, stored as a bcrypt hash |
 | POST | /api/auth/login | `{ email, password }` | `data: { token, user }`. Wrong email/password and Google-only accounts: the same 401. Suspended: 403. Limited to 10 failed tries per 15 min per IP |
 | POST | /api/auth/google | `{ credential, mode: "login"\|"signup" }` | `data: { token, user }`. Login with no account: 404 `data.code = "NO_ACCOUNT"`. Suspended: 403 |
-| GET | /api/auth/me | | Bearer. `data.user`. Used to validate a stored token |
+| GET | /api/auth/me | | Bearer. `data.user` plus a fresh `data.token` carrying the role currently in the database (so promoting or demoting an account in MySQL applies without a new login) |
 | POST | /api/auth/logout | | Stateless; browser discards the JWT |
 
 `user` = `{ id, name, given_name, email, picture, role }`. JWT payload = `{ sub: user_id, role, iat, exp }`.
@@ -63,6 +63,8 @@ CREATE TABLE users (
   phone         VARCHAR(30) NULL,                -- collected in Profile, hidden until a claim is approved
   role          ENUM('user','admin') NOT NULL DEFAULT 'user',
   status        ENUM('active','suspended') NOT NULL DEFAULT 'active',
+  suspension_reason VARCHAR(300) NULL,   -- written by the admin when suspending; shown to the user at login
+  suspended_at  TIMESTAMP NULL,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_login_at DATETIME NULL
 );

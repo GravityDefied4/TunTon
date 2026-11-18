@@ -7,6 +7,8 @@ const rq = require('../db/reportQueries');
 const { wrap } = require('../middleware/errorHandler');
 const v = require('../middleware/validate');
 const { runQuietly } = require('../services/matchRunner');
+const { queueSuspensionEmail } = require('../services/notifier');
+const { DURATIONS, hideReports, restoreReports } = require('../services/suspensions');
 
 const like = s => '%' + String(s).trim().slice(0, 100).replace(/[\\%_]/g, '\\$&') + '%';
 
@@ -34,7 +36,8 @@ exports.users = wrap(async (req, res) => {
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const [rows] = await pool.query(
-    `SELECT u.user_id AS id, u.full_name AS name, u.email, u.role, u.status, u.created_at, u.last_login_at,
+    `SELECT u.user_id AS id, u.full_name AS name, u.email, u.role, u.status, u.suspension_reason, u.created_at, u.last_login_at,
+            IF(u.suspended_until IS NULL, NULL, UNIX_TIMESTAMP(u.suspended_until) * 1000) AS suspended_until_ms,
             (SELECT COUNT(*) FROM pet_reports r WHERE r.user_id = u.user_id) AS report_count,
             (SELECT COUNT(*) FROM claims c WHERE c.claimant_user_id = u.user_id) AS claim_count
        FROM users u ${whereSql} ORDER BY u.created_at DESC, u.user_id DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
@@ -42,54 +45,56 @@ exports.users = wrap(async (req, res) => {
   res.ok({ items: rows, total, limit, offset });
 });
 
-/* Log action for a report hidden because its owner was suspended (kept apart from 'report_removed', an admin hiding it). */
-const HOLD_ACTION = 'report_hidden_owner_suspended';
-
-/* PATCH /api/admin/users/:id/status  { status: 'active' | 'suspended', reason? }  */
+/* PATCH /api/admin/users/:id/status  { status: 'active' | 'suspended', reason?, duration? }
+   duration (only when suspending): '3d' | '7d' | '30d' | 'permanent' (default). A timed suspension is lifted automatically
+   when its time is up (services/suspensions.js). */
 exports.setUserStatus = wrap(async (req, res) => {
   const id = v.id(req.params.id, 'user id');
   const status = v.oneOf(req.body?.status, ['active', 'suspended'], 'status');
-  const reason = v.text(req.body?.reason, 'reason', { max: 300 });
+  const reason = v.text(req.body?.reason, 'A reason for the suspension', { max: 300, required: status === 'suspended' });   // shown to the user when they try to log in
+  const durationKey = status === 'suspended' ? v.oneOf(req.body?.duration ?? 'permanent', Object.keys(DURATIONS), 'duration') : null;
+  const duration = durationKey && DURATIONS[durationKey];
   if (id === req.user.user_id) throw v.bad('You cannot change the status of your own account.');
 
-  const restored = [];
+  let restored = [];
   const user = await withTransaction(async conn => {
-    const [[u]] = await conn.query('SELECT user_id, role, status FROM users WHERE user_id = ? FOR UPDATE', [id]);
+    const [[u]] = await conn.query(
+      'SELECT user_id, role, status, email, full_name, suspension_reason, (suspended_until IS NULL) AS was_permanent FROM users WHERE user_id = ? FOR UPDATE', [id]);
     if (!u) throw Object.assign(new Error('User not found.'), { status: 404 });
     if (u.role === 'admin') throw Object.assign(new Error('Admin accounts cannot be suspended here.'), { status: 403 });
-    if (u.status !== status) {
-      await conn.query('UPDATE users SET status = ? WHERE user_id = ?', [status, id]);
-      await logActivity({ userId: req.user.user_id, action: status === 'suspended' ? 'user_suspended' : 'user_reactivated', table: 'users', id, details: { reason } }, conn);
-    }
-    /* Runs on every request, even when the status is already the same, so a user who was suspended before reports were
-       hidden with the suspension (or whose new reports slipped through) is brought in line by suspending again. */
+    let untilMs = null;
     if (status === 'suspended') {
-      /* Hide every visible report of this user until they are reactivated. Reports the admin already hid are skipped,
-         so they are never touched here and stay hidden after reactivation. The report's old status is logged. */
-      const [mine] = await conn.query("SELECT report_id, status FROM pet_reports WHERE user_id = ? AND status <> 'removed' FOR UPDATE", [id]);
-      for (const r of mine) {
-        await conn.query("UPDATE pet_reports SET status = 'removed' WHERE report_id = ?", [r.report_id]);
-        await logActivity({ userId: req.user.user_id, action: HOLD_ACTION, table: 'pet_reports', id: r.report_id, details: { previous_status: r.status, owner_suspended: id } }, conn);
+      const until = duration.days ? 'DATE_ADD(NOW(), INTERVAL ? DAY)' : 'NULL';
+      const params = duration.days ? [reason, duration.days, id] : [reason, id];
+      if (u.status !== 'suspended') {
+        await conn.query(`UPDATE users SET status = 'suspended', suspension_reason = ?, suspended_at = NOW(), suspended_until = ${until} WHERE user_id = ?`, params);
+        await logActivity({ userId: req.user.user_id, action: 'user_suspended', table: 'users', id, details: { reason, duration: duration.label } }, conn);
+      } else {
+        await conn.query(`UPDATE users SET suspension_reason = ?, suspended_until = ${until} WHERE user_id = ?`, params);   // already suspended: new reason and/or length
       }
+      if (duration.days) [[{ until_ms: untilMs }]] = await conn.query('SELECT UNIX_TIMESTAMP(suspended_until) * 1000 AS until_ms FROM users WHERE user_id = ?', [id]);
+      /* Tell the user by e-mail (queued here, sent later in batches by the notifier worker). Repeating the exact same
+         permanent suspension sends nothing new. */
+      if (u.status !== 'suspended' || u.suspension_reason !== reason || duration.days || !u.was_permanent) {
+        await queueSuspensionEmail(conn, { userId: id, email: u.email, fullName: u.full_name, reason, durationLabel: duration.label, untilMs });
+      }
+      /* Runs on every request, even when the status is already the same, so a user who was suspended before reports were
+         hidden with the suspension (or whose new reports slipped through) is brought in line by suspending again. */
+      await hideReports(conn, id, req.user.user_id);
     } else {
-      /* Bring back only the reports hidden BY the suspension: a report is one of those when its latest hide entry is the
-         suspension one. A report the admin hid on its own (a 'report_removed' entry) stays hidden. */
-      const [hidden] = await conn.query("SELECT report_id FROM pet_reports WHERE user_id = ? AND status = 'removed' FOR UPDATE", [id]);
-      for (const r of hidden) {
-        const [[last]] = await conn.query(
-          `SELECT action, JSON_UNQUOTE(JSON_EXTRACT(details, '$.previous_status')) AS previous_status FROM activity_logs
-            WHERE target_table = 'pet_reports' AND target_id = ? AND action IN ('report_removed', ?) ORDER BY log_id DESC LIMIT 1`, [r.report_id, HOLD_ACTION]);
-        if (last?.action !== HOLD_ACTION) continue;
-        const back = ['active', 'matched', 'resolved', 'closed'].includes(last.previous_status) ? last.previous_status : 'active';
-        await conn.query('UPDATE pet_reports SET status = ? WHERE report_id = ?', [back, r.report_id]);
-        await logActivity({ userId: req.user.user_id, action: 'report_restored', table: 'pet_reports', id: r.report_id, details: { restored_status: back, owner_reactivated: id } }, conn);
-        if (back === 'active') restored.push(r.report_id);
+      if (u.status !== 'active') {
+        await conn.query("UPDATE users SET status = 'active', suspension_reason = NULL, suspended_at = NULL, suspended_until = NULL WHERE user_id = ?", [id]);
+        await logActivity({ userId: req.user.user_id, action: 'user_reactivated', table: 'users', id, details: { reason } }, conn);
       }
+      restored = await restoreReports(conn, id, req.user.user_id);
     }
-    return { id, status };
+    return { id, status, suspended_until: untilMs ? new Date(untilMs).toISOString() : null };
   });
   for (const rid of restored) await runQuietly(rid, req.user.user_id);   // matches are refreshed for the reports that came back
-  res.ok({ user }, status === 'suspended' ? 'User suspended. Their reports and claims are hidden until they are reactivated.' : 'User reactivated. Their reports and claims are back.');
+  const until = user.suspended_until ? ` until ${new Date(user.suspended_until).toLocaleString('en-PH', { timeZone: process.env.MAIL_TIMEZONE || 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}` : '';
+  res.ok({ user }, status === 'suspended'
+    ? `User suspended${duration.days ? ` for ${duration.label}${until}` : ' permanently'}. Their reports and claims are hidden until the suspension ends or they are reactivated.`
+    : 'User reactivated. Their reports and claims are back.');
 });
 
 /* GET /api/admin/reports  ?type=&status=&species=&q=&barangay_id=&user_id=&limit=&offset=  (includes removed, with reporter name/email) */

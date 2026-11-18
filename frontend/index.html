@@ -216,6 +216,25 @@
   </main>
 
 
+  <!-- Shown over the login form when a suspended account tries to log in (js/index.js, showSuspended) -->
+  <dialog class="suspended-dialog" id="suspended-dialog" aria-labelledby="suspended-title" aria-describedby="suspended-reason">
+    <div class="suspended-dialog__content">
+      <div class="suspended-dialog__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.7 5.7l12.6 12.6"/></svg></div>
+      <h2 id="suspended-title">Your account has been suspended</h2>
+      <p class="suspended-dialog__lead">You can’t log in to TunTon right now.</p>
+      <div class="suspended-dialog__reason">
+        <span class="suspended-dialog__label">Reason</span>
+        <p id="suspended-reason"></p>
+      </div>
+      <div class="suspended-dialog__reason suspended-dialog__until" id="suspended-until-box" hidden>
+        <span class="suspended-dialog__label">Suspension ends</span>
+        <p id="suspended-until"></p>
+        <p class="suspended-dialog__left" id="suspended-left"></p>
+      </div>
+      <button type="button" class="suspended-dialog__ok" id="suspended-ok">OK</button>
+    </div>
+  </dialog>
+
   <dialog class="recovery-dialog" id="recovery-dialog" aria-labelledby="recovery-title">
     <button type="button" class="recovery-dialog__close" data-close-recovery aria-label="Close story">&times;</button>
     <div class="recovery-article">

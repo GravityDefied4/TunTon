@@ -27,6 +27,9 @@ CREATE TABLE users (
     picture_url    VARCHAR(255)               NULL,
     role           ENUM('user','admin')       NOT NULL DEFAULT 'user',
     status         ENUM('active','suspended') NOT NULL DEFAULT 'active',
+    suspension_reason VARCHAR(300) NULL,          -- why an admin suspended the account (shown to the user at login)
+    suspended_at   TIMESTAMP    NULL,
+    suspended_until DATETIME    NULL,          -- when a timed suspension ends and is lifted automatically; NULL = permanent (while status = 'suspended')
     created_at     TIMESTAMP                  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at  TIMESTAMP                  NULL,
     PRIMARY KEY (user_id),
@@ -57,7 +60,7 @@ CREATE TABLE pet_reports (
     lng               DECIMAL(9,6) GENERATED ALWAYS AS (ST_Longitude(location)) STORED,
     barangay_id       SMALLINT UNSIGNED NULL,
     search_radius_km  TINYINT UNSIGNED  NULL,
-    phone             VARCHAR(15)       NULL, --reminder: change phone to contact
+    phone             VARCHAR(15)       NULL, -- reminder: change phone to contact
     facebook_profile_link  VARCHAR(255) NULL,
     status            ENUM('active','matched','resolved','closed','removed') NOT NULL DEFAULT 'active',
     created_at        TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -152,10 +155,12 @@ CREATE TABLE claim_photos (
 -- kind 'match': a new report matches someone else's report; the OWNER of the existing report is the recipient.
 --   The unique key uq_notify_pair means a pair of reports notifies an owner only once, even if matching runs again.
 -- kind 'claim': someone sent a claim on a report; the OWNER of that report is the recipient (one e-mail per claim).
+-- kind 'suspension': an admin suspended the user's account; the suspended user is the recipient.
+--   Existing database? Run once: ALTER TABLE email_notifications MODIFY kind ENUM('match','claim','suspension') NOT NULL DEFAULT 'match';
 CREATE TABLE email_notifications (
     notification_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id          INT UNSIGNED NOT NULL,
-    kind             ENUM('match','claim') NOT NULL DEFAULT 'match',
+    kind             ENUM('match','claim','suspension') NOT NULL DEFAULT 'match',
     lost_report_id   INT UNSIGNED NULL,
     found_report_id  INT UNSIGNED NULL,
     claim_id         INT UNSIGNED NULL,

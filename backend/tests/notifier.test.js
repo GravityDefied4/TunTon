@@ -1,7 +1,7 @@
 /* Unit tests for match e-mails: message text and queueing rules (no database or SMTP needed). Run: npm test */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildMessage, buildClaimMessage, queueMatchEmail, queueClaimEmail } = require('../services/notifier');
+const { buildMessage, buildClaimMessage, buildSuspensionMessage, queueMatchEmail, queueClaimEmail, queueSuspensionEmail } = require('../services/notifier');
 
 const owner = { report_id: 5, user_id: 1, type: 'lost', pet_name: 'Bantay', species: 'Dog', breed: 'Aspin', color: 'Brown', size: 'medium', event_date: '2026-10-01', barangay: 'Pantal', email: 'owner@example.com', full_name: 'Ana Cruz', user_status: 'active' };
 const fresh = { report_id: 9, user_id: 2, type: 'found', pet_name: 'Unknown', species: 'Dog', breed: 'Aspin', color: 'Brown', size: 'medium', event_date: '2026-10-02', barangay: 'Lucao', email: 'finder@example.com', phone: '09171234567', full_name: 'Ben Lim', user_status: 'active' };
@@ -92,4 +92,47 @@ test('layout: title and subtitle in the header, **bold** markers become <strong>
   assert.match(m.html, /<strong>&quot;Bantay&quot;<\/strong>/);
   assert.ok(!m.text.includes('**') && !m.html.includes('**'));
   assert.match(m.text, /^Strong match found\nFor your lost pet "Bantay"/);
+});
+
+/* ---- Suspension e-mails ---- */
+test('suspension message tells the user why, and html in the reason is escaped', () => {
+  const m = buildSuspensionMessage({ ownerName: 'Ana', reason: 'Fake claims <script>x</script>', date: '2026-11-18', url: 'http://x' });
+  assert.equal(m.subject, 'Your TunTon account has been suspended');
+  assert.match(m.text, /Hi Ana,/);
+  assert.match(m.text, /Reason: Fake claims/);
+  assert.match(m.text, /Date: 2026-11-18/);
+  assert.ok(!m.html.includes('<script>') && !m.text.includes('**') && !m.html.includes('**'));
+});
+
+test('queues one suspension e-mail, and none when the user has no e-mail', async () => {
+  const calls = [];
+  const conn = { query: async (sql, p) => (calls.push([sql, p]), [{ affectedRows: 1 }]) };
+  assert.equal(await queueSuspensionEmail(conn, { userId: 7, email: 'ana@example.com', fullName: 'Ana Cruz', reason: 'Spam' }), true);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0][0], /'suspension'/);
+  assert.deepEqual(calls[0][1].slice(0, 2), [7, 'ana@example.com']);
+  assert.equal(await queueSuspensionEmail(conn, { userId: 7, email: '', fullName: 'Ana', reason: 'Spam' }), false);
+  assert.equal(calls.length, 1);
+});
+
+test('timed suspension e-mail shows the length and the date it ends; permanent one does not', () => {
+  const timed = buildSuspensionMessage({ ownerName: 'Ana', reason: 'Spam', date: 'November 18, 2026', durationLabel: '7 days', endsText: 'November 25, 2026, 10:45 AM GMT+8', url: 'http://x' });
+  assert.equal(timed.subject, 'Your TunTon account is suspended for 7 days');
+  assert.match(timed.text, /suspended your TunTon account for 7 days/);
+  assert.match(timed.text, /Length: 7 days/);
+  assert.match(timed.text, /Ends on: November 25, 2026,? (at )?10:45 AM GMT\+8/);
+  assert.match(timed.text, /reactivated automatically on November 25, 2026/);
+  const perm = buildSuspensionMessage({ ownerName: 'Ana', reason: 'Spam', date: 'November 18, 2026', durationLabel: 'Permanent', url: 'http://x' });
+  assert.equal(perm.subject, 'Your TunTon account has been suspended');
+  assert.match(perm.text, /Length: Permanent/);
+  assert.ok(!/Ends on/.test(perm.text) && !/\{\w+\}/.test(perm.text + timed.text), 'no unfilled placeholders');
+});
+
+test('queueSuspensionEmail puts the end date in a timed suspension e-mail', async () => {
+  const calls = [];
+  const conn = { query: async (sql, p) => (calls.push(p), [{ affectedRows: 1 }]) };
+  const until = Date.UTC(2026, 10, 25, 2, 45);   // 2026-11-25 10:45 in Manila
+  await queueSuspensionEmail(conn, { userId: 7, email: 'ana@example.com', fullName: 'Ana', reason: 'Spam', durationLabel: '7 days', untilMs: until });
+  assert.match(calls[0][3], /Ends on: November 25, 2026,? (at )?10:45 AM GMT\+8/);
+  assert.match(calls[0][1], /ana@example.com/);
 });

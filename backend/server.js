@@ -97,6 +97,7 @@ if (SSL_KEY_FILE && SSL_CERT_FILE) {
 server.listen(port, () => {
   console.log(`TunTon running at ${scheme}://localhost:${port}`);
   require('./services/notifier').startWorker();   // sends queued match e-mails in batches
+  require('./services/suspensions').startSweeper();   // lifts timed suspensions when their time is up
   if (PUBLIC_URL) {
     console.log(`Public address: ${PUBLIC_URL}`);
     console.log(`  Google sign-in: add exactly this under "Authorized JavaScript origins": ${PUBLIC_URL.replace(/\/+$/, '')}`);

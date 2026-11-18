@@ -114,7 +114,7 @@ function showDialog(title, content, actionLabel = '', action = null, danger = fa
   yes.onclick = async () => {
     if (!action) return closeDialog();
     yes.disabled = true;
-    try { await action(); closeDialog(); }
+    try { if (await action() !== false) closeDialog(); }   // an action can return false to keep the dialog open
     catch (e) { fail(e); }
     finally { yes.disabled = false; }
   };
@@ -155,7 +155,7 @@ $('#refresh-stats').addEventListener('click', loadStats);
 function userRow(u) {
   const id = pick(u, 'id', 'user_id'), name = pick(u, 'name', 'full_name'), suspended = u.status === 'suspended';
   return `<tr><td><div class="a-person"><span class="a-avatar">${esc(initials(name))}</span><span><b>${esc(name || 'Unnamed user')}</b><small>${esc(u.email)}</small></span></div></td>
-    <td>${badge(u.role || 'user')}</td><td>${badge(u.status)}</td><td>${date(u.created_at)}</td>
+    <td>${badge(u.role || 'user')}</td><td>${badge(u.status)}${suspended ? `<small class="a-susp-until">${u.suspended_until_ms ? 'Until ' + esc(datetime(Number(u.suspended_until_ms))) : 'Permanent'}</small>` : ''}</td><td>${date(u.created_at)}</td>
     <td class="r"><button class="a-btn ${suspended ? '' : 'a-btn--danger'}" data-user-action data-id="${esc(id)}" data-name="${esc(name || u.email)}" data-status="${suspended ? 'active' : 'suspended'}">${suspended ? 'Reactivate' : 'Suspend'}</button></td></tr>`;
 }
 async function loadUsers() {
@@ -169,9 +169,49 @@ async function loadUsers() {
     pageControls('u', state.users.total, state.users.offset, items.length); error('');
   } catch (e) { fail(e); setLoading('#u-rows', 5, 'Unable to load users.'); }
 }
+/* Suspend: the admin picks how long (3 / 7 / 30 days or permanent) and must write a reason first. Suspend saves both and
+   suspends; Cancel (or X / Esc) closes the popup and nothing changes. The user sees the reason and the end date in a popup
+   the next time they try to log in (and in an e-mail). A timed suspension is lifted automatically when its time is up. */
+const REASON_MAX = 300;
+const SUSPEND_OPTIONS = [['3d', '3 days'], ['7d', '7 days'], ['30d', '30 days'], ['permanent', 'Permanent']];
+function suspendDialog(id, name) {
+  showDialog('Suspend account?', `<p><b>${esc(name)}</b> will lose access to their TunTon account, and their reports and claims will be hidden until the suspension ends or they are reactivated.</p>
+    <fieldset class="a-duration"><legend>How long?</legend>${SUSPEND_OPTIONS.map(([val, text], i) =>
+      `<label class="a-duration__opt"><input type="radio" name="susp-duration" value="${val}"${i === 0 ? ' checked' : ''}><span>${text}</span></label>`).join('')}</fieldset>
+    <p class="a-duration__note" id="susp-note"></p>
+    <label class="a-flag-reason-label" for="susp-reason">Reason for suspension</label>
+    <textarea id="susp-reason" maxlength="${REASON_MAX}" rows="4" placeholder="e.g. Posting false or misleading reports" required aria-describedby="susp-hint"></textarea>
+    <div class="a-reason-meta"><span id="susp-hint">The user will see this reason when they try to log in.</span><span id="susp-count">0/${REASON_MAX}</span></div>
+    <p class="a-reason-error" id="susp-error" role="alert" hidden></p>`,
+  'Suspend', async () => {
+    const box = $('#susp-reason'), reason = box.value.trim();
+    if (!reason) {
+      box.setAttribute('aria-invalid', 'true');
+      const err = $('#susp-error'); err.textContent = 'Please write the reason for the suspension before suspending.'; err.hidden = false;
+      box.focus();
+      return false;   // keep the popup open
+    }
+    await api(EP.userStatus(id), { method: 'PATCH', body: { status: 'suspended', reason, duration: document.querySelector('input[name="susp-duration"]:checked')?.value || 'permanent' } });
+    state.users.offset = 0; await loadUsers();
+  }, true);
+  /* Shows the exact date and time a timed suspension would end. */
+  const note = () => {
+    const val = document.querySelector('input[name="susp-duration"]:checked')?.value, days = { '3d': 3, '7d': 7, '30d': 30 }[val];
+    $('#susp-note').textContent = days ? `Lifted automatically on ${datetime(Date.now() + days * 864e5)}.` : 'Stays suspended until you reactivate the account.';
+  };
+  document.querySelectorAll('input[name="susp-duration"]').forEach(r => r.addEventListener('change', note));
+  note();
+  const box = $('#susp-reason');
+  box.addEventListener('input', () => {
+    $('#susp-count').textContent = `${box.value.length}/${REASON_MAX}`;
+    box.removeAttribute('aria-invalid'); $('#susp-error').hidden = true;
+  });
+  box.focus();
+}
 $('#u-rows').addEventListener('click', e => {
   const b = e.target.closest('[data-user-action]'); if (!b) return;
   const to = b.dataset.status, suspend = to === 'suspended';
+  if (suspend) return suspendDialog(b.dataset.id, b.dataset.name);
   confirmAction(suspend ? 'Suspend account?' : 'Reactivate account?', `<b>${esc(b.dataset.name)}</b> will ${suspend ? 'lose access to' : 'regain access to'} their TunTon account.`, suspend ? 'Suspend' : 'Reactivate', async () => {
     await api(EP.userStatus(b.dataset.id), { method: 'PATCH', body: { status: to } });
     state.users.offset = 0; await loadUsers();
