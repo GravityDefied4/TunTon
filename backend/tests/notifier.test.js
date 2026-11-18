@@ -163,3 +163,16 @@ test('queues one reactivation e-mail into the outbox, and none when the user has
   assert.equal(await queueReactivationEmail(conn, { userId: 7, email: '', fullName: 'Ana' }), false);
   assert.equal(calls.length, 1);
 });
+
+test('suspension e-mail has no link or button and asks the user to reply instead', () => {
+  for (const durationLabel of ['Permanent', '7 days']) {
+    const m = buildSuspensionMessage({ ownerName: 'Ana', reason: 'Spam', date: 'November 18, 2026', durationLabel, endsText: durationLabel === 'Permanent' ? '' : 'November 25, 2026, 10:45 AM GMT+8', url: 'http://tunton.test' });
+    assert.ok(!m.text.includes('http://tunton.test') && !m.html.includes('http://tunton.test') && !m.html.includes('<a '), 'no link');
+    assert.ok(!/Visit TunTon/.test(m.text + m.html));
+    assert.match(m.text, /reply to this e-mail/);
+    assert.match(m.text, durationLabel === 'Permanent' ? /reply to this e-mail to appeal/ : /appeal before then, reply to this e-mail/);
+    assert.match(m.html, /<strong>reply to this e-mail( to appeal)?<\/strong>/);
+  }
+  const back = buildReactivationMessage({ ownerName: 'Ana', auto: true, date: 'x', url: 'http://tunton.test' });
+  assert.match(back.html, /<a href="http:\/\/tunton.test"/, 'other e-mails keep their button');
+});

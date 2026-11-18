@@ -103,7 +103,8 @@ const EMAIL = {
 
   /* 3. An admin suspended your account. {reason} is the one the admin typed (it is also shown at login).
      Permanent suspensions use intro/outro; timed ones use introTimed/outroTimed, where {length} is "3 days" etc. and
-     {ends} is the date and time the suspension is lifted automatically. */
+     {ends} is the date and time the suspension is lifted automatically. It has no button or link (button: ''): the user is
+   asked to reply to the e-mail, and the reply goes to MAIL_REPLY_TO (see sendBatch). */
   suspension: {
     subject:  'Your TunTon account has been suspended',
     subjectTimed: 'Your TunTon account is suspended for {length}',
@@ -113,9 +114,9 @@ const EMAIL = {
     greeting: 'Hi {ownerName},',
     intro:    'An administrator **suspended your TunTon account**. While it is suspended you cannot log in, and your pet reports and claims are hidden.',
     introTimed: 'An administrator **suspended your TunTon account for {length}**. The suspension ends on **{ends}**. Until then you cannot log in, and your pet reports and claims are hidden.',
-    outro:    'If you think this was a mistake, please contact the TunTon administrators. Your reports will come back if your account is reactivated.',
-    outroTimed: 'You do not need to do anything: your account is reactivated automatically on {ends} and your reports come back. If you think this was a mistake, please contact the TunTon administrators.',
-    button:   'Visit TunTon',
+    outro:    'If you think this was a mistake, **reply to this e-mail to appeal** and the TunTon administrators will review your case. Your reports will come back if your account is reactivated.',
+    outroTimed: 'You do not need to do anything: your account is reactivated automatically on {ends} and your reports come back. If you want to appeal before then, **reply to this e-mail** and the TunTon administrators will review your case.',
+    button:   '',   // no button: a suspended user cannot log in, so they are asked to reply to the e-mail instead
     footer:   ACCOUNT_FOOTER,
     details: [
       ['Reason',   s => shorten(s.reason, 300)],
@@ -178,7 +179,7 @@ const mailAttachments = () => hasLogo() ? [{ filename: 'tunton-logo.png', path: 
 
 /* Plain-text version (shown by e-mail apps that do not display HTML). */
 function renderText({ title, subtitle, greeting, intro, rows, outro, url, footer }) {
-  return [title, subtitle, '', greeting, '', plain(intro), '', ...rows.map(([k, v]) => `${k}: ${v}`), '', plain(outro), url, '', footer].join('\n');
+  return [title, subtitle, '', greeting, '', plain(intro), '', ...rows.map(([k, v]) => `${k}: ${v}`), '', plain(outro), ...(url ? [url] : []), '', footer].join('\n');
 }
 
 /* HTML version: coloured header with logo, white card, details box, centred button. Built from tables because
@@ -205,8 +206,8 @@ ${logo}
 <tr><td style="${F}padding:38px 40px 14px;font-size:17px;line-height:1.8;color:${st.text}">
 <p style="margin:0 0 18px;font-weight:bold;color:${st.heading}">${esc(greeting)}</p>
 <p style="margin:0 0 20px">${rich(intro)}</p>${box}
-<p style="margin:0 0 28px">${rich(outro)}</p>
-<p style="margin:0 0 24px;text-align:center"><a href="${esc(url)}" style="${F}display:inline-block;background-color:${st.buttonFrom};background-image:linear-gradient(135deg,${st.buttonFrom},${st.buttonTo});color:${st.buttonText};font-size:17px;font-weight:bold;text-decoration:none;padding:16px 38px;border-radius:8px">${esc(button)}</a></p>
+<p style="margin:0 0 ${button ? 28 : 24}px">${rich(outro)}</p>${button ? `
+<p style="margin:0 0 24px;text-align:center"><a href="${esc(url)}" style="${F}display:inline-block;background-color:${st.buttonFrom};background-image:linear-gradient(135deg,${st.buttonFrom},${st.buttonTo});color:${st.buttonText};font-size:17px;font-weight:bold;text-decoration:none;padding:16px 38px;border-radius:8px">${esc(button)}</a></p>` : ''}
 </td></tr>
 <tr><td style="${F}padding:4px 40px 30px;text-align:center;font-size:12px;line-height:1.5;color:${st.faint}">${esc(footer)}</td></tr>
 </table></div>`;
@@ -217,7 +218,7 @@ function compose(tpl, vars, data, url) {
   const parts = {
     title: fill(tpl.title, vars), subtitle: fill(tpl.subtitle, vars), greeting: fill(tpl.greeting, vars),
     intro: fill(tpl.intro, vars), rows: detailRows(tpl.details, data), outro: fill(tpl.outro, vars),
-    button: fill(tpl.button, vars), footer: fill(tpl.footer, vars), url
+    button: fill(tpl.button, vars), footer: fill(tpl.footer, vars), url: tpl.button ? url : ''   // an empty button = no button and no link
   };
   return { subject: fill(tpl.subject, vars), text: renderText(parts), html: renderHtml(parts) };
 }
@@ -378,10 +379,12 @@ async function sendBatch() {
     }
     if (room > 0) {
       const [batch] = await pool.query(
-        "SELECT notification_id, to_email, subject, body_text, body_html, attempts FROM email_notifications WHERE status = 'pending' ORDER BY notification_id LIMIT ?", [room]);
+        "SELECT notification_id, kind, to_email, subject, body_text, body_html, attempts FROM email_notifications WHERE status = 'pending' ORDER BY notification_id LIMIT ?", [room]);
       for (const [i, m] of batch.entries()) {
         try {
-          await tx.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to: m.to_email, subject: m.subject, text: m.body_text, html: m.body_html, attachments: mailAttachments() });
+          await tx.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to: m.to_email, subject: m.subject, text: m.body_text, html: m.body_html, attachments: mailAttachments(),
+            /* Suspended users are asked to reply, so their replies must reach a real inbox, not the no-reply sender. */
+            ...(m.kind === 'suspension' && process.env.MAIL_REPLY_TO ? { replyTo: process.env.MAIL_REPLY_TO } : {}) });
           await pool.query("UPDATE email_notifications SET status = 'sent', attempts = attempts + 1, sent_at = NOW(), last_error = NULL WHERE notification_id = ?", [m.notification_id]);
           out.sent++;
         } catch (e) {
