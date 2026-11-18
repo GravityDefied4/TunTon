@@ -836,31 +836,92 @@ main.is-choosing .type-card b {
   min-height: 3rem;
 }
 
-/* ---------- "About your pet" step: tidy, evenly aligned fields ---------- */
-.step-about .step-body {
+/* ---------- "About your pet" step: grouped sections, one radius scale ----------
+   Radius scale (outer to inner, each shape is a little rounder than what it sits inside):
+     step card 24px  >  controls (inputs, tag box, menu) 14px  >  tags and menu options 8px
+   Choice chips are buttons, so they are fully round (pill) like the Back / Next buttons.
+   Fully round shapes (the step number, the remove button on a tag) stay circles. */
+.step-about {
+  --r-control: 14px;
+  --r-tag: 8px;
+  --ctl-h: 3.25rem;
+}
+
+/* The step body becomes a stack of titled groups instead of one long grid */
+.step-about .about-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.about-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.about-group:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.about-group:last-child {
+  padding-bottom: 0;
+}
+
+.about-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   align-items: start;
-  row-gap: 1.5rem;
+  gap: 1.15rem 1.25rem;
+  min-width: 0;
 }
 
-/* every control in this step is the same height, so each row lines up */
-.step-about input[type=text],
-.step-about .pills {
+.about-fields > * {
+  min-width: 0;
+}
+
+.step-about .form label,
+.step-about .form legend,
+.step-about label,
+.step-about legend {
+  margin-bottom: .45rem;
+  font-size: .92rem;
+}
+
+/* Text boxes and the tag box: same height, same radius */
+.step-about .about-fields input[type=text],
+.step-about .about-fields .pills {
   box-sizing: border-box;
-  min-height: 3.4rem;
+  min-height: var(--ctl-h);
+  border-radius: var(--r-control);
 }
 
-.step-about .pills {
-  padding-block: .25em;
+.step-about .about-fields .pills {
+  padding: .25em .5em;
 }
 
-/* Sex and Size: the choices share the column width evenly, like the boxes beside them */
-.step-about fieldset:not(.full) .chips {
-  flex-wrap: nowrap;
+/* The typing area shrinks so it stays on the same line as the first tag and the box keeps one height */
+.step-about .about-fields .pills input.pills-input {
+  flex: 1 1 5ch;
+  min-width: 5ch;
+  text-overflow: ellipsis;
+}
+
+/* Tags sit inside the box, so they are rounded to match its corners */
+.step-about .pill {
+  border-radius: var(--r-tag);
+}
+
+/* Choice chips: equal-width segments, fully rounded like the Back / Next buttons */
+.step-about .chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: .6rem;
 }
 
-.step-about fieldset:not(.full) .chips label {
-  flex: 1 1 0;
+.step-about .chips label {
   min-width: 0;
 }
 
@@ -868,23 +929,76 @@ main.is-choosing .type-card b {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: .45em;
   box-sizing: border-box;
-  min-height: 3.4rem;
-  padding: .45em 1.3em;
+  width: 100%;
+  min-height: var(--ctl-h);
+  padding: .45em .4em;
+  border-radius: var(--radius-sm);
   text-align: center;
 }
 
-.step-about fieldset:not(.full) .chips span {
-  padding-inline: .5em;
+.step-about .chips i {
+  display: inline-flex;
+  font-style: normal;
+  line-height: 1;
+}
+
+.step-about .chips i svg {
+  width: 1.25em;
+  height: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.step-about .chips input:checked+span {
+  box-shadow: 0 3px 10px rgba(15, 107, 63, .25);
+}
+
+/* Autocomplete menu: rounded like the controls, options nested inside it */
+.step-about .pills-options {
+  padding: .35rem;
+  border-radius: var(--r-control);
+}
+
+.step-about .pills-option {
+  border-radius: var(--r-tag);
+}
+
+.step-about .about-lock-note {
+  border-radius: var(--r-control);
 }
 
 @media (max-width: 1000px) {
-  .step-about .step-body { row-gap: 1.25rem; }
+  .about-group {
+    grid-template-columns: 1fr;
+    gap: .9rem;
+    padding-block: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .about-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
-  .step-about fieldset:not(.full) .chips { flex-wrap: wrap; }
-  .step-about fieldset:not(.full) .chips label { flex: 1 1 auto; }
+  .step-about {
+    --ctl-h: 3rem;
+  }
+
+  .step-about .chips {
+    gap: .45rem;
+  }
+
+  .step-about .chips span {
+    padding-inline: .3em;
+    font-size: .92rem;
+  }
 }
 
 /* ---------- Hover effects inside the form ---------- */
@@ -991,3 +1105,201 @@ main.is-choosing .type-card b {
 }
 .pills-option:hover, .pills-option.is-active { background: var(--mint, #eaf5ed); color: var(--forest, #174b35); }
 .pills-option:focus-visible { outline: 2px solid var(--leaf, #4c9b63); outline-offset: -2px; }
+
+/* Tag boxes (Breed, Main color): the container draws the border and focus ring,
+   so the typing area inside must never draw its own outline, border or shadow
+   (otherwise a second ring shows inside the box on hover / focus). */
+.form .pills input.pills-input[type=text],
+.form .pills input.pills-input[type=text]:hover,
+.form .pills input.pills-input[type=text]:focus,
+.form .pills input.pills-input[type=text]:focus-visible,
+.step-about .about-fields .pills input.pills-input[type=text],
+.step-about .about-fields .pills input.pills-input[type=text]:hover,
+.step-about .about-fields .pills input.pills-input[type=text]:focus,
+.step-about .about-fields .pills input.pills-input[type=text]:focus-visible {
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  min-height: 0;
+}
+
+/* ---------- Shake a field that is invalid or incomplete (stays red via .is-invalid) ---------- */
+.is-shaking {
+  animation: field-shake .4s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes field-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-shaking { animation: none; }
+}
+
+/* "Mixed breed" tag that is added automatically (no remove button) */
+.pill--auto {
+  padding-right: .9em;
+}
+
+/* ---------- Size guide (hint, toggle button and panel under the Size chips) ---------- */
+.size-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem .9rem;
+  margin-top: .65rem;
+}
+
+.size-guide-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .4em;
+  padding: .3em .85em .3em .6em;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--forest);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.size-guide-toggle:hover {
+  border-color: var(--leaf);
+  background: var(--surface-tint);
+}
+
+.size-guide-toggle:focus-visible {
+  outline: 3px solid var(--leaf);
+  outline-offset: 2px;
+}
+
+.size-guide-toggle svg {
+  width: 1.15em;
+  height: 1.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.size-guide-toggle[aria-expanded="true"] {
+  background: var(--mint);
+  border-color: var(--leaf);
+}
+
+:root[data-theme="dark"] .size-guide-toggle {
+  color: var(--leaf-text);
+}
+
+.size-hint {
+  color: var(--ink);
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.size-hint:empty {
+  display: none;
+}
+
+.size-guide {
+  margin-top: .75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control, 14px);
+  background: var(--surface-tint);
+}
+
+.size-guide[hidden] {
+  display: none;
+}
+
+.size-guide-title {
+  margin: 0 0 .6rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.size-guide-note {
+  margin: -.25rem 0 .7rem;
+  font-size: .88rem;
+  color: var(--ink);
+  opacity: .8;
+}
+
+.size-guide-list {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.size-guide-list li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: .75rem;
+  align-items: start;
+  padding: .7rem .85rem;
+  border: 2px solid transparent;
+  border-radius: var(--r-tag, 8px);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.size-guide-list li.is-picked {
+  border-color: var(--leaf);
+  background: var(--mint);
+}
+
+.size-guide-list strong {
+  font-family: var(--font-display, inherit);
+  font-size: 1rem;
+}
+
+.size-guide-list li > span {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+  font-size: .92rem;
+}
+
+.size-guide-list b {
+  font-weight: 700;
+}
+
+.size-guide-list em {
+  font-style: normal;
+}
+
+.size-guide-list small {
+  font-size: .85rem;
+  opacity: .8;
+}
+
+.size-guide-tip {
+  margin: .8rem 0 0;
+  font-size: .86rem;
+  line-height: 1.45;
+  color: var(--ink);
+  opacity: .85;
+}
+
+@media (max-width: 480px) {
+  .size-guide {
+    padding: .85rem .8rem;
+  }
+
+  .size-guide-list li {
+    grid-template-columns: 4.4rem minmax(0, 1fr);
+    gap: .55rem;
+  }
+}

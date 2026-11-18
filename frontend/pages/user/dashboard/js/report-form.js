@@ -223,6 +223,18 @@ function getFieldErrorNode(el, create = true) {
   return msg;
 }
 
+/* Quick side-to-side shake on the invalid field. Restarts every time validation fails. */
+function shakeField(el) {
+  const target = getFieldAnchor(el);
+  if (!target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  target.classList.remove('is-shaking');
+  void target.offsetWidth;   // force reflow so the animation can replay
+  target.classList.add('is-shaking');
+  target.addEventListener('animationend', e => {
+    if (e.target === target) target.classList.remove('is-shaking');
+  }, { once: true });
+}
+
 function setFieldError(el, invalid, message) {
   if (!el) return;
   const box = el.closest(FIELD_BOX);
@@ -233,6 +245,8 @@ function setFieldError(el, invalid, message) {
   if (fieldset && !box?.matches('.pills, .drop, .pick')) fieldset.classList.toggle('is-invalid', invalid);
   if (el.matches('input:not([type=radio]), select, textarea')) el.classList.toggle('is-invalid', invalid && !box?.matches('.pills'));
   if (control && control.setAttribute) control.setAttribute('aria-invalid', invalid ? 'true' : 'false');
+
+  if (invalid) shakeField(el);
 
   const msg = getFieldErrorNode(el, invalid);
   if (!msg) return;
@@ -315,15 +329,31 @@ function setupPills(form) {
       return selected === 'Other' ? (form.elements.otherSpecies?.value.trim() || 'Other') : selected;
     };
     let list = [];
+    /* Breed box only: "Mixed breed" is never picked by hand. It is added automatically once two or more
+       breeds are chosen, and taken away again when fewer than two are left. */
+    const isBreed = box.dataset.pills === 'breed';
+    const MIXED = 'Mixed breed';
+    const isMixed = v => normalizeOptionValue(v) === 'mixed breed';
+    const realBreeds = () => list.filter(v => !isMixed(v) && normalizeOptionValue(v) !== 'unknown').length;
+    const isAutoMixed = v => isBreed && isMixed(v) && realBreeds() >= 2;
+    const syncMixed = () => {
+      if (!isBreed) return;
+      const real = realBreeds();
+      if (real >= 2) list = list.filter(v => !isMixed(v)).concat(MIXED);        // always last
+      else if (real === 1) list = list.filter(v => !isMixed(v));                // 0 is kept: an older saved "Mixed breed"
+    };
     const draw = () => {
+      syncMixed();
       box.querySelectorAll('.pill').forEach(p => p.remove());
-      list.forEach((t, i) => input.insertAdjacentHTML('beforebegin', `<span class="pill">${esc(t)}<button type="button" data-i="${i}" aria-label="Remove ${esc(t)}">&times;</button></span>`));
+      list.forEach((t, i) => input.insertAdjacentHTML('beforebegin', isAutoMixed(t)
+        ? `<span class="pill pill--auto" title="Added automatically when you pick two or more breeds">${esc(t)}</span>`
+        : `<span class="pill">${esc(t)}<button type="button" data-i="${i}" aria-label="Remove ${esc(t)}">&times;</button></span>`));
       hidden.value = list.join(', ');
     };
     const add = raw => {
       const typed = String(raw || '').trim().replace(/^[,;]+|[,;]+$/g, '');
       if (!typed) return;
-      const vals = parsePillValues(typed, box.dataset.pills, speciesNow());
+      const vals = parsePillValues(typed, box.dataset.pills, speciesNow()).filter(v => !(isBreed && isMixed(v)));
       /* remember words that were not on the suggestion list, so validation can name them in its error message */
       box.dataset.rejected = splitPillValues(typed, box.dataset.pills).filter(v => !isValidPillValue(box.dataset.pills, v, speciesNow())).join(' ');
       if (!vals.length) return;
@@ -342,7 +372,7 @@ function setupPills(form) {
     menu.hidden = true;
     box.appendChild(menu);
     let activeOption = -1;
-    const optionValues = () => [...(sourceList?.options || [])].map(o => o.value).filter(Boolean);
+    const optionValues = () => [...(sourceList?.options || [])].map(o => o.value).filter(v => v && !(isBreed && isMixed(v)));
     const closeMenu = () => { menu.hidden = true; activeOption = -1; };
     const chooseOption = value => { add(value); input.value = ''; draw(); closeMenu(); input.focus(); };
     const showMenu = () => {
@@ -388,7 +418,11 @@ function setupPills(form) {
         e.preventDefault(); chooseOption(menu.children[activeOption].dataset.value);
       } else if (e.key === 'Escape') { closeMenu(); input.setAttribute('aria-expanded', 'false'); }
       else if (e.key === 'Enter') { e.preventDefault(); commit(); closeMenu(); }
-      else if (e.key === 'Backspace' && !input.value && list.length) { list.pop(); draw(); }
+      else if (e.key === 'Backspace' && !input.value && list.length) {
+        let i = list.length - 1;
+        while (i >= 0 && isAutoMixed(list[i])) i--;
+        if (i >= 0) { list.splice(i, 1); draw(); }
+      }
     });
     input.addEventListener('blur', () => setTimeout(() => {
       if (!box.contains(document.activeElement)) {
@@ -422,6 +456,92 @@ function setupPills(form) {
   });
 }
 
+/* ---------- Size guide ----------
+   Small / Medium / Large mean different things for a cat and a dog, so the guide follows the chosen species.
+   It shows a one-line hint under the chips and a "Size guide" panel with weight, height and familiar examples. */
+const SIZE_GUIDE = {
+  Dog: {
+    title: 'Size guide for dogs',
+    rows: [
+      ['Small', 'Up to 10 kg', 'Under 35 cm tall at the shoulder', 'Shih Tzu, Chihuahua, Pomeranian'],
+      ['Medium', '10 to 25 kg', '35 to 55 cm tall at the shoulder', 'Aspin, Beagle, Cocker Spaniel'],
+      ['Large', 'Over 25 kg', 'Over 55 cm tall at the shoulder', 'Labrador, German Shepherd, Husky'],
+    ],
+  },
+  Cat: {
+    title: 'Size guide for cats',
+    rows: [
+      ['Small', 'Up to 3.5 kg', 'Kittens and slim, petite cats', 'Kitten, young Puspin'],
+      ['Medium', '3.5 to 5 kg', 'Most house cats', 'Puspin, Persian, Siamese'],
+      ['Large', 'Over 5 kg', 'Big, sturdy build', 'Maine Coon, Ragdoll, large males'],
+    ],
+  },
+  Other: {
+    title: 'Size guide for other animals',
+    rows: [
+      ['Small', 'Fits in your hands', 'Smaller than a cat', 'Hamster, small bird'],
+      ['Medium', 'About the size of a cat', 'Easy to carry in one arm', 'Rabbit, parrot'],
+      ['Large', 'Bigger than a cat', 'Hard to carry for long', 'Large rabbit, goat'],
+    ],
+  },
+};
+SIZE_GUIDE.none = {
+  title: 'Size guide',
+  rows: [
+    ['Small', 'Fits in your hands or lap', '', 'Hamster, kitten, small dog'],
+    ['Medium', 'Easy to carry in your arms', '', 'Cat, medium dog'],
+    ['Large', 'Heavy to lift for long', '', 'Large dog'],
+  ],
+};
+
+/* Adds the hint, the toggle button and the panel after the Size chips. Returns a function that redraws them
+   (call it when the species or the chosen size changes). */
+function setupSizeGuide(form, k) {
+  const chips = form.querySelector('.size-choice');
+  if (!chips) return () => {};
+  const id = k + '-size-guide';
+  chips.insertAdjacentHTML('afterend',
+    '<div class="size-help">' +
+      '<button type="button" class="size-guide-toggle" aria-expanded="false" aria-controls="' + id + '">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>' +
+        '<span>Size guide</span>' +
+      '</button>' +
+      '<span class="size-hint" aria-live="polite"></span>' +
+    '</div>' +
+    '<div class="size-guide" id="' + id + '" hidden></div>');
+  const toggle = form.querySelector('.size-guide-toggle');
+  const hint = form.querySelector('.size-hint');
+  const panel = form.querySelector('#' + id);
+
+  const render = () => {
+    const sp = form.querySelector('input[name="species"]:checked')?.value || '';
+    const guide = SIZE_GUIDE[sp] || SIZE_GUIDE.none;
+    const picked = form.querySelector('input[name="size"]:checked')?.value || '';
+    const row = guide.rows.find(r => r[0] === picked);
+    const who = sp === 'Dog' || sp === 'Cat' ? ' ' + sp.toLowerCase() : '';
+    hint.textContent = row ? row[0] + who + ': ' + row[1].charAt(0).toLowerCase() + row[1].slice(1) : '';
+    panel.innerHTML =
+      '<p class="size-guide-title">' + guide.title + '</p>' +
+      (sp ? '' : '<p class="size-guide-note">Choose a species above to see exact ranges.</p>') +
+      '<ul class="size-guide-list">' + guide.rows.map(r =>
+        '<li' + (r[0] === picked ? ' class="is-picked"' : '') + '>' +
+          '<strong>' + r[0] + '</strong>' +
+          '<span><b>' + r[1] + '</b>' + (r[2] ? '<em>' + r[2] + '</em>' : '') + '<small>e.g. ' + r[3] + '</small></span>' +
+        '</li>').join('') + '</ul>' +
+      '<p class="size-guide-tip">Go by how big the pet is now, not how big it may grow. If it is between two sizes, pick the closer one. A rough guess is fine.</p>';
+  };
+
+  toggle.addEventListener('click', () => {
+    const open = panel.hidden;
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.querySelector('span').textContent = open ? 'Hide size guide' : 'Size guide';
+  });
+  form.querySelectorAll('input[name="size"]').forEach(r => r.addEventListener('change', render));
+  render();
+  return render;
+}
+
 function setupForm(k, host) {
   const form = host.querySelector('form'), err = host.querySelector('.err');
   const pickEl = host.querySelector('.pick');
@@ -444,6 +564,7 @@ function setupForm(k, host) {
     const opts = sp === 'Other' ? (OTHER_BREEDS[otherInput.value.trim().toLowerCase()] || []) : (BREEDS[sp] || []);
     breedList.innerHTML = opts.map(b => `<option value="${esc(b)}"></option>`).join('');
   };
+  const syncSize = setupSizeGuide(form, k);
   const syncSpecies = () => {
     const sp = species(), other = sp === 'Other';
     otherBox.hidden = !other; otherInput.disabled = !other; otherInput.required = other;
@@ -453,6 +574,7 @@ function setupForm(k, host) {
     fillBreeds();
     const colorList = form.querySelector('#' + k + '-color-list');
     if (colorList) colorList.innerHTML = reportColorsFor(sp, otherInput.value).map(c => `<option value="${esc(c)}"></option>`).join('');
+    syncSize();
   };
   form.syncSpecies = syncSpecies;
   const clearSpeciesDependentFields = () => {
@@ -511,6 +633,7 @@ function setupForm(k, host) {
         refreshOtherAnimalOptions();
         form.elements.name.value = foundReport.name || '';
         form.elements.size.value = foundReport.size || '';
+        syncSize();
         breedBox.pills.set(foundReport.breed || '');
         form.querySelector('.pills[data-pills="color"]').pills.set(foundReport.color || '');
         form.elements.markings.value = foundReport.markings || '';
@@ -660,6 +783,7 @@ function setupForm(k, host) {
     syncSpecies();
     if (r.species === 'Other') otherInput.value = r.otherSpecies || '';
     set('name', r.name); set('size', r.size); set('sex', r.sex); set('markings', r.markings);
+    syncSize();
     set('description', r.description); set('howfound', r.howFound); set('where', r.where);
     set('brgy', r.brgy); set('date', r.date); set('zone', r.zone || ''); set('contact', r.contact); set('facebook', r.facebook || '');
     if ('breed' in r) breedBox.pills.set(r.breed || '');
