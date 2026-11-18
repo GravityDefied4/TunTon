@@ -127,6 +127,9 @@
     border-radius: 26px;
     background: linear-gradient(180deg, var(--white), color-mix(in srgb, var(--tone-soft) 55%, var(--white)));
   }
+  :root[data-theme="dark"] main.is-choosing .type-pick .type-card {
+    background: var(--surface);
+  }
   main.is-choosing .type-pick .type-card svg {
     width: 4.5rem; height: 4.5rem; padding: 1.1rem;
     margin: 0 0 .35rem;
