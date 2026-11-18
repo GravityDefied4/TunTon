@@ -20,13 +20,13 @@ const withGivenName = u => u && { ...u, given_name: (u.full_name || u.email).spl
 
 const badRequest = message => Object.assign(new Error(message), { status: 400 });
 
-/* schema.sql limits: email 50, full_name 100, picture_url 255. Strict mode would
+/* schema.sql limits: email 50, full_name 60, picture_url 255. Strict mode would
    otherwise turn an over-long Google value into a 500. */
 function fit({ email, full_name, picture }) {
   if (email.length > 50) throw badRequest('Your Google email is too long for TunTon (max 50 characters).');
   return {
     email,
-    full_name: (full_name || email).slice(0, 100),
+    full_name: (full_name || email).slice(0, 60),
     picture: picture && picture.length <= 255 ? picture : null
   };
 }

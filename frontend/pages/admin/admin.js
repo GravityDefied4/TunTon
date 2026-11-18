@@ -172,7 +172,7 @@ async function loadUsers() {
 /* Suspend: the admin picks how long (3 / 7 / 30 days or permanent) and must write a reason first. Suspend saves both and
    suspends; Cancel (or X / Esc) closes the popup and nothing changes. The user sees the reason and the end date in a popup
    the next time they try to log in (and in an e-mail). A timed suspension is lifted automatically when its time is up. */
-const REASON_MAX = 300;
+const REASON_MAX = 100;   // users.suspension_reason is VARCHAR(100)
 const SUSPEND_OPTIONS = [['3d', '3 days'], ['7d', '7 days'], ['30d', '30 days'], ['permanent', 'Permanent']];
 function suspendDialog(id, name) {
   showDialog('Suspend account?', `<p><b>${esc(name)}</b> will lose access to their TunTon account, and their reports and claims will be hidden until the suspension ends or they are reactivated.</p>
@@ -308,7 +308,7 @@ $('#dlg-body').addEventListener('click', e => {
   if (!button) return;
   const { flagReport: id, flagType: type } = button.dataset;
   const humanType = type === 'fraud' ? 'fraud' : 'AI-generated';
-  showDialog(`Flag as ${humanType}?`, `<p>Record this as an admin review flag only. The report itself will remain unchanged.</p><label class="a-flag-reason-label" for="flag-reason">Reason for flag</label><textarea id="flag-reason" maxlength="500" rows="4" placeholder="Describe the discrepancy you noticed" required></textarea>`, 'Save flag', async () => {
+  showDialog(`Flag as ${humanType}?`, `<p>Record this as an admin review flag only. The report itself will remain unchanged.</p><label class="a-flag-reason-label" for="flag-reason">Reason for flag</label><textarea id="flag-reason" maxlength="200" rows="4" placeholder="Describe the discrepancy you noticed" required></textarea>`, 'Save flag', async () => {
     const reason = $('#flag-reason').value.trim();
     if (!reason) throw new Error('Please provide a reason for this flag.');
     await api(EP.flagReport(id), { method: 'PATCH', body: { type, reason } });

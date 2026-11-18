@@ -35,7 +35,7 @@ exports.getMe = (req, res) => res.ok({ user: me(req.user) });
 exports.updateMe = wrap(async (req, res) => {
   const body = req.body || {};
   const changes = {};
-  if ('full_name' in body) changes.full_name = v.text(body.full_name, 'full_name', { max: 100, required: true });
+  if ('full_name' in body) changes.full_name = v.text(body.full_name, 'full_name', { max: 60, required: true });   // users.full_name is VARCHAR(60)
   if ('phone' in body) {
     if (body.phone !== null && body.phone !== undefined && typeof body.phone !== 'string') throw v.bad('Phone must be text.');
     let p = v.text(typeof body.phone === 'string' ? body.phone.replace(/[\s-]/g, '') : body.phone, 'phone', { max: 15 });   // "0917 123-4567" -> "09171234567"

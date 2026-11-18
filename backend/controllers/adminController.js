@@ -51,7 +51,7 @@ exports.users = wrap(async (req, res) => {
 exports.setUserStatus = wrap(async (req, res) => {
   const id = v.id(req.params.id, 'user id');
   const status = v.oneOf(req.body?.status, ['active', 'suspended'], 'status');
-  const reason = v.text(req.body?.reason, 'A reason for the suspension', { max: 300, required: status === 'suspended' });   // shown to the user when they try to log in
+  const reason = v.text(req.body?.reason, 'A reason for the suspension', { max: 100, required: status === 'suspended' });   // users.suspension_reason is VARCHAR(100); shown to the user when they try to log in
   const durationKey = status === 'suspended' ? v.oneOf(req.body?.duration ?? 'permanent', Object.keys(DURATIONS), 'duration') : null;
   const duration = durationKey && DURATIONS[durationKey];
   if (id === req.user.user_id) throw v.bad('You cannot change the status of your own account.');
@@ -114,7 +114,7 @@ exports.reports = wrap(async (req, res) => {
     params.push(...Array(5).fill(like(q.q)));
   }
   const out = await rq.findReports({
-    where, params, ...v.paging(q), includeRemoved: true, viewerId: req.user.user_id,
+    where, params, ...v.paging(q), includeRemoved: true, viewerId: req.user.user_id, viewerIsAdmin: true,   // admins see every flag_reason
     orderBy: 'r.created_at DESC, r.report_id DESC',
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
     extraCols: `u.full_name AS reporter_name, u.email AS reporter_email, u.status AS reporter_status,
@@ -128,7 +128,7 @@ exports.reportDetail = wrap(async (req, res) => {
   const id = v.id(req.params.id, 'report id');
   const out = await rq.findReports({
     where: ['r.report_id = ?'], params: [id], limit: 1, offset: 0,
-    includeRemoved: true, viewerId: req.user.user_id,
+    includeRemoved: true, viewerId: req.user.user_id, viewerIsAdmin: true,
     extraJoins: 'JOIN users u ON u.user_id = r.user_id',
     extraCols: 'u.full_name AS reporter_name, u.email AS reporter_email, u.status AS reporter_status'
   });
@@ -140,20 +140,27 @@ exports.reportDetail = wrap(async (req, res) => {
   res.ok({ report });
 });
 
-/* PATCH /api/admin/reports/:id/flag — append an auditable moderation flag; never edits the report. */
+/* PATCH /api/admin/reports/:id/flag  { type: 'fraud' | 'ai_generated', reason }
+   Saves the admin's reason in pet_reports.flag_reason (VARCHAR 200) and appends an auditable entry to activity_logs
+   (which also records the flag type). Both happen in one transaction. The report's content is never edited.
+   A report can carry both flag types, each only once; flag_reason holds the most recent reason, and the reason for
+   each type stays in the audit log (shown by reportQueries as flag_reasons). */
 exports.flagReport = wrap(async (req, res) => {
   const id = v.id(req.params.id, 'report id');
   const type = v.oneOf(req.body?.type, ['fraud', 'ai_generated'], 'flag type');
-  const reason = v.text(req.body?.reason, 'reason', { max: 500, required: true });
-  const [[report]] = await pool.query('SELECT report_id FROM pet_reports WHERE report_id = ?', [id]);
-  if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
+  const reason = v.text(req.body?.reason, 'reason', { max: 200, required: true });   // pet_reports.flag_reason is VARCHAR(200)
   const action = type === 'fraud' ? 'report_flagged_fraud' : 'report_flagged_ai_generated';
-  /* A report can carry both flags, but each type only once. */
-  const [[dupe]] = await pool.query(
-    "SELECT 1 AS found FROM activity_logs WHERE target_table = 'pet_reports' AND target_id = ? AND action = ? LIMIT 1", [id, action]);
-  if (dupe) throw Object.assign(new Error(`This report is already flagged as ${type === 'fraud' ? 'fraud' : 'AI-generated'}.`), { status: 409 });
-  await logActivity({ userId: req.user.user_id, action, table: 'pet_reports', id, details: { reason } });
-  res.ok({ id, review_flag: action }, 'Report flag recorded.');
+  await withTransaction(async conn => {
+    const [[report]] = await conn.query('SELECT report_id FROM pet_reports WHERE report_id = ? FOR UPDATE', [id]);
+    if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
+    const [[dupe]] = await conn.query(
+      "SELECT 1 AS found FROM activity_logs WHERE target_table = 'pet_reports' AND target_id = ? AND action = ? LIMIT 1", [id, action]);
+    if (dupe) throw Object.assign(new Error(`This report is already flagged as ${type === 'fraud' ? 'fraud' : 'AI-generated'}.`), { status: 409 });
+    /* updated_at = updated_at: a moderation flag is not an edit, so the report's "last updated" time stays as it was. */
+    await conn.query('UPDATE pet_reports SET flag_reason = ?, updated_at = updated_at WHERE report_id = ?', [reason, id]);
+    await logActivity({ userId: req.user.user_id, action, table: 'pet_reports', id, details: { reason } }, conn);
+  });
+  res.ok({ id, review_flag: action, flag_reason: reason }, 'Report flag recorded.');
 });
 
 /* PATCH /api/admin/reports/:id/remove  { reason }  Remove an inappropriate report (kept in the database, hidden from users) */

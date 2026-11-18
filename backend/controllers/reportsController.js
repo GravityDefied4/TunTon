@@ -1,5 +1,5 @@
 /* reports controller: business logic lives here, routes only map URLs (plan rule 2).
-   Contact details (phone, email) are never selected here (plan rule 5). */
+   The report's contact (one box: phone number or email) is stored in pet_reports.contact. */
 const fs = require('fs/promises');
 const path = require('path');
 const pool = require('../db/pool');
@@ -18,7 +18,6 @@ const SIZES = ['small', 'medium', 'large', 'extra_large'];
 const SEXES = ['male', 'female', 'unknown'];
 const SPECIES_SUGGESTIONS = ['Dog', 'Cat', 'Other'];
 const COLOR_SUGGESTIONS = ['Black', 'White', 'Brown', 'Gray', 'Orange', 'Cream', 'Golden', 'Tan', 'Red', 'Tricolor', 'Brindle', 'Spotted'];
-const PHONE_RE = /^(\+63|09)[0-9]{9}$/;                    // same rule as the chk_users_phone constraint
 const PUBLIC_STATUSES = ['active', 'matched', 'resolved', 'closed'];
 
 /* "1,2" | "[1,2]" | [1,2] | "1" -> [1,2] (multipart forms send everything as strings). Used for photo ids. */
@@ -53,14 +52,13 @@ function colorText(raw) {
   return out;
 }
 
-/* Optional contact details stored on the report itself (phone, facebook_profile_link). Never returned by the public projection. */
+/* Optional contact details stored on the report itself (contact, facebook_profile_link). Never returned by the public preview.
+   `contact` is ONE field that takes a phone number OR an email address (pet_reports.contact, 50 characters).
+   Older clients that still send `phone` are accepted: it is treated as `contact`. */
 function contactFields(src) {
   const c = {};
-  if (src.phone !== undefined) {
-    const p = v.text(src.phone, 'phone', { max: 15 });
-    if (p && !PHONE_RE.test(p)) throw v.bad('phone must look like 09XXXXXXXXX or +63XXXXXXXXXX.');
-    c.phone = p;
-  }
+  const raw = src.contact !== undefined ? src.contact : src.phone;
+  if (raw !== undefined) c.contact = v.contact(raw, 'contact', { max: 50 });
   if (src.facebook_profile_link !== undefined) {
     const l = v.text(src.facebook_profile_link, 'facebook_profile_link', { max: 255 });
     if (l && !/^https?:\/\//i.test(l)) throw v.bad('facebook_profile_link must be a web address (https://...).');
@@ -73,8 +71,8 @@ function contactFields(src) {
 async function normalize(src, type, db = pool) {
   const f = {};
   f.pet_name = v.text(src.pet_name, 'pet_name', { max: 60, required: type === 'lost' }) || 'Unknown';   // pet_name is NOT NULL; a finder may not know it
-  f.species = v.text(src.species, 'species', { max: 50, required: true });
-  f.breed = v.text(src.breed, 'breed', { max: 50 }) || 'Unknown';   // breed is NOT NULL in the schema
+  f.species = v.text(src.species, 'species', { max: 30, required: true });   // pet_reports.species is VARCHAR(30)
+  f.breed = v.text(src.breed, 'breed', { max: 30 }) || 'Unknown';   // breed is VARCHAR(30) NOT NULL in the schema
   f.color = colorText(src.colors !== undefined && src.color === undefined ? src.colors : src.color);
 
   f.size = v.oneOf(src.size, SIZES, 'size');
@@ -103,7 +101,7 @@ async function normalize(src, type, db = pool) {
 
 const COLUMNS = ['pet_name', 'species', 'breed', 'color', 'size', 'sex', 'markings', 'description',
   'event_date', 'search_radius_km', 'barangay_id'];
-const CONTACT_COLUMNS = ['phone', 'facebook_profile_link'];   // not in the public projection, so only written when sent
+const CONTACT_COLUMNS = ['contact', 'facebook_profile_link'];   // only written when sent, so an edit that omits them keeps what is stored
 
 const ownerOnly = (report, user) => {
   if (!report) throw Object.assign(new Error('Report not found.'), { status: 404 });
@@ -134,11 +132,11 @@ exports.create = wrap(async (req, res) => {
       const barangayId = f.barangay_id ?? await rq.nearestBarangayId(f.lat, f.lng, conn);
       const [r] = await conn.query(
         `INSERT INTO pet_reports (user_id, report_type, pet_name, species, breed, color, size, sex, markings,
-           description, event_date, location, barangay_id, search_radius_km, phone, facebook_profile_link)
+           description, event_date, location, barangay_id, search_radius_km, contact, facebook_profile_link)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${rq.POINT}, ?, ?, ?, ?)`,
         [req.user.user_id, type, f.pet_name, f.species, f.breed, f.color, f.size, f.sex, f.markings,
           f.description, f.event_date, rq.pointWkt(f.lat, f.lng), barangayId, f.search_radius_km,
-          f.phone ?? null, f.facebook_profile_link ?? null]);
+          f.contact ?? null, f.facebook_profile_link ?? null]);
       if (files.length) {
         await conn.query('INSERT INTO report_photos (report_id, file_path, image_data, mime_type, is_primary) VALUES ?',
           [files.map((file, i) => [r.insertId, file.filename, file.buffer, file.mimetype, i === 0])]);
@@ -229,7 +227,7 @@ exports.mine = wrap(async (req, res) => {
 
 /* GET /api/reports/:id  Details (contact info hidden) */
 exports.getOne = wrap(async (req, res) => {
-  const report = await rq.findReportById(v.id(req.params.id), { viewerId: req.user.user_id, includeRemoved: true });
+  const report = await rq.findReportById(v.id(req.params.id), { viewerId: req.user.user_id, includeRemoved: true, viewerIsAdmin: req.user.role === 'admin' });   // admins also see flag_reason
   const visible = report && (report.status !== 'removed' || report.is_mine || req.user.role === 'admin');
   if (!visible) return res.fail(404, 'Report not found.');
   res.ok({ report });
@@ -247,7 +245,9 @@ exports.update = wrap(async (req, res) => {
     if (existing.status !== 'active') throw Object.assign(new Error('Only active reports can be edited.'), { status: 409 });
     if (!(await checkFiles(files))) throw v.bad('One of the files is not a valid image.');
 
-    const body = req.body || {};
+    const body = { ...(req.body || {}) };
+    if ('phone' in body && !('contact' in body)) body.contact = body.phone;   // older clients send the phone number as `phone`
+    delete body.phone;
     const src = {
       ...Object.fromEntries(COLUMNS.map(k => [k, existing[k]])),
       lat: existing.lat, lng: existing.lng,
@@ -264,7 +264,7 @@ exports.update = wrap(async (req, res) => {
     if (remaining > MAX_PHOTOS) throw v.bad(`A report can have at most ${MAX_PHOTOS} photos.`);
     if (REQUIRE_PHOTO && remaining < 1) throw v.bad('A report needs at least one photo.');
 
-    const contactSets = CONTACT_COLUMNS.filter(k => k in body);   // contact is not readable back, so it only changes when sent
+    const contactSets = CONTACT_COLUMNS.filter(k => k in body);   // only the contact fields that were sent are changed
     await withTransaction(async conn => {
       const barangayId = f.barangay_id ?? await rq.nearestBarangayId(f.lat, f.lng, conn);
       await conn.query(

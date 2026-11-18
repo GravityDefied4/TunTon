@@ -72,9 +72,9 @@ const blank = x => x === undefined || x === null || String(x).trim() === '';
 function parseFields(body = {}, type) {
   const out = {}, has = k => body[k] !== undefined;
   if (has('description')) out.description = v.text(body.description, 'description', { max: 2000 });
-  if (has('markings')) out.markings = v.text(body.markings, 'markings', { max: 500 });
+  if (has('markings')) out.markings = v.text(body.markings, 'markings', { max: 100 });   // claims.markings is VARCHAR(100)
   if (has('pet_location')) out.pet_location = v.text(body.pet_location, 'pet_location', { max: 255 });
-  if (has('contact')) out.contact = v.text(body.contact, 'contact', { max: 255 });
+  if (has('contact')) out.contact = v.text(body.contact, 'contact', { max: 50 });   // claims.contact is VARCHAR(50)
   if (has('facebook')) out.facebook = v.text(body.facebook, 'facebook', { max: 255 });
   if (has('color')) { const c = v.text(body.color, 'color', { max: 40 }); if (c) out.color = c; }   // claims.color is NOT NULL
   if (has('event_date')) out.event_date = blank(body.event_date) ? null : v.date(String(body.event_date).trim(), 'event_date');

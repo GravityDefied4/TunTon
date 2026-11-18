@@ -64,7 +64,7 @@ exports.register = async (req, res, next) => {
     const email = str(body.email, 'Email').trim().toLowerCase();
     const password = str(body.password, 'Password');
 
-    if (name.length < 2 || name.length > 100) return res.fail(400, 'Please enter your full name (2 to 100 characters).');
+    if (name.length < 2 || name.length > 60) return res.fail(400, 'Please enter your full name (2 to 60 characters).');   // users.full_name is VARCHAR(60)
     if (!EMAIL_RE.test(email)) return res.fail(400, 'That email address does not look right.');
     if (email.length > 50) return res.fail(400, 'Your email is too long for TunTon (max 50 characters).');
     if (password.length < 8) return res.fail(400, 'Your password needs at least 8 characters.');

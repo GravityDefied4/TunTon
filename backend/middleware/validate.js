@@ -24,6 +24,23 @@ function text(value, label, { max = 1000, required = false } = {}) {
   return s;
 }
 
+/* One "contact" box that takes a phone number OR an email address (pet_reports.contact and claims.contact are VARCHAR(50)).
+   Phone: spaces / hyphens are dropped and +63 9XX... becomes 09XX..., the same single stored form as users.phone
+   (09 + 9 digits). Email: lowercased, must look like name@domain.tld. Empty -> null when optional. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function contact(value, label = 'contact', { max = 50, required = false } = {}) {
+  const raw = text(value, label, { max: 200, required });
+  if (raw === null) return null;
+  if (raw.includes('@')) {
+    if (!EMAIL_RE.test(raw)) throw bad(`${label} must be a valid email address or a phone number (09XXXXXXXXX).`);
+    if (raw.length > max) throw bad(`${label} is too long (max ${max} characters).`);
+    return raw.toLowerCase();
+  }
+  const phone = raw.replace(/[\s-]/g, '').replace(/^\+?63(?=9\d{9}$)/, '0');   // "+63 917 123 4567" -> "09171234567"
+  if (!/^09\d{9}$/.test(phone)) throw bad(`${label} must be a phone number (09XXXXXXXXX or +63 9XX XXX XXXX) or an email address.`);
+  return phone;
+}
+
 /* Real calendar date as YYYY-MM-DD, not in the future. */
 function date(value, label) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) throw bad(`${label} must be a date (YYYY-MM-DD).`);
@@ -40,4 +57,4 @@ function paging(query, def = 20) {
   return { limit, offset };
 }
 
-module.exports = { bad, id, oneOf, text, date, paging };
+module.exports = { bad, id, oneOf, text, contact, date, paging };
