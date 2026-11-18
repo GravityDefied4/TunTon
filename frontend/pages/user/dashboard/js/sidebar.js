@@ -52,6 +52,24 @@ window.sidebarReady = (async function () {
       if (pageName(new URL(a.getAttribute('href'), location.href).pathname) === here) a.setAttribute('aria-current', 'page');
     });
 
+    /* ---------- Floating bottom bar (phones / tablets) ----------
+       Built from the sidebar links so the menu is still defined only in sidebar.html.
+       CSS (css/bottom-nav.css) shows it at 1000px and below. */
+    if (!document.querySelector('.bnav')) {
+      const short = { 'All reports': 'Reports', 'Add pet report': 'Report', 'My profile': 'Profile' };
+      const bar = document.createElement('nav');
+      bar.className = 'bnav';
+      bar.setAttribute('aria-label', 'Main');
+      bar.innerHTML = [...document.querySelectorAll('.side-nav a')].map(a => {
+        const svg = a.querySelector('svg') ? a.querySelector('svg').outerHTML : '';
+        const label = (a.querySelector('.label') ? a.querySelector('.label').textContent.trim() : a.title);
+        const add = /add-report/.test(a.getAttribute('href'));
+        const cur = a.getAttribute('aria-current') ? ' aria-current="page"' : '';
+        return `<a href="${a.getAttribute('href')}"${cur}${add ? ' class="bnav-add"' : ''}>${add ? `<i>${svg}</i>` : svg}<span>${short[label] || label}</span></a>`;
+      }).join('');
+      document.body.append(bar);
+    }
+
     /* ---------- Tab switching animation ----------
        Every tab is its own page, so the sliding highlight is carried across the page load:
        a click saves where the highlight was, and the next page starts it there and slides it

@@ -950,3 +950,160 @@ a.cc-value:hover {
 @media (prefers-reduced-motion: reduce) {
   .d-thumbs button { transition: none; }
 }
+
+/* ===== v11: phone layout + capped photo size =====
+   Placed LAST on purpose. The v4 block above re-declared the two-column .d-top after the 800px rule,
+   so on phones the photo and the summary card were squeezed side by side. */
+
+/* Safety net: an icon that has no size of its own can never grow to fill its container.
+   :where() keeps this at zero specificity, so every existing icon size above still wins. */
+:where(.ico) { width: 1.1em; height: 1.1em; flex: none; }
+
+/* The photo never outgrows its frame, whatever the picture's own size or shape. */
+.d-gallery { min-width: 0; max-width: 100%; }
+.d-photo { max-width: 100%; max-height: 520px; }
+.d-photo-btn img { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: cover; }
+
+@media (max-width: 800px) {
+  /* One column: photo on top, details on the next row */
+  .d-top { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .d-gallery,
+  .d-summary { width: 100%; min-width: 0; }
+
+  .d-photo { flex: none; aspect-ratio: 4 / 3; min-height: 0; max-height: 380px; }
+  .d-summary { padding: 1rem 1.1rem; }
+  .d-summary .contact-card { min-width: 0; }
+}
+
+/* ===== Found / lost response cards (the "Found reports" section) =====
+   Photo is a fixed-size frame on the left; details sit beside it. Stacks on small screens. */
+.d-find {
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-tint);
+}
+.d-find + .d-find { margin-top: 1rem; }
+.d-find--confirmed { border-color: var(--leaf); }
+.d-find--rejected { opacity: .7; }
+
+.d-find-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.d-find-avatar { width: 44px; height: 44px; font-size: 1.1rem; }
+.d-find-who { flex: 1; min-width: 0; }
+.d-find-who h3 { margin: 0; font-size: 1.05rem; }
+.d-find-who p { margin: 0; font-size: .85rem; color: var(--muted); }
+.d-status {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .7rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  background: var(--surface-hover);
+  color: var(--heading);
+}
+.d-status--rejected { background: var(--danger-bg); color: var(--danger-text); }
+
+.d-find-body {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.d-find-body--nophoto { grid-template-columns: minmax(0, 1fr); }
+
+.d-find-photos { min-width: 0; display: flex; flex-direction: column; gap: .5rem; }
+.d-find-main {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--sk-base);
+  cursor: zoom-in;
+}
+.d-find-main img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.d-find-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: .4rem; }
+.d-find-thumbs button {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--sk-base);
+  cursor: zoom-in;
+}
+.d-find-thumbs img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.d-find-info { min-width: 0; display: flex; flex-direction: column; gap: .9rem; }
+.d-find-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.d-find-facts li { display: flex; align-items: flex-start; gap: .65rem; }
+.d-find-facts .ico { margin-top: .15rem; width: 1.15em; height: 1.15em; color: var(--leaf-text); }
+.d-find-facts li > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem; min-width: 0; }
+.d-find-facts .d-label { flex-basis: 100%; }
+.d-find-facts strong { font-weight: 700; }
+.d-find-facts small { color: var(--muted); font-size: .85rem; }
+
+.d-find .d-label {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-bottom: .15rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.d-find-notes { display: grid; gap: .6rem; }
+.d-find-note p { margin: 0; overflow-wrap: anywhere; }
+.d-find-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+.d-find-tags span {
+  padding: .2rem .65rem;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  font-size: .85rem;
+}
+.d-find-contact { padding-top: .8rem; border-top: 1px solid var(--line-soft); }
+.d-find-chips { display: flex; flex-wrap: wrap; gap: .5rem; overflow-wrap: anywhere; }
+.d-find-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1rem; }
+
+@media (max-width: 800px) {
+  .d-find-body { grid-template-columns: minmax(0, 1fr); }
+  .d-find-main { max-height: 320px; }
+}
+
+
+/* ===== "About this pet" facts: label/value tiles in a responsive grid ===== */
+.d-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: .75rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+.d-fact {
+  min-width: 0;
+  padding: .7rem .9rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface-tint);
+}
+.d-fact dt {
+  margin: 0 0 .1rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.d-fact dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

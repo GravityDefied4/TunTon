@@ -305,3 +305,92 @@
 @media (prefers-reduced-motion: reduce) {
   #all-list.is-fresh .pet-card { animation: none; }
 }
+
+
+/* =========================================================
+   Phones: compact report cards
+   The photo moves to the left (small square), details sit beside it and the
+   buttons run along the bottom, so a card is about a third of its old height.
+   ========================================================= */
+@media (max-width: 640px) {
+  .view-head--reports { margin-bottom: 1rem; align-items: flex-start; }
+  .view-head--reports h1 { font-size: 1.6rem; margin-bottom: .15rem; }
+  .view-head--reports p { font-size: .88rem; }
+  .rcount { font-size: .85rem; padding-top: .35rem; }
+
+  /* Search on its own row; type filter + species share the next one */
+  .toolbar--reports { gap: .6rem; margin-bottom: 1rem; }
+  .rsearch { flex: 1 1 100%; padding: .6em 1.1em; font-size: .95rem; }
+  .toolbar--reports .chips { flex: 1 1 auto; justify-content: space-between; }
+  .toolbar--reports .chips label { flex: 1; }
+  .toolbar--reports .chips span { display: block; padding: .4em .5em; text-align: center; font-size: .86rem; }
+  .rselect { flex: 0 1 auto; max-width: 48%; padding: .55em .8em; font-size: .86rem; }
+
+  #all-list.pet-list--grid { grid-template-columns: minmax(0, 1fr); gap: .7rem; }
+
+  #all-list .pet-card {
+    width: 100%;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-areas: "thumb body" "actions actions";
+    border-radius: 16px;
+  }
+  #all-list .pet-card:hover { transform: none; }
+
+  #all-list .pet-thumb {
+    grid-area: thumb;
+    width: 100%;
+    height: 100%;
+    min-height: 104px;
+    aspect-ratio: auto;
+  }
+  #all-list .pet-thumb::after { display: none; }
+
+  /* Status tag becomes a small pill on the photo corner */
+  #all-list .tag-missing {
+    top: 6px;
+    left: 6px;
+    gap: .35em;
+    padding: .2em .6em .2em .5em;
+    font-size: .62rem;
+    letter-spacing: .05em;
+  }
+  #all-list .tag-dot { width: 6px; height: 6px; }
+
+  #all-list .pet-body {
+    grid-area: body;
+    justify-content: flex-start;
+    gap: .25rem;
+    padding: .7rem .85rem .35rem;
+  }
+  #all-list .pet-body h3 {
+    font-size: 1.02rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  #all-list .pet-info { font-size: .8rem; gap: .12rem; }
+  #all-list .pet-info .ico { width: .9rem; height: .9rem; }
+
+  /* Reporter line is secondary on a phone: keep it, but small and unframed */
+  #all-list .pet-by { padding-top: .35rem; font-size: .78rem; border-top: 0; }
+  #all-list .pet-by-av { width: 1.45rem; height: 1.45rem; font-size: .7rem; }
+
+  #all-list .pet-actions {
+    grid-area: actions;
+    padding: .2rem .75rem .75rem;
+  }
+  #all-list .pet-actions > .btn,
+  #all-list .pet-actions > .pet-status {
+    min-height: 2.25rem;
+    font-size: .82rem;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 380px) {
+  #all-list .pet-card { grid-template-columns: 88px minmax(0, 1fr); }
+  #all-list .pet-thumb { min-height: 88px; }
+  #all-list .pet-body h3 { font-size: .98rem; }
+  #all-list .pet-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
