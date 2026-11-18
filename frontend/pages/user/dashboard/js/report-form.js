@@ -332,6 +332,37 @@ function setupPills(form) {
       });
     };
     const commit = () => { add(input.value); input.value = ''; draw(); };
+    // Styled autocomplete menu backed by the species-aware datalist.
+    // Remove the native datalist binding so the browser's unstyled popup never appears.
+    const sourceList = form.querySelector('#' + input.getAttribute('list'));
+    input.removeAttribute('list');
+    const menu = document.createElement('div');
+    menu.className = 'pills-options';
+    menu.setAttribute('role', 'listbox');
+    menu.hidden = true;
+    box.appendChild(menu);
+    let activeOption = -1;
+    const optionValues = () => [...(sourceList?.options || [])].map(o => o.value).filter(Boolean);
+    const closeMenu = () => { menu.hidden = true; activeOption = -1; };
+    const chooseOption = value => { add(value); input.value = ''; draw(); closeMenu(); input.focus(); };
+    const showMenu = () => {
+      const query = input.value.trim().toLowerCase();
+      const matches = optionValues().filter(v => !list.some(x => normalizeOptionValue(x) === normalizeOptionValue(v)) && (!query || v.toLowerCase().includes(query))).slice(0, 30);
+      menu.innerHTML = matches.map(v => `<button type="button" class="pills-option" role="option" aria-selected="false" data-value="${esc(v)}">${esc(v)}</button>`).join('');
+      menu.hidden = !matches.length;
+      activeOption = -1;
+      input.setAttribute('aria-expanded', String(!menu.hidden));
+    };
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-haspopup', 'listbox');
+    input.setAttribute('aria-expanded', 'false');
+    input.addEventListener('focus', showMenu);
+    input.addEventListener('input', showMenu);
+    menu.addEventListener('pointerdown', e => {
+      const option = e.target.closest('.pills-option');
+      if (option) { e.preventDefault(); chooseOption(option.dataset.value); }
+    });
     const sep = box.dataset.sep === 'comma' ? /[,;]/ : /[\s,;]/;
     const sepEnd = new RegExp(sep.source + '$'), sepSplit = new RegExp(sep.source + '+');
     input.addEventListener('input', e => {
@@ -343,10 +374,27 @@ function setupPills(form) {
       parts.forEach(add); input.value = rest; draw();
     });
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      if (!menu.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        const count = menu.children.length;
+        if (count) {
+          activeOption = (activeOption + (e.key === 'ArrowDown' ? 1 : -1) + count) % count;
+          [...menu.children].forEach((el, i) => {
+            el.classList.toggle('is-active', i === activeOption);
+            el.setAttribute('aria-selected', String(i === activeOption));
+          });
+        }
+      } else if (!menu.hidden && e.key === 'Enter' && activeOption >= 0) {
+        e.preventDefault(); chooseOption(menu.children[activeOption].dataset.value);
+      } else if (e.key === 'Escape') { closeMenu(); input.setAttribute('aria-expanded', 'false'); }
+      else if (e.key === 'Enter') { e.preventDefault(); commit(); closeMenu(); }
       else if (e.key === 'Backspace' && !input.value && list.length) { list.pop(); draw(); }
     });
-    input.addEventListener('blur', commit);
+    input.addEventListener('blur', () => setTimeout(() => {
+      if (!box.contains(document.activeElement)) {
+        commit(); closeMenu(); input.setAttribute('aria-expanded', 'false');
+      }
+    }, 120));
     box.addEventListener('click', e => {
       const x = e.target.closest('button[data-i]');
       if (x) { list.splice(+x.dataset.i, 1); draw(); }
@@ -357,7 +405,7 @@ function setupPills(form) {
       commit,
       /* the species changed: drop any tag that does not fit it any more (a blue dog) */
       refilter() { list = list.filter(v => isValidPillValue(box.dataset.pills, v, speciesNow())); draw(); },
-      clear() { list = []; input.value = ''; draw(); },
+      clear() { list = []; input.value = ''; draw(); closeMenu(); },
       set(str) {   // "White and brown" -> White, Brown (breed keeps spaces: "Shih Tzu")
         list = []; input.value = '';
         const split = box.dataset.pills === 'breed' ? /[,;]+|\s+and\s+/i : /[,;]+|\s+and\s+|\s+/;

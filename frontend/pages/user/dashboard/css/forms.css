@@ -973,3 +973,21 @@ main.is-choosing .type-card b {
   font-size: .9rem;
   line-height: 1.5;
 }
+
+
+/* Styled autocomplete menus for breed and color comboboxes */
+.pills { position: relative; }
+.pills-options {
+  position: absolute; z-index: 100; top: calc(100% + 7px); left: 0; right: 0;
+  max-height: 230px; overflow-y: auto; padding: .4rem;
+  border: 1px solid var(--line, #dce8df); border-radius: 14px;
+  background: var(--white, #fff); box-shadow: 0 12px 30px rgba(20, 55, 35, .16);
+}
+.pills-options[hidden] { display: none; }
+.pills-option {
+  display: block; width: 100%; padding: .65rem .8rem; border: 0; border-radius: 9px;
+  background: transparent; color: var(--ink, #173b2b); text-align: left; font: inherit; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.pills-option:hover, .pills-option.is-active { background: var(--mint, #eaf5ed); color: var(--forest, #174b35); }
+.pills-option:focus-visible { outline: 2px solid var(--leaf, #4c9b63); outline-offset: -2px; }
