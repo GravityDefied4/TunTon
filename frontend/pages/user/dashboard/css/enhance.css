@@ -168,41 +168,58 @@
 .bnav { display: none; }
 
 @media (max-width: 1000px) {
+  /* Floating pill: lifted off the bottom edge, rounded, with a soft shadow */
   .bnav {
     position: fixed; z-index: 1050;
-    left: 0; right: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
+    width: min(calc(100% - 1.5rem), 460px);
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    align-items: end;
-    padding: .35rem .5rem calc(.35rem + env(safe-area-inset-bottom, 0px));
-    background: color-mix(in srgb, var(--surface) 94%, transparent);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, .08);
+    align-items: center;
+    gap: .1rem;
+    padding: .35rem .4rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(10, 50, 30, .28), 0 2px 6px rgba(10, 50, 30, .12);
   }
   .bnav a {
-    display: grid; justify-items: center; gap: .1rem;
-    padding: .35rem 0;
+    display: grid; justify-items: center; align-content: center; gap: .1rem;
+    padding: .3rem 0;
     min-height: 48px;
-    border-radius: 14px;
+    border-radius: 999px;
     color: var(--muted);
-    font: 800 .68rem var(--font-body);
+    font: 800 .66rem var(--font-body);
     text-decoration: none;
+    transition: background-color .2s ease, color .2s ease;
   }
   .bnav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .bnav a[aria-current="page"] { color: var(--heading); }
+  .bnav a[aria-current="page"] { color: var(--heading); background: var(--surface-hover); }
   .bnav a[aria-current="page"] svg { stroke-width: 2.4; }
-  .bnav .bnav-add { transform: translateY(-14px); }
+  /* Centre "add" button pops out of the pill */
+  .bnav .bnav-add { transform: translateY(-16px); background: none; }
   .bnav .bnav-add i {
     display: grid; place-items: center;
     width: 52px; height: 52px; border-radius: 50%;
     background: var(--sun); color: #3b2d00;
+    border: 3px solid var(--surface);
     box-shadow: 0 8px 18px rgba(0, 0, 0, .28);
   }
   .bnav .bnav-add span { color: var(--heading); }
-  main { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
-  .toast-host { bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+  /* Keep page content and toasts clear of the floating bar */
+  main { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
+  .toast-host { bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
 }
+
+@media (max-width: 360px) {
+  .bnav a { font-size: .6rem; }
+  .bnav svg { width: 20px; height: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .bnav a { transition: none; } }
 
 /* ---------- Responsive tuning ---------- */
 @media (max-width: 1000px) {
