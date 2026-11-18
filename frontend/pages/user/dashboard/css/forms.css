@@ -82,15 +82,27 @@ fieldset {
   line-height: 1.4;
   animation: field-error-in .18s ease-out;
 }
-.field-error[hidden] { display: none; }
+
+.field-error[hidden] {
+  display: none;
+}
 
 @keyframes field-error-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .field-error { animation: none; }
+  .field-error {
+    animation: none;
+  }
 }
 
 /* Tag input: words typed in the lost and found forms become pills (see setupPills in report-form.js) */
@@ -488,7 +500,8 @@ main.is-choosing .type-card b {
 
 /* ---------- Report form split into numbered steps ---------- */
 .form.steps {
-  grid-template-columns: 1fr;      /* one step card per row */
+  grid-template-columns: 1fr;
+  /* one step card per row */
   gap: 1.25rem;
 }
 
@@ -600,23 +613,24 @@ main.is-choosing .type-card b {
 }
 
 /* grey track from the middle of the previous circle to the middle of this one */
-.wp-dots li + li::before,
-.wp-dots li + li::after {
+.wp-dots li+li::before,
+.wp-dots li+li::after {
   content: "";
   position: absolute;
-  top: calc(.95rem - 2px);          /* vertical middle of the circles (1.9rem tall) */
+  top: calc(.95rem - 2px);
+  /* vertical middle of the circles (1.9rem tall) */
   left: -50%;
   width: 100%;
   height: 4px;
   border-radius: 999px;
 }
 
-.wp-dots li + li::before {
+.wp-dots li+li::before {
   background: #e3ece0;
 }
 
 /* green fill, grows left to right when the previous step is complete */
-.wp-dots li + li::after {
+.wp-dots li+li::after {
   background: var(--grad-bright);
   transform: scaleX(0);
   transform-origin: left center;
@@ -629,7 +643,8 @@ main.is-choosing .type-card b {
 
 .wp-dot {
   position: relative;
-  z-index: 1;                       /* circles sit on top of the lines */
+  z-index: 1;
+  /* circles sit on top of the lines */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -674,7 +689,8 @@ main.is-choosing .type-card b {
   background: var(--leaf);
   border-color: var(--leaf);
   color: var(--white);
-  font-size: 0;                     /* hide the number, show a check mark instead */
+  font-size: 0;
+  /* hide the number, show a check mark instead */
 }
 
 .wp-dot.is-done b::before {
@@ -684,7 +700,8 @@ main.is-choosing .type-card b {
   width: .95rem;
   height: .95rem;
   transform: translateY(.5px);
-  background: currentColor;         /* drawn as a shape so it is truly centered (a text glyph sits off-center) */
+  background: currentColor;
+  /* drawn as a shape so it is truly centered (a text glyph sits off-center) */
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
@@ -728,7 +745,8 @@ main.is-choosing .type-card b {
 
 @media (max-width: 600px) {
   .wp-dot span {
-    display: none;     /* only the numbers fit on a phone */
+    display: none;
+    /* only the numbers fit on a phone */
   }
 
   .wizard-nav .btn {
@@ -738,7 +756,9 @@ main.is-choosing .type-card b {
 
 
 /* Dark theme: keep the "choose a species first" hint readable while the box is inactive */
-:root[data-theme="dark"] .pills.is-disabled { opacity: .85; }
+:root[data-theme="dark"] .pills.is-disabled {
+  opacity: .85;
+}
 
 /* ---------- Dark theme: Add pet report ----------
    The cards, steps and progress bar used fixed light colors; point them at the theme tokens. */
@@ -746,7 +766,8 @@ main.is-choosing .type-card b {
   --tone: #5fcf86;
   --tone-soft: rgba(95, 207, 134, .14);
   --tone-ring: rgba(95, 207, 134, .18);
-  --on-tone: var(--page);   /* dark glyph on the light solid icon keeps contrast */
+  --on-tone: var(--page);
+  /* dark glyph on the light solid icon keeps contrast */
   border-color: var(--line);
   background: var(--surface);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
@@ -776,7 +797,7 @@ main.is-choosing .type-card b {
   border-bottom-color: var(--line);
 }
 
-:root[data-theme="dark"] .wp-dots li + li::before {
+:root[data-theme="dark"] .wp-dots li+li::before {
   background: var(--line-soft);
 }
 
@@ -878,7 +899,7 @@ main.is-choosing .type-card b {
   min-width: 0;
 }
 
-.about-fields > * {
+.about-fields>* {
   min-width: 0;
 }
 
@@ -1057,6 +1078,7 @@ main.is-choosing .type-card b {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .chips label:hover input:not(:checked)+span,
   .pill:hover,
   .wizard-nav .btn:hover {
@@ -1068,15 +1090,18 @@ main.is-choosing .type-card b {
 .step-about.is-locked .step-body {
   opacity: .78;
 }
+
 .step-about.is-locked .step-body input:disabled,
 .step-about.is-locked .step-body textarea:disabled,
 .step-about.is-locked .step-body select:disabled {
   cursor: not-allowed;
 }
+
 .step-about.is-locked .step-body .chips label,
 .step-about.is-locked .step-body .pills {
   cursor: not-allowed;
 }
+
 .about-lock-note {
   margin: .85rem 0 0;
   padding: .75rem 1rem;
@@ -1090,21 +1115,68 @@ main.is-choosing .type-card b {
 
 
 /* Styled autocomplete menus for breed and color comboboxes */
-.pills { position: relative; }
-.pills-options {
-  position: absolute; z-index: 100; top: calc(100% + 7px); left: 0; right: 0;
-  max-height: 230px; overflow-y: auto; padding: .4rem;
-  border: 1px solid var(--line, #dce8df); border-radius: 14px;
-  background: var(--white, #fff); box-shadow: 0 12px 30px rgba(20, 55, 35, .16);
+.pills {
+  position: relative;
 }
-.pills-options[hidden] { display: none; }
+
+.pills-options {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 7px);
+  left: 0;
+  right: 0;
+  max-height: 230px;
+  overflow-y: auto;
+  padding: .4rem;
+  border: 1px solid var(--line, #dce8df);
+  border-radius: 14px;
+  background: var(--white, #fff);
+  box-shadow: 0 12px 30px rgba(20, 55, 35, .16);
+}
+
+.pills-options[hidden] {
+  display: none;
+}
+
 .pills-option {
-  display: block; width: 100%; padding: .65rem .8rem; border: 0; border-radius: 9px;
-  background: transparent; color: var(--ink, #173b2b); text-align: left; font: inherit; cursor: pointer;
+  display: block;
+  width: 100%;
+  padding: .65rem .8rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink, #173b2b);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
-.pills-option:hover, .pills-option.is-active { background: var(--mint, #eaf5ed); color: var(--forest, #174b35); }
-.pills-option:focus-visible { outline: 2px solid var(--leaf, #4c9b63); outline-offset: -2px; }
+
+.pills-option:hover,
+.pills-option.is-active {
+  background: var(--mint, #eaf5ed);
+  color: var(--forest, #174b35);
+}
+
+.pills-option:focus-visible {
+  outline: 2px solid var(--leaf, #4c9b63);
+  outline-offset: -2px;
+}
+
+:root[data-theme="dark"] .pills-options {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .pills-option {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .pills-option:hover,
+:root[data-theme="dark"] .pills-option.is-active {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
 
 /* Tag boxes (Breed, Main color): the container draws the border and focus ring,
    so the typing area inside must never draw its own outline, border or shadow
@@ -1131,14 +1203,33 @@ main.is-choosing .type-card b {
 }
 
 @keyframes field-shake {
-  10%, 90% { transform: translateX(-1px); }
-  20%, 80% { transform: translateX(2px); }
-  30%, 50%, 70% { transform: translateX(-4px); }
-  40%, 60% { transform: translateX(4px); }
+
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .is-shaking { animation: none; }
+  .is-shaking {
+    animation: none;
+  }
 }
 
 /* "Mixed breed" tag that is added automatically (no remove button) */
@@ -1265,7 +1356,7 @@ main.is-choosing .type-card b {
   font-size: 1rem;
 }
 
-.size-guide-list li > span {
+.size-guide-list li>span {
   display: grid;
   gap: .1rem;
   min-width: 0;
