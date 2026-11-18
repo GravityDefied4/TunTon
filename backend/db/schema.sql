@@ -1,12 +1,8 @@
--- =====================================================================
--- Tunton: Lost Pet Recovery System for Dagupan City
--- schema.sql | Target: MySQL 8.0.16+ (CHECK constraints + spatial SRID 4326)
--- =====================================================================
 DROP DATABASE IF EXISTS tunton;
 CREATE DATABASE tunton CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tunton;
 
--- 1. BARANGAYS (Strong Entity for Geofencing)
+-- 1. BARANGAYS (strong entity: geofencing)
 CREATE TABLE barangays (
     barangay_id  SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name         VARCHAR(60)       NOT NULL,
@@ -17,7 +13,7 @@ CREATE TABLE barangays (
     SPATIAL INDEX sp_barangays_center (center)
 ) ENGINE=InnoDB;
 
--- 2. USERS (Strong Entity)
+-- 2. USERS (strong entity)
 CREATE TABLE users (
     user_id        INT UNSIGNED               NOT NULL AUTO_INCREMENT,
     google_sub     VARCHAR(255)               NULL,
@@ -41,8 +37,8 @@ CREATE TABLE users (
     CONSTRAINT chk_users_phone CHECK (phone IS NULL OR phone REGEXP '^(\\+63|09)[0-9]{9}$')
 ) ENGINE=InnoDB;
 
--- 3. PET REPORTS (Weak Entity dependent on Users)
--- FDS Note: 'lat' and 'lng' are GENERATED columns to avoid update anomalies (3NF compliance).
+-- 3. PET REPORTS (weak entity dependent on Users)
+-- Note: 'lat' and 'lng' are GENERATED columns to avoid update anomalies (3NF)
 CREATE TABLE pet_reports (
     report_id         INT UNSIGNED      NOT NULL AUTO_INCREMENT,
     user_id           INT UNSIGNED      NOT NULL,
@@ -61,7 +57,7 @@ CREATE TABLE pet_reports (
     lng               DECIMAL(9,6) GENERATED ALWAYS AS (ST_Longitude(location)) STORED,
     barangay_id       SMALLINT UNSIGNED NULL,
     search_radius_km  TINYINT UNSIGNED  NULL,
-    phone             VARCHAR(15)       NULL,
+    phone             VARCHAR(15)       NULL, --reminder: change phone to contact
     facebook_profile_link  VARCHAR(255) NULL,
     status            ENUM('active','matched','resolved','closed','removed') NOT NULL DEFAULT 'active',
     created_at        TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -75,7 +71,7 @@ CREATE TABLE pet_reports (
     KEY ix_reports_match_filter (report_type, species, status, event_date)
 ) ENGINE=InnoDB;
 
--- 4. REPORT PHOTOS (Resolves 1NF Repeating Groups)
+-- 4. REPORT PHOTOS (resolves 1NF repeating groups)
 CREATE TABLE report_photos (
     photo_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
     report_id     INT UNSIGNED NOT NULL,
@@ -90,8 +86,8 @@ CREATE TABLE report_photos (
     CONSTRAINT fk_photos_report FOREIGN KEY (report_id) REFERENCES pet_reports (report_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 5. MATCHES (Composite Entity / Associative Entity)
--- FDS Note: Resolves the M:N relationship between a lost report and a found report.
+-- 5. MATCHES (composite entity / associative entity)
+-- Note: Resolves M:N relationship between a lost report and a found report
 CREATE TABLE matches (
     match_id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
     lost_report_id   INT UNSIGNED NOT NULL,
@@ -195,10 +191,8 @@ CREATE TABLE activity_logs (
     CONSTRAINT fk_logs_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- =====================================================================
--- VIEWS (FDS: Virtual Tables for Security and Simplified Queries)
--- =====================================================================
--- FDS Note: Prevents transitive exposure of contact info (Security + 3NF principle)
+-- VIEWS (virtual table)
+-- Note: prevents transitive exposure of contact info (security + 3NF)
 CREATE VIEW v_public_reports AS
 SELECT r.report_id, r.user_id, r.report_type, r.pet_name,
        r.species, r.breed, r.color,
