@@ -37,6 +37,7 @@ app.use('/api', require('./routes/matches'));          // /api/matching/run/:id 
 app.use('/api/claims', require('./routes/claims'));
 app.use('/api/push', require('./routes/push'));      // web push: public key, subscribe, unsubscribe
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/cron', require('./routes/cron'));      // called by Vercel Cron (or any scheduler): sends queued e-mails, lifts finished suspensions
 app.use('/api', notFound);
 
 /* ---- Uploads ----
@@ -86,19 +87,24 @@ app.use(express.static(path.join(__dirname, '..', 'frontend'), { extensions: ['h
 
 app.use(errorHandler);
 
+/* On Vercel the app runs as a serverless function: there is no long-running process, so listen() and the timers
+   (e-mail worker, suspension sweeper) must NOT be started. Vercel imports the exported app, and /api/cron/* does the
+   timer work when Vercel Cron calls it. Everywhere else (your PC, Railway, Render...) it starts as before. */
 const port = Number(process.env.PORT) || 3000;
 
 /* Optional HTTPS. Browsers only allow GPS location (and Google sign-in) on https:// pages or localhost, so a plain
    http://192.168.x.x:3000 or http tunnel loses both. Set SSL_KEY_FILE and SSL_CERT_FILE (e.g. made with mkcert) to serve https directly. */
 const { SSL_KEY_FILE, SSL_CERT_FILE, PUBLIC_URL } = process.env;
 let server, scheme = 'http';
-if (SSL_KEY_FILE && SSL_CERT_FILE) {
+if (process.env.VERCEL) {
+  /* serverless: nothing to start */
+} else if (SSL_KEY_FILE && SSL_CERT_FILE) {
   const fs = require('fs');
   server = require('https').createServer({ key: fs.readFileSync(SSL_KEY_FILE), cert: fs.readFileSync(SSL_CERT_FILE) }, app);
   scheme = 'https';
 } else server = require('http').createServer(app);
 
-server.listen(port, () => {
+if (server) server.listen(port, () => {
   console.log(`TunTon running at ${scheme}://localhost:${port}`);
   require('./services/notifier').startWorker();   // sends queued match e-mails in batches
   require('./services/suspensions').startSweeper();   // lifts timed suspensions when their time is up
@@ -109,3 +115,5 @@ server.listen(port, () => {
     if (!/^https:/i.test(PUBLIC_URL)) console.warn('  [warn] PUBLIC_URL is not https: browsers will block GPS location and Google sign-in there. Use an https tunnel.');
   }
 });
+
+module.exports = app;
