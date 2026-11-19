@@ -345,20 +345,65 @@ async function queueReactivationEmail(conn, { userId, email, fullName, auto = fa
   return r.affectedRows === 1;
 }
 
-/* ---- Sending ---- */
+/* ---- Sending ----
+   Two ways to send, picked by what is set in the environment (the first one found wins):
+     1. BREVO_API_KEY -> Brevo's HTTPS API (port 443). Use this on hosts that block SMTP ports:
+        Render free web services block outbound 25, 465 and 587. MAIL_FROM must be a sender verified in Brevo.
+     2. SMTP_HOST     -> classic SMTP through nodemailer (SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS).
+   Both give back { send(m) } so sendBatch does not care which one is used. */
+const fromAddress = () => process.env.MAIL_FROM || process.env.SMTP_USER || '';
+/* "TunTon <no-reply@x.com>" or "no-reply@x.com" -> { name?, email } */
+const parseFrom = s => {
+  const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(s || '');
+  return m ? { ...(m[1].trim() ? { name: m[1].trim() } : {}), email: m[2].trim() } : { email: String(s || '').trim() };
+};
+/* Replies go to MAIL_REPLY_TO when it is set (blank = replies go to the sender). Useful when the sender is replaced by the mail provider
+   (free addresses such as gmail.com), and for suspended users, who are asked to reply and must reach a real inbox. Applies to every e-mail. */
+const replyToFor = () => process.env.MAIL_REPLY_TO || null;
+
+function brevoTransport(apiKey) {
+  return {
+    async send(m) {
+      const sender = parseFrom(fromAddress());
+      if (!sender.email) throw new Error('MAIL_FROM is not set (it must be a sender verified in Brevo)');
+      /* The stored HTML points at an attached image (cid:). The API sends no attachments, so use the logo's public address. */
+      const html = String(m.body_html).split(`cid:${LOGO_CID}`).join(`${baseUrl()}/assets/logo/tunton-white.png`);
+      const replyTo = replyToFor();
+      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ sender, to: [{ email: m.to_email }], subject: m.subject, textContent: m.body_text, htmlContent: html,
+          ...(replyTo ? { replyTo: parseFrom(replyTo) } : {}) }),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (!r.ok) throw new Error(`Brevo ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    }
+  };
+}
+
+function smtpTransport() {
+  const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } = process.env;
+  const tx = require('nodemailer').createTransport({
+    host: SMTP_HOST, port: Number(SMTP_PORT) || 587, secure: /^(1|true|yes)$/i.test(SMTP_SECURE || ''),
+    auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+    /* A blocked port would otherwise hang each send for about two minutes and hold up the whole batch. */
+    connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000
+  });
+  return {
+    send: m => tx.sendMail({ from: fromAddress(), to: m.to_email, subject: m.subject, text: m.body_text, html: m.body_html,
+      attachments: mailAttachments(), ...(replyToFor() ? { replyTo: replyToFor() } : {}) })
+  };
+}
+
+const emailConfigured = () => Boolean(process.env.BREVO_API_KEY || process.env.SMTP_HOST);
+
 let transport; // undefined = not tried yet, null = not configured
 function getTransport() {
   if (transport !== undefined) return transport;
-  const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST) return (transport = null);
-  try {
-    transport = require('nodemailer').createTransport({
-      host: SMTP_HOST, port: Number(SMTP_PORT) || 587, secure: /^(1|true|yes)$/i.test(SMTP_SECURE || ''),
-      auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined
-    });
-  } catch (e) {
-    console.error('[email] nodemailer is not installed. Run: npm install'); transport = null;
-  }
+  if (process.env.BREVO_API_KEY) return (transport = brevoTransport(process.env.BREVO_API_KEY));
+  if (!process.env.SMTP_HOST) return (transport = null);
+  try { transport = smtpTransport(); }
+  catch (e) { console.error('[email] nodemailer is not installed. Run: npm install'); transport = null; }
   return transport;
 }
 
@@ -382,9 +427,7 @@ async function sendBatch() {
         "SELECT notification_id, kind, to_email, subject, body_text, body_html, attempts FROM email_notifications WHERE status = 'pending' ORDER BY notification_id LIMIT ?", [room]);
       for (const [i, m] of batch.entries()) {
         try {
-          await tx.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to: m.to_email, subject: m.subject, text: m.body_text, html: m.body_html, attachments: mailAttachments(),
-            /* Suspended users are asked to reply, so their replies must reach a real inbox, not the no-reply sender. */
-            ...(m.kind === 'suspension' && process.env.MAIL_REPLY_TO ? { replyTo: process.env.MAIL_REPLY_TO } : {}) });
+          await tx.send(m);
           await pool.query("UPDATE email_notifications SET status = 'sent', attempts = attempts + 1, sent_at = NOW(), last_error = NULL WHERE notification_id = ?", [m.notification_id]);
           out.sent++;
         } catch (e) {
@@ -405,12 +448,13 @@ async function sendBatch() {
   return out;
 }
 
-/* Called once from server.js. Does nothing (and says so) when SMTP_HOST is not set; queued e-mails then just wait. */
+/* Called once from server.js. Does nothing (and says so) when no e-mail provider is set; queued e-mails then just wait. */
 function startWorker() {
-  if (!process.env.SMTP_HOST) {
-    console.warn('[email] SMTP_HOST is not set: e-mails (matches, claims, suspensions, reactivations) are queued but not sent. See .env.example.');
+  if (!emailConfigured()) {
+    console.warn('[email] Neither BREVO_API_KEY nor SMTP_HOST is set: e-mails (matches, claims, suspensions, reactivations) are queued but not sent. See .env.example.');
     return null;
   }
+  console.log(`[email] provider: ${process.env.BREVO_API_KEY ? 'Brevo API' : 'SMTP ' + process.env.SMTP_HOST}`);
   console.log(`[email] sending up to ${CFG.batchSize} e-mails every ${CFG.intervalMs / 1000}s${CFG.dailyLimit ? `, max ${CFG.dailyLimit}/day` : ''}`);
   const timer = setInterval(() => { sendBatch().catch(e => console.error('[email]', e.message)); }, CFG.intervalMs);
   timer.unref();
