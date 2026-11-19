@@ -263,6 +263,10 @@ fieldset {
   box-sizing: border-box;
   min-height: 3.2em;
 }
+/* Comfortable minimum size so the placeholder is readable even before the auto-grow script has measured */
+.form textarea[name="markings"] { min-height: 5.5rem; }
+.form textarea[name="description"],
+.form textarea[name="howfound"] { min-height: 8rem; }
 
 /* ---------- Add pet report: choose lost or found ---------- */
 .sr-only {

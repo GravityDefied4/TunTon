@@ -90,6 +90,7 @@ async function sendClaim(kind, reportId, f, photos, prev) {
   else {
     const sp = f.get('species');
     put('pet_name', f.get('name'));
+    put('sex', String(f.get('sex') || '').toLowerCase());
     put('species', sp === 'Other' ? f.get('otherSpecies') : sp);
     put('breed', f.get('breed'));
     put('color', f.get('color'));
@@ -617,7 +618,7 @@ function setupForm(k, host) {
 
   // A user who recognizes a found-pet report can send their lost-pet details to THAT found report (add-report.html?claim=<id>).
   // This never creates a lost report of its own: the details are added to the found report for its finder to confirm.
-  // The user must still confirm the missing date/location and upload a photo before submitting.
+  // Only the species is pre-selected; the user fills in everything else about their own pet.
   let claimTarget = null, claimEdit = null;
   if (k === 'lost') {
     const claimId = new URLSearchParams(location.search).get('claim');
@@ -631,13 +632,8 @@ function setupForm(k, host) {
         syncSpecies();
         if (foundReport.species === 'Other') otherInput.value = foundReport.otherSpecies || '';
         refreshOtherAnimalOptions();
-        form.elements.name.value = foundReport.name || '';
-        form.elements.size.value = foundReport.size || '';
-        syncSize();
-        breedBox.pills.set(foundReport.breed || '');
-        form.querySelector('.pills[data-pills="color"]').pills.set(foundReport.color || '');
-        form.elements.markings.value = foundReport.markings || '';
-        form.elements.description.value = foundReport.description || foundReport.howFound || '';
+        // Only the species is carried over. Name, sex, breed, color, size, markings and description are left empty:
+        // the owner describes their OWN pet, so nothing from the finder's report is copied in.
         const banner = document.createElement('p');
         banner.className = 'match-banner';
         banner.textContent = claimEdit ? 'You are editing the lost report you sent to this found pet. Change what you need, then save. It does not create a new lost report.' : 'Claiming this pet as yours? Fill in your details and the finder will confirm. This won\'t create a new lost report.';
@@ -1051,10 +1047,19 @@ function setupAutoGrowTextareas(root = document) {
   root.querySelectorAll('.form textarea').forEach(textarea => {
     const resizeToContent = () => {
       textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
+      // Hidden (a later wizard step) measures 0: leave the height to the rows="" attribute instead of collapsing the box.
+      if (textarea.scrollHeight > 0) textarea.style.height = `${textarea.scrollHeight}px`;
     };
 
     textarea.addEventListener('input', resizeToContent);
+    // Re-measure when the textarea first becomes visible (its wizard step opens) or its width changes.
+    if (window.ResizeObserver) {
+      let lastW = 0;
+      new ResizeObserver(() => {
+        const w = textarea.offsetWidth;
+        if (w && w !== lastW) { lastW = w; resizeToContent(); }
+      }).observe(textarea);
+    }
 
     // Set the correct height on load,
     // including any prefilled content.

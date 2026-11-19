@@ -394,6 +394,7 @@ const toClaim = c => {
     markings: c.markings || '', description: c.description || '', howFound: c.description || '',
     name: pet.name || '', species: other ? 'Other' : (pet.species || ''), otherSpecies: other ? pet.species : '',
     breed: pet.breed || '', color: pet.color || '', size: REPORT_SIZES[pet.size] || '',
+    sex: String(pet.sex || c.sex || '').toLowerCase(),
     photos: (c.photos || []).map(p => reportAsset(p.url)), photoIds: ids,
     at: c.created_at ? Date.parse(c.created_at) : 0
   };
