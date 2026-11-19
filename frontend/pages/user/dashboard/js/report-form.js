@@ -640,7 +640,7 @@ function setupForm(k, host) {
         form.elements.description.value = foundReport.description || foundReport.howFound || '';
         const banner = document.createElement('p');
         banner.className = 'match-banner';
-        banner.textContent = claimEdit ? 'You are editing the lost report you sent to this found pet. Change what you need, then save. It does not create a new lost report.' : 'You are saying this found pet is yours. Your lost pet details are added to that found report for its finder to confirm. It does not create a new lost report. Check the details, choose when and where your pet was last seen, add a photo, and drop a pin.';
+        banner.textContent = claimEdit ? 'You are editing the lost report you sent to this found pet. Change what you need, then save. It does not create a new lost report.' : 'Claiming this pet as yours? Fill in your details and the finder will confirm. This won\'t create a new lost report.';
         form.parentElement.insertBefore(banner, form);
       }
     }

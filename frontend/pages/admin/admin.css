@@ -1312,3 +1312,17 @@ body.adm {
 }
 /* A locked button, e.g. Restore on a report whose owner is suspended */
 .a-btn:disabled { opacity: .45; cursor: not-allowed; pointer-events: auto; }
+/* Admin access tab */
+.a-you { display: inline; margin-left: 4px; color: var(--muted); font-weight: 700; }
+/* CONFIRM box in the role-change popup */
+#dlg-body .a-confirm-input { box-sizing: border-box; width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: 800 14px var(--font-body); letter-spacing: .08em }
+#dlg-body .a-confirm-input:focus { outline: 2px solid color-mix(in srgb, var(--leaf) 45%, transparent); border-color: var(--leaf) }
+#dlg-body .a-confirm-input[aria-invalid="true"] { border-color: #c0392b }
+
+/* Top header removed on desktop (the page title is already shown in the page itself).
+   On phones only the menu button stays, so the sidebar can still be opened. */
+.a-topbar { display: none }
+@media (max-width: 760px) {
+  .a-topbar { display: flex; min-height: 0; padding: 10px 16px; background: transparent; border-bottom: 0; backdrop-filter: none; position: static }
+  .a-topbar > div { display: none }
+}
