@@ -91,3 +91,379 @@
   .sk-vcard { grid-template-columns: 84px minmax(0, 1fr); }
   .sk-vcard .sk-thumb { aspect-ratio: 1 / 1; }
 }
+
+/* --- 4. Add pet report: report-type cards, tuned for phones ----------------------------------
+   Two states, two problems:
+   a) Nothing chosen yet  -> the cards were small and left half the screen empty. Now they are big,
+      centred, easy tap targets that share the available height.
+   b) A type is chosen    -> the cards were still big and pushed step 1 off the screen. Now they
+      collapse into a compact two-button switch (icon + title) so the form starts right below.
+   Desktop and tablet (above 640px) are untouched. */
+@media (max-width: 640px) {
+
+  /* a) CHOOSING: large tap targets that fill the screen */
+  main.is-choosing {
+    min-height: calc(100dvh - 3.5rem);          /* viewport minus the top bar; main's own padding keeps it clear of the bottom nav */
+    justify-content: flex-start;
+  }
+  main.is-choosing .view-head p { max-width: 28ch; margin-inline: auto; }
+  main.is-choosing .type-pick {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, minmax(max-content, 1fr));
+    gap: 1rem;
+    max-height: 30rem;
+    margin: 1.25rem auto 0;
+  }
+  main.is-choosing .type-pick .type-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: center;
+    text-align: center;
+    row-gap: .35rem;
+    padding: 1.5rem 1.25rem;
+    border-width: 2px;
+    border-radius: 26px;
+    background: linear-gradient(180deg, var(--white), color-mix(in srgb, var(--tone-soft) 55%, var(--white)));
+  }
+  :root[data-theme="dark"] main.is-choosing .type-pick .type-card {
+    background: var(--surface);
+  }
+  main.is-choosing .type-pick .type-card svg {
+    width: 4.5rem; height: 4.5rem; padding: 1.1rem;
+    margin: 0 0 .35rem;
+  }
+  main.is-choosing .type-pick .type-card b { font-size: 1.45rem; line-height: 1.15; }
+  main.is-choosing .type-pick .type-card small { font-size: 1rem; line-height: 1.4; max-width: 30ch; }
+
+  /* b) CHOSEN: compact two-button switch, description hidden (the lead text above already says it) */
+  main:not(.is-choosing) .type-pick {
+    grid-template-columns: 1fr 1fr;
+    gap: .6rem;
+    margin: .9rem 0 1rem;
+  }
+  main:not(.is-choosing) .type-pick .type-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: .55rem;
+    min-height: 56px;                            /* still a comfortable thumb target */
+    padding: .45rem .7rem .45rem .55rem;
+    border-radius: 18px;
+  }
+  main:not(.is-choosing) .type-pick .type-card svg {
+    grid-row: auto;
+    width: 2.2rem; height: 2.2rem; padding: .5rem;
+  }
+  main:not(.is-choosing) .type-pick .type-card b { font-size: .95rem; line-height: 1.15; }
+  main:not(.is-choosing) .type-pick .type-card small { display: none; }
+  /* no lift on a compact switch: it should feel like a toggle, not a card */
+  main:not(.is-choosing) .type-pick label:hover .type-card { transform: none; }
+}
+
+@media (max-width: 360px) {
+  main:not(.is-choosing) .type-pick .type-card b { font-size: .88rem; }
+  main:not(.is-choosing) .type-pick .type-card svg { display: none; }   /* very narrow phones: text only, no squeeze */
+}
+
+/* --- 5. All reports: phone layout ----------------------------------------------------------
+   - Filters stay pinned under the top bar while you scroll (search, type, species).
+   - Type filter is a real segmented control (the active pill used to shrink to a circle).
+   - Each card is a tidy list row: square photo with rounded corners, up to two lines per detail,
+     reporter line at the bottom, 44px buttons.
+   - The loading skeleton has the same shape, so nothing jumps when the cards arrive.
+   Above 640px nothing changes. */
+@media (max-width: 640px) {
+
+  /* header */
+  .view-head--reports { margin-bottom: .75rem; }
+  .view-head--reports h1 { font-size: 1.5rem; }
+  .rcount {
+    padding: .25rem .7rem; border-radius: 999px;
+    background: var(--surface); box-shadow: var(--shadow);
+    font-size: .8rem; white-space: nowrap;
+  }
+
+  /* pinned filter bar (--topbar-h is measured in reports.js; 4rem is the fallback) */
+  .toolbar--reports {
+    position: sticky; top: var(--topbar-h, 4rem); z-index: 20;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem;
+    margin: 0 -1rem .75rem; padding: .5rem 1rem .6rem;
+    background: color-mix(in srgb, var(--page) 94%, transparent);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .rsearch {
+    grid-column: 1 / -1;
+    min-height: 44px; padding: .55em 1.1em .55em 2.6rem;
+    background: var(--surface) no-repeat 1rem 50% / 1.1rem
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237a8f80' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E");
+    font-size: 1rem;                                  /* 16px: stops iOS zooming in on focus */
+  }
+  .toolbar--reports .chips { grid-column: 1; width: 100%; }
+  .toolbar--reports .chips label { display: flex; flex: 1; min-width: 0; }
+  .toolbar--reports .chips span { flex: 1; display: grid; place-items: center; min-height: 38px; padding: 0 .4em; }
+  .rselect { grid-column: 2; max-width: none; min-height: 46px; font-size: .9rem; }
+
+  /* list */
+  #all-list.pet-list--grid { gap: .65rem; }
+  #all-list .pet-card {
+    grid-template-columns: 104px minmax(0, 1fr);
+    column-gap: .75rem; row-gap: .6rem;
+    padding: .6rem;
+    border-radius: 18px;
+  }
+  #all-list .pet-thumb {
+    width: 104px; height: 104px; min-height: 0;
+    border-radius: 13px; overflow: hidden; align-self: start;
+  }
+  #all-list .pet-body { padding: .1rem 0 0; gap: .2rem; min-height: 104px; }
+  #all-list .pet-body h3 {
+    font-size: 1.05rem;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  #all-list .pet-info li span {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  #all-list .pet-by { margin-top: auto; padding-top: .25rem; }
+  #all-list .pet-actions { padding: 0; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: .5rem; }
+  #all-list .pet-actions > .btn,
+  #all-list .pet-actions > .pet-status { min-height: 2.75rem; font-size: .88rem; }
+
+  /* skeleton: same row layout as the real card */
+  .sk-card {
+    display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: .75rem; row-gap: .6rem;
+    padding: .6rem; border-radius: 18px;
+  }
+  .sk-card .sk-thumb { width: 104px; height: 104px; aspect-ratio: auto; border-radius: 13px; }
+  .sk-card .sk-body { padding: .1rem 0 0; gap: .5rem; align-content: start; }
+  .sk-card .sk-actions { grid-column: 1 / -1; padding: 0; gap: .5rem; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+  .sk-card .sk-actions .sk-btn:first-child { width: auto; }
+  .sk-card .sk-btn { height: 2.75rem; }
+}
+
+@media (max-width: 380px) {
+  #all-list .pet-card, .sk-card { grid-template-columns: 88px minmax(0, 1fr); }
+  #all-list .pet-thumb, .sk-card .sk-thumb { width: 88px; height: 88px; }
+  #all-list .pet-body { min-height: 88px; }
+}
+
+/* --- 6. My profile: phone layout ------------------------------------------------------------
+   Everything on the page was desktop-sized (96px photo, 2.5rem name, stacked one-per-row stats,
+   big inputs and cards). Now: photo + name side by side, the three counts in one compact row,
+   one-column form with 16px inputs (so iOS does not zoom in), and slim report rows.
+   Above 640px nothing changes. */
+@media (max-width: 640px) {
+  #view-profile .view-head { margin-bottom: .75rem; }
+  #view-profile .view-head h1 { font-size: 1.5rem; }
+  #view-profile .view-head p { font-size: .85rem; line-height: 1.35; }
+  #view-profile .box { margin-top: .9rem; padding: .9rem; border-radius: 20px; }
+  #view-profile h2 { font-size: 1.15rem; margin-bottom: .6rem; }
+
+  /* header card: photo + name on one row, counts on the next */
+  .pf-profile-card { padding: .9rem; border-width: 2px; }
+  .pf-profile-card .pf-head { gap: .85rem; padding-bottom: .9rem; align-items: center; flex-wrap: wrap; }
+  .pf-avatar-wrap { flex: none; gap: .6rem; }
+  .pf-avatar-frame { width: 76px; height: 76px; }
+  .pf-avatar-frame .pf-avatar { border-width: 3px; font-size: 1.8rem; }
+  .pf-camera-overlay svg { width: 24px; height: 24px; }
+  .pf-identity { flex: 1 1 0; min-width: 0; }
+  #pf-name-big {
+    font-size: 1.5rem !important;
+    line-height: 1.15 !important;
+    margin: 0 0 .15rem !important;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+  #pf-email { font-size: .85rem; overflow-wrap: anywhere; }
+  .pf-identity .hint { font-size: .76rem; margin-top: .1rem; }
+
+  /* photo instructions only appear while editing: keep them small and under the photo */
+  .pf-avatar-actions { max-width: 130px; gap: .2rem; }
+  .pf-picture-note, #pf-picture-note { font-size: .72rem; line-height: 1.3; max-width: 130px; }
+  #pf-picture-note-label { font-size: .85rem; }
+
+  /* the three counts: one row, compact tiles */
+  .pf-stats { flex: 1 1 100%; width: 100%; margin: 0; gap: .45rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pf-stat { min-height: 0; padding: .55rem .25rem; border-radius: 14px; box-shadow: none; }
+  .pf-stat:hover { transform: none; box-shadow: none; }
+  .pf-stats .pf-stat b { font-size: 1.4rem; }
+  .pf-stats .pf-stat span { margin-top: .15rem; font-size: .7rem; line-height: 1.15; }
+
+  /* details form */
+  .pf-details-section { padding-top: .9rem; }
+  .pf-details-heading { flex-direction: row; align-items: center; margin-bottom: .6rem; }
+  .pf-details-heading h2 { font-size: 1.15rem; }
+  .pf-edit-icon-button { padding: .4em .9em; font-size: .85rem; gap: .35rem; }
+  .pf-edit-icon-button svg { width: 15px; height: 15px; }
+  #profile-form { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  #profile-form label { font-size: .88rem; margin-bottom: .25rem; }
+  #profile-form input[type=text],
+  #profile-form input[type=url],
+  #profile-form select { padding: .6em .85em; font-size: 1rem; border-radius: 14px; border-width: 1.5px; }   /* 16px: no iOS zoom */
+  #profile-form.is-editing { padding: .75rem; }
+  #profile-form .hint { font-size: .8rem; line-height: 1.4; }
+  .field-error { font-size: .82rem; }
+  .pf-edit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .pf-edit-actions .btn { padding: .6em 1em; font-size: .95rem; }
+
+  /* my reports: slim rows, photo left, link on its own line */
+  .rep-list { gap: .6rem; }
+  .rep { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: .65rem; align-items: start; padding: .6rem; border-width: 1.5px; border-radius: 16px; }
+  .rep img { width: 64px; height: 64px; border-radius: 11px; }
+  .rep-body h3 { font-size: 1rem; margin: .15em 0 0; }
+  .rep-body p { font-size: .82rem; }
+  .rep-actions { grid-column: 1 / -1; width: 100%; justify-content: flex-end; padding-top: .35rem; border-top: 1px solid var(--line-soft); }
+  .rep-view-link { padding: .25rem 0; font-size: .9rem; }
+  .rep-list .empty { font-size: .9rem; }
+}
+
+@media (max-width: 360px) {
+  .pf-avatar-frame { width: 64px; height: 64px; }
+  #pf-name-big { font-size: 1.3rem !important; }
+  .pf-stats .pf-stat b { font-size: 1.25rem; }
+}
+
+
+/* --- 7. Attribute matching: phone layout ----------------------------------------------------
+   Before: every result was a tall stacked card (full-width photo, then text, then a big score, then a
+   button), the percentage filter wrapped into a pile of chips, and the intro cards were desktop-sized.
+   Now: compact result cards (small photo + details on top, score and button in one row below),
+   a single scrolling row of filter chips, and a tighter picker. Above 640px nothing changes. */
+@media (max-width: 640px) {
+  #view-matching .view-head { margin-bottom: .6rem; }
+  #view-matching .view-head h1 { font-size: 1.5rem; }
+  #view-matching .view-head p { font-size: .85rem; line-height: 1.35; }
+
+  /* "Matching for" picker + how-it-works note */
+  .match-pick { gap: .5rem; margin: .9rem 0 1.1rem; }
+  .ms-label { font-size: .72rem; }
+  .ms-row { gap: .6rem; padding: .6rem; border-radius: 18px; }
+  .ms-row .ms-trigger img { width: 48px; height: 48px; border-radius: 12px; }
+  .ms-text b { font-size: 1rem; }
+  .ms-text small { font-size: .8rem; }
+  .ms-arrow { width: 1.8rem; height: 1.8rem; }
+  .ms-view { min-height: 2.5rem; font-size: .9rem; }
+  .ms-panel { border-radius: 18px; max-height: min(380px, 55vh); }
+  .ms-option { gap: .65rem; padding: .5rem; }
+  .mp-how { padding: .65rem .85rem; border-radius: 16px; font-size: .82rem; line-height: 1.4; }
+  .mp-how b { font-size: .92rem; }
+
+  /* results heading + filter: heading, then one horizontally scrolling row of chips */
+  .mr-head { flex-direction: column; align-items: stretch; gap: .6rem; padding-bottom: .75rem; margin-bottom: .85rem; }
+  .match-head h2 { font-size: 1.2rem; }
+  .match-head p { font-size: .85rem; }
+  .mr-filter { flex-wrap: nowrap; gap: .5rem; margin-inline: -1rem; padding-inline: 1rem; min-width: 0; }
+  .mr-filter-label { flex: none; font-size: .8rem; }
+  .mc-chips {
+    flex-wrap: nowrap; gap: .4rem; min-width: 0;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    padding: .15rem 1rem .15rem 0;
+  }
+  .mc-chips::-webkit-scrollbar { display: none; }
+  .mc-chip { flex: none; }
+  .mc-chip span { gap: .35rem; padding: .5em .8em; font-size: .82rem; }
+  .mc-chip span em { display: none; }       /* the % ranges are in the tooltip; the label + count is enough here */
+  .mc-chip span b { min-width: 1.2rem; font-size: .7rem; }
+
+  /* result cards: photo + details on the first row, score + button on the second */
+  .match-list { gap: .7rem; }
+  .match-list .m-card {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: .65rem .8rem; align-items: start;
+    padding: .7rem; border-radius: 18px;
+  }
+  .match-list .m-photo { width: 92px; height: 92px; aspect-ratio: auto; border-radius: 13px; }
+  .match-list .m-photo .tag-missing { top: 5px; left: 5px; font-size: .6rem; padding: .18em .55em .18em .45em; }
+  .match-list .m-body h3 { font-size: 1.02rem; gap: .4rem; margin-bottom: .1rem; }
+  .match-list .m-rank { font-size: .68rem; padding: .05em .5em; }
+  .match-list .m-facts { font-size: .84rem; margin-bottom: .2rem; line-height: 1.3; }
+  .match-list .m-meta { font-size: .78rem; gap: .1rem .7rem; }
+  .match-list .m-chips { grid-column: 1 / -1; margin-top: .45rem; gap: .3rem; }
+  .match-list .m-chip { font-size: .68rem; padding: .1em .55em .1em .4em; }
+
+  .match-list .m-side {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .7rem;
+    padding-top: .6rem; border-top: 1px solid var(--line-soft);
+  }
+  .match-list .m-score { min-width: 0; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: .1rem .55rem; }
+  .match-list .m-pct { font-size: 1.7rem; }
+  .match-list .m-pct small { font-size: .85rem; }
+  .match-list .m-verdict { margin: 0; font-size: .8rem; }
+  .match-list .m-bar { grid-column: 1 / -1; height: 6px; }
+  .match-list .m-view { min-height: 2.4rem; padding: 0 1em; font-size: .88rem; gap: .35rem; }
+  .match-list .m-view svg { width: .95rem; height: .95rem; }
+
+  /* the best match keeps a bigger photo, but a wide one instead of a tall one */
+  .match-list .m-card--top { grid-template-columns: 1fr; padding: .8rem; border-radius: 22px; gap: .7rem; }
+  .match-list .m-card--top .m-photo { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; }
+  .match-list .m-card--top .m-photo .tag-missing { top: 8px; left: 8px; font-size: .7rem; }
+  .match-list .m-card--top .m-body h3 { font-size: 1.3rem; margin-bottom: .2rem; }
+  .match-list .m-card--top .m-facts { font-size: .92rem; }
+  .match-list .m-card--top .m-meta { font-size: .84rem; }
+  .match-list .m-card--top .m-chips { margin-top: .5rem; }
+  .match-list .m-card--top .m-chip { font-size: .72rem; }
+  .match-list .m-card--top .m-pct { font-size: 2.3rem; }
+  .match-list .m-card--top .m-pct small { font-size: 1rem; }
+  .match-list .m-card--top .m-verdict { font-size: .88rem; }
+  .match-list .m-card--top .m-bar { height: 7px; }
+  .match-list .m-card--top .m-view { min-height: 2.6rem; font-size: .95rem; }
+  .m-top-tag { margin-bottom: .35rem; padding: .2em .7em .2em .5em; font-size: .68rem; }
+
+  /* empty states */
+  .m-none { padding: 1.5rem 1rem; }
+  .m-none h3 { font-size: 1.1rem; }
+  .m-none p { font-size: .88rem; }
+  .m-none-actions { width: 100%; }
+  .m-none-actions .btn { flex: 1 1 100%; }
+  .m-empty { padding-block: 1.25rem; }
+  .m-empty h2 { font-size: 1.15rem; }
+}
+
+@media (max-width: 380px) {
+  .match-list .m-card { grid-template-columns: 78px minmax(0, 1fr); }
+  .match-list .m-photo { width: 78px; height: 78px; }
+}
+
+
+/* --- 8. Dashboard: the map is the main feature on phones ------------------------------------
+   The map was a short box (about half the screen) squeezed between the toolbar and the list.
+   Now: the welcome text is trimmed so the map starts higher, and the map is a tall, edge-to-edge
+   panel that takes most of the screen. The report list sits below it. Tablets keep their layout. */
+@media (max-width: 640px) {
+  .view-head--dashboard { margin-bottom: .6rem; }
+  .view-head--dashboard h1 { font-size: 1.35rem; margin-bottom: 0; }
+  .view-head--dashboard h1::after { height: 4px; margin-top: .25em; }
+  .view-head--dashboard p { display: none; }          /* the map itself says what to do; this line pushed it down */
+
+  .map-status { margin-bottom: .5rem; }
+
+  /* the map: tall, full width of the screen, and the clear focal point */
+  .map-wrap { margin-inline: -1rem; }
+  #map {
+    height: 62vh;                                     /* fallback */
+    height: clamp(380px, 64dvh, 680px);
+    border-radius: 0;
+    box-shadow: none;
+    border-block: 1px solid var(--line);
+  }
+  .legend { left: 8px; bottom: 14px; padding: .3rem .6rem; font-size: .7rem; }
+
+  /* the list below the map gets a clear start */
+  .map-grid { gap: 1rem; }
+  .map-side { margin-top: .25rem; }
+}
+
+@media (max-width: 380px) {
+  #map { height: clamp(340px, 60dvh, 560px); }
+}
+
+
+/* --- 9. Dashboard on phones: same calm treatment --- */
+@media (max-width: 640px) {
+  .view-head--dashboard h1::after { display: none; }
+  .map-status { margin: 0 .25rem .5rem; font-size: .78rem; }
+  #map { border-inline: 0; }            /* edge-to-edge map: no side borders */
+  .map-side { border: 0; box-shadow: none; background: transparent; height: auto; }
+  .map-side .side-body { padding: .25rem 0 0; }
+  .vcard { background: var(--surface); border: 1px solid var(--line-soft); }
+}

@@ -432,3 +432,332 @@
 }
 
 @media (max-width: 1000px) { #app-nav { display: none; } }
+
+
+/* =========================================================
+   Desktop top-right bar: bell, theme toggle and profile.
+   js/sidebar.js moves the profile card in here at 1001px and wider
+   (phones keep it in the drawer / top bar).
+   ========================================================= */
+.dash-bar { display: none; }
+
+@media (min-width: 1001px) {
+  .dash-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    max-width: 1680px;
+    margin-inline: auto;
+    padding: 1rem clamp(1rem, 2.4vw, 2.75rem) 0;
+  }
+
+  .dash-bar .side-profile {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .3rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 2px 10px rgba(15, 107, 63, .08);
+  }
+
+  .dash-bar .who { order: 3; flex: none; padding-right: .5rem; color: var(--ink); }
+  .dash-bar .who:focus-visible,
+  .dash-bar .notif-btn:focus-visible,
+  .dash-bar .theme-toggle--side:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
+
+  .dash-bar .notif-btn,
+  .dash-bar .theme-toggle--side {
+    width: 38px;
+    height: 38px;
+    background: var(--surface-tint);
+    color: var(--heading);
+  }
+  .dash-bar .notif-btn:hover,
+  .dash-bar .theme-toggle--side:hover { background: var(--surface-hover); }
+  .dash-bar .notif-badge { box-shadow: 0 0 0 2px var(--surface); }
+
+  .dash-bar .avatar { width: 38px; height: 38px; flex: none; border-radius: 10px; object-fit: cover; }
+  .dash-bar .avatar.initial { background: var(--mint); color: var(--heading); }
+  .side-min .dash-bar #user-name { display: inline; }
+  .dash-bar #user-name { max-width: 140px; }
+
+  /* Log out is the only thing left in the sidebar footer */
+  .side-user { gap: 0; }
+}
+
+/* ---------- Top-right bar: larger controls, less empty space above the page ---------- */
+@media (min-width: 1001px) {
+  .dash-main > main { padding-top: .75rem; }
+  .dash-bar { padding-top: 1.1rem; }
+
+  .dash-bar .side-profile { gap: .6rem; padding: .45rem; border-radius: 18px; }
+  .dash-bar .notif-btn,
+  .dash-bar .theme-toggle--side { width: 48px; height: 48px; border-radius: 13px; }
+  .dash-bar .notif-btn svg,
+  .dash-bar .theme-toggle--side svg { width: 24px; height: 24px; }
+  .dash-bar .avatar { width: 48px; height: 48px; border-radius: 13px; }
+  .dash-bar .avatar.initial { font-size: 1.25rem; }
+  .dash-bar .who { gap: .8rem; padding-right: .8rem; font-size: 1.15rem; }
+  .dash-bar #user-name { max-width: 180px; }
+  .dash-bar .notif-badge { top: -6px; right: -6px; }
+}
+
+/* Placeholders for the bell: js/notifications.js swaps the real button in, but it (and its stylesheet) arrive
+   a moment after every page load, and the bell used to be missing until then. So the placeholder is drawn
+   like the bell (same size, colour and icon) and the swap is invisible. Keep in step with css/notifications.css. */
+.notif-slot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--side-r-sm, 10px);
+  background: var(--side-hover, rgba(255, 255, 255, .09));
+  color: var(--white, #fff);
+}
+.notif-slot svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.notif-slot--top { width: 42px; height: 42px; background: rgba(255, 255, 255, .14); }
+@media (max-width: 1000px) { .notif-slot--side { display: none; } }
+@media (min-width: 1001px) {
+  .notif-slot--top { display: none; }
+  /* desktop: the bell sits in the top-right card (same look as .dash-bar .notif-btn) */
+  .dash-bar .notif-slot--side {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    background: var(--surface-tint);
+    color: var(--heading);
+  }
+  .dash-bar .notif-slot--side svg { width: 24px; height: 24px; }
+}
+
+
+/* =========================================================
+   Desktop top-right bar, Gizmo-style: three separate round controls
+   (theme, bell with a red count badge, avatar with a chevron that
+   opens the account menu). No shared card around them.
+   ========================================================= */
+@media (min-width: 1001px) {
+  .dash-bar { align-items: center; padding-top: 1rem; position: relative; z-index: 900; }
+
+  .dash-bar .side-profile {
+    gap: .65rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  /* round white buttons with a hairline border */
+  .dash-bar .notif-btn,
+  .dash-bar .theme-toggle--side,
+  .dash-bar .notif-slot--side {
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(15, 107, 63, .08);
+    transition: background .2s ease, border-color .2s ease, transform .15s ease, box-shadow .2s ease;
+  }
+  .dash-bar .notif-btn:hover,
+  .dash-bar .theme-toggle--side:hover {
+    background: var(--surface-hover);
+    border-color: var(--leaf);
+    box-shadow: 0 4px 12px rgba(15, 107, 63, .14);
+  }
+  .dash-bar .notif-btn[aria-expanded="true"] { background: var(--surface-hover); border-color: var(--leaf); }
+  .dash-bar .notif-btn svg,
+  .dash-bar .theme-toggle--side svg,
+  .dash-bar .notif-slot--side svg { width: 22px; height: 22px; }
+
+  /* theme button sits first, then bell, then account (flex order) */
+  .dash-bar .theme-toggle--side { order: 1; }
+  .dash-bar .notif-btn,
+  .dash-bar .notif-slot--side { order: 2; }
+  .dash-bar .who { order: 3; }
+
+  /* red count badge, top-right of the bell like Gizmo's "9+" */
+  .dash-bar .notif-badge {
+    top: -7px;
+    right: -7px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    border-radius: 999px;
+    font: 800 .76rem/22px 'Nunito', system-ui, sans-serif;
+    box-shadow: 0 0 0 2px var(--page);
+  }
+
+  /* account: round avatar + chevron, in a pill. The name moves into the menu. */
+  .dash-bar .who {
+    flex: none;
+    gap: .35rem;
+    padding: .2rem .55rem .2rem .2rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgba(15, 107, 63, .08);
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease;
+  }
+  .dash-bar .who:hover,
+  .dash-bar .who[aria-expanded="true"] { background: var(--surface-hover); border-color: var(--leaf); }
+  .dash-bar .who #user-name { display: none; }
+  .side-min .dash-bar #user-name { display: none; }
+  .dash-bar .avatar { width: 40px; height: 40px; border-radius: 50%; }
+  .dash-bar .avatar.initial { font-size: 1.15rem; background: var(--mint); color: var(--heading); }
+  .dash-bar .who::after {
+    content: "";
+    width: 9px;
+    height: 9px;
+    margin: 0 .25rem 3px .1rem;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg);
+    transition: transform .2s ease, margin .2s ease;
+  }
+  .dash-bar .who[aria-expanded="true"]::after { transform: rotate(-135deg); margin-bottom: -3px; }
+
+  /* ---------- Account dropdown ---------- */
+  .acct-wrap { display: contents; }
+  .dash-bar .side-profile { position: relative; }
+  .acct-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 1300;
+    width: 270px;
+    padding: .5rem;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 18px 40px rgba(10, 46, 28, .24);
+    animation: notif-in .16s ease-out;
+  }
+  .acct-menu[hidden] { display: none; }
+  .acct-head {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .6rem .75rem;
+    margin-bottom: .35rem;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .acct-head .acct-pic { width: 44px; height: 44px; flex: none; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: var(--mint); color: var(--heading); font: 600 1.2rem var(--font-display); }
+  .acct-head b { display: block; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px; }
+  .acct-head small { color: var(--muted); font-weight: 600; font-size: .78rem; }
+  .acct-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    width: 100%;
+    min-height: 44px;
+    padding: .5rem .7rem;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--ink);
+    font: 700 .95rem var(--font-body, inherit);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .acct-item svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--heading); }
+  .acct-item:hover, .acct-item:focus-visible { background: var(--surface-hover); outline: none; }
+  .acct-item--out:hover, .acct-item--out:focus-visible { background: var(--danger-bg); color: var(--danger-text); }
+  .acct-item--out:hover svg, .acct-item--out:focus-visible svg { color: var(--danger-text); }
+  .acct-sep { height: 1px; margin: .35rem .4rem; background: var(--line-soft); }
+
+  /* theme row inside the menu: label + switch */
+  .acct-theme .acct-switch {
+    margin-left: auto;
+    position: relative;
+    width: 38px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--line);
+    transition: background .2s ease;
+  }
+  .acct-theme .acct-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    transition: transform .2s ease;
+  }
+  :root[data-theme="dark"] .acct-theme .acct-switch { background: var(--leaf); }
+  :root[data-theme="dark"] .acct-theme .acct-switch::after { transform: translateX(16px); }
+
+  /* notification panel hangs under the bell, same style as the menu */
+  .notif-panel.from-top { top: 74px; border-radius: 18px; }
+  :root[data-theme="dark"] .dash-bar .notif-btn,
+  :root[data-theme="dark"] .dash-bar .theme-toggle--side,
+  :root[data-theme="dark"] .dash-bar .who { box-shadow: none; }
+}
+
+@media (max-width: 1000px) { .acct-wrap, .acct-menu { display: none; } }
+
+
+/* =========================================================
+   Desktop: put the three controls on the SAME ROW as the page title
+   ("Welcome back", "All reports", ...). The bar floats over the top of
+   the page instead of taking a row of its own, and its top is worked out
+   from the title's font size so the centres line up on every tab.
+   ========================================================= */
+@media (min-width: 1001px) {
+  .dash-main { position: relative; }
+
+  .dash-main > main { padding-top: 1.25rem; }
+
+  .dash-bar {
+    position: absolute;
+    top: calc(1.25rem + .575 * clamp(1.7rem, 3vw, 2.3rem) - 25px);   /* title centre - half the bar */
+    left: 0;
+    right: 0;
+    height: 0;
+    padding: 0 clamp(1rem, 2.4vw, 2.75rem);
+    align-items: flex-start;
+    pointer-events: none;       /* the empty strip never blocks clicks on the page */
+    z-index: 900;
+  }
+
+  .dash-bar > * { pointer-events: auto; }
+
+  /* the title's decorative shape moves left so it does not sit under the controls */
+  .view-head::after { right: clamp(14rem, 17vw, 17rem); }
+  .view-head p { max-width: none; }   /* the subtitle sits below the controls' row, so it can use the full width */
+}
+
+
+/* Minimized sidebar: the rules that stack the profile card vertically in the narrow sidebar
+   must not touch the top-right bar, which always stays one row. */
+@media (min-width: 1001px) {
+  .side-min .dash-bar .side-profile {
+    flex-direction: row;
+    align-items: center;
+    gap: .65rem;
+    padding: 0;
+  }
+  .side-min .dash-bar .who { flex: none; justify-content: flex-start; padding: .2rem .55rem .2rem .2rem; }
+}
+
+/* All reports: the "N reports" count used to sit at the top right, under the account controls. Hidden on desktop. */
+@media (min-width: 1001px) { .rcount { display: none; } }

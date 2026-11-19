@@ -1,0 +1,168 @@
+/* =========================================================
+   Dashboard map, floating style (desktop, 1001px and wider).
+   The map fills the whole area beside the sidebar and everything else
+   floats on top of it as frosted-glass pieces:
+     top-left   greeting, search pill, filter chips + radius, status
+     left       results card
+     right      zoom / "Zoom to Dagupan" stack, top-right account bar
+     bottom     legend + round "My location" button
+   Phones and tablets keep the existing stacked layout.
+   Switched on by <body class="page-map"> in dashboard.html.
+   ========================================================= */
+.loc-ico { display: none; }
+
+@media (min-width: 1001px) {
+  body.page-map {
+    --glass: color-mix(in srgb, var(--surface) 74%, transparent);
+    --glass-line: color-mix(in srgb, var(--surface) 60%, transparent);
+    --glass-shadow: 0 8px 28px rgba(10, 46, 28, .16), 0 1px 3px rgba(10, 46, 28, .1);
+  }
+  :root[data-theme="dark"] body.page-map { --glass-line: var(--line); --glass-shadow: 0 8px 28px rgba(0, 0, 0, .45); }
+
+  /* ---------- Full-bleed canvas ---------- */
+  body.page-map .dash-main > main { max-width: none; padding: 0; margin: 0; }
+  body.page-map .dash-bar { max-width: none; }
+
+  body.page-map #view-map {
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: min(420px, 36vw) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    row-gap: .65rem;
+    padding: 1rem 0 1.25rem 1rem;
+  }
+
+  body.page-map .map-grid { display: contents; }
+
+  body.page-map .map-wrap { position: absolute; inset: 0; z-index: 0; }
+  body.page-map #map { height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  body.page-map .map-skel { border-radius: 0; }
+
+  /* ---------- Floating pieces share one frosted look ---------- */
+  body.page-map .view-head,
+  body.page-map .map-search,
+  body.page-map .fchip,
+  body.page-map .radius-pick select,
+  body.page-map .map-status,
+  body.page-map .map-side,
+  body.page-map .legend,
+  body.page-map #locate,
+  body.page-map .leaflet-bar {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+    backdrop-filter: blur(18px) saturate(1.6);
+    border: 1px solid var(--glass-line);
+    box-shadow: var(--glass-shadow);
+  }
+
+  body.page-map .view-head,
+  body.page-map .map-bar,
+  body.page-map .map-status,
+  body.page-map .map-side { position: relative; z-index: 2; }
+
+  /* greeting: a small pill, no decoration */
+  body.page-map .view-head--dashboard {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: .5rem 1.15rem;
+    border-radius: 999px;
+  }
+  body.page-map .view-head--dashboard h1 { font-size: 1.1rem; margin: 0; white-space: nowrap; }
+  body.page-map .view-head--dashboard p,
+  body.page-map #view-map .view-head::after { display: none; }
+
+  /* search pill + chips */
+  body.page-map .map-bar { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0; align-items: center; }
+  body.page-map .map-actions { display: contents; }
+
+  body.page-map .map-search {
+    flex: 1 1 100%;
+    min-height: 54px;
+    padding: 0 1.2rem;
+    border-radius: 999px;
+  }
+  body.page-map .map-search:focus-within { border-color: var(--leaf); box-shadow: var(--glass-shadow), 0 0 0 3px color-mix(in srgb, var(--leaf) 22%, transparent); }
+  body.page-map .map-search input { padding: .8rem 0; }
+
+  body.page-map .chip-row { display: flex; gap: .5rem; padding: 0; background: none; border: 0; box-shadow: none; }
+  body.page-map .fchip { padding: .5em 1.15em; border-radius: 999px; transition: background .15s ease, color .15s ease; }
+  body.page-map .fchip:hover { background: var(--surface-hover); }
+  body.page-map .fchip.is-on { background: var(--forest-dark); border-color: var(--forest-dark); color: var(--white); }
+  body.page-map .radius-pick select { padding: .55em 1em; border-radius: 999px; }
+
+  /* status line: a small pill, hidden when empty */
+  body.page-map .map-status {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: .25rem .8rem;
+    border-radius: 999px;
+    font-size: .78rem;
+  }
+
+  /* results: a floating card that is only as tall as its content */
+  body.page-map .map-side {
+    align-self: start;
+    height: auto;
+    max-height: 100%;
+    border-radius: 26px;
+  }
+  body.page-map .side-body { padding: 1rem 1.1rem 1.1rem; }
+  body.page-map .side-back { background: transparent; }
+
+  /* ---------- Right side: zoom stack ---------- */
+  body.page-map .leaflet-top.leaflet-left { left: auto; right: 20px; top: 84px; }
+  body.page-map .leaflet-left .leaflet-control { margin-left: 0; margin-top: 0; }
+  body.page-map .leaflet-bar { border-radius: 26px; overflow: hidden; }
+  body.page-map .leaflet-bar a,
+  body.page-map .leaflet-bar .map-ctl {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    border-bottom: 1px solid var(--glass-line);
+  }
+  body.page-map .leaflet-bar a:last-child,
+  body.page-map .leaflet-bar .map-ctl:last-child { border-bottom: 0; }
+  body.page-map .leaflet-bar a:hover,
+  body.page-map .leaflet-bar .map-ctl:hover { background: var(--surface-hover); }
+
+  /* ---------- Bottom: round "My location" + legend ---------- */
+  body.page-map #locate {
+    position: absolute;
+    right: 20px;
+    bottom: 44px;
+    z-index: 3;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--heading);
+    cursor: pointer;
+    transition: background .15s ease, transform .15s ease;
+  }
+  body.page-map #locate:hover { background: var(--surface-hover); transform: none; }
+  body.page-map #locate:active { transform: scale(.94); }
+  body.page-map #locate:focus-visible { outline: 3px solid var(--leaf); outline-offset: 2px; }
+  body.page-map #locate .loc-ico { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  body.page-map #locate .loc-txt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  body.page-map .legend {
+    left: auto;
+    right: 90px;
+    bottom: 54px;
+    padding: .5rem 1rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    gap: .2rem 1rem;
+  }
+  body.page-map .leaflet-bottom.leaflet-right { margin-right: 0; }
+}

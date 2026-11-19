@@ -16,7 +16,15 @@ const map = L.map('map').setView(DAGUPAN, 13);
 lockToDagupan(map);
 mapSkeleton($('#map').parentElement, tiles(map));   // the static cover in dashboard.html goes away once tiles draw
 const city = highlightDagupan(map);   // green outline of the city, the rest is dimmed
-city.fit();
+/* Phones (max 640px): the map is full screen with floating controls and a bottom sheet over it.
+   sheetMode() is true there; every sheet / padding rule below is skipped on tablets and desktop. */
+const sheetMode = () => matchMedia('(max-width: 640px)').matches;
+const MINI_H = 44, PEEK_H = 156, TOP_H = 180, BOT_H = 79;   // collapsed sheet height; top bar + search + chips area; tab bar + gap under the sheet (px)
+const fitTo = (bounds, pad = 20, opts = {}) => sheetMode()
+  ? map.fitBounds(bounds, { paddingTopLeft: [pad, TOP_H + pad], paddingBottomRight: [pad, PEEK_H + BOT_H + pad], ...opts })
+  : map.fitBounds(bounds, { padding: [pad, pad], ...opts });
+const fitCity = () => sheetMode() ? fitTo(L.latLngBounds(DAGUPAN_BOUNDS), 12) : city.fit();
+fitCity();
 const CityControl = L.Control.extend({
   options: { position: 'topleft' },
   onAdd() {
@@ -24,7 +32,7 @@ const CityControl = L.Control.extend({
     b.type = 'button'; b.title = 'Zoom to Dagupan City'; b.setAttribute('aria-label', 'Zoom to Dagupan City');
     b.innerHTML = ICON.pin;
     L.DomEvent.disableClickPropagation(b);
-    b.addEventListener('click', () => city.fit());
+    b.addEventListener('click', () => fitCity());
     return b;
   }
 });
@@ -70,13 +78,13 @@ function cityRing(origin, radiusKm) {
   }
   if (area.length < 3) return null;
   const g = L.featureGroup().addTo(map);
-  L.polygon(area, { stroke: false, fillColor: '#0f6b3f', fillOpacity: .14, interactive: false }).addTo(g);
+  L.polygon(area, { stroke: false, fillColor: '#0f6b3f', fillOpacity: .07, interactive: false }).addTo(g);
   /* dashed edge: only the stretches of the circle that lie inside the city */
   const inside = circle.map(p => inDagupan(p[0], p[1]));
   const start = inside.indexOf(false);
   const order = start < 0 ? circle.concat([circle[0]]) : circle.slice(start).concat(circle.slice(0, start)).concat([circle[start]]);
   let run = [];
-  const flush = () => { if (run.length > 1) L.polyline(run, { color: '#0f6b3f', weight: 2.5, dashArray: '8 7', interactive: false }).addTo(g); run = []; };
+  const flush = () => { if (run.length > 1) L.polyline(run, { color: '#0f6b3f', weight: 2, opacity: .55, dashArray: '6 8', interactive: false }).addTo(g); run = []; };
   order.forEach(p => { if (inDagupan(p[0], p[1])) run.push(p); else flush(); });
   flush();
   return g;
@@ -101,9 +109,9 @@ function render(fit) {
   renderSide(); markSelected();
   $('#count').textContent = pts.length + (pts.length === 1 ? ' report' : ' reports');
   if (fit) {
-    if (lim === Infinity && pts.length) map.fitBounds(L.latLngBounds(inDagupan(...origin) ? pts.concat([origin]) : pts).pad(.2));
-    else if (ring) map.fitBounds(ring.getBounds(), { padding: [20, 20] });   // zoom so the whole circle is on screen
-    else city.fit();
+    if (lim === Infinity && pts.length) fitTo(L.latLngBounds(inDagupan(...origin) ? pts.concat([origin]) : pts).pad(.2), 0);
+    else if (ring) fitTo(ring.getBounds(), 20);   // zoom so the whole circle is on screen
+    else fitCity();
   }
 }
 
@@ -169,12 +177,19 @@ function select(id, zoom) {
   renderSide(); markSelected();
   const r = id && allReports().find(x => x.id === id);
   if (!r) return;
+  if (sheetMode()) {
+    setSheet(true);
+    /* the sheet covers the bottom of the map, so put the pin in the middle of what is still visible */
+    const z = zoom ? Math.max(map.getZoom(), 15) : map.getZoom(), shift = (sheetPx() + BOT_H - TOP_H) / 2;
+    map.setView(map.unproject(map.project([r.lat, r.lng], z).add([0, shift]), z), z, { animate: true });
+    return;
+  }
   if (zoom) map.setView([r.lat, r.lng], Math.max(map.getZoom(), 15), { animate: true });
   else map.panInside([r.lat, r.lng], { padding: [60, 60] });
   if (!desktop()) side.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function backToList() { selectedId = null; renderSide(); markSelected(); }
+function backToList() { selectedId = null; renderSide(); markSelected(); if (typeof paintSheet === 'function') paintSheet(); }
 
 side.addEventListener('click', e => {
   const item = e.target.closest('.vcard'), pic = e.target.closest('[data-pic]');
@@ -189,7 +204,64 @@ const hoverPin = (e, on) => {
 };
 side.addEventListener('mouseover', e => hoverPin(e, true));
 side.addEventListener('mouseout', e => hoverPin(e, false));
-map.on('click', backToList);   // click on empty map: back to the list
+map.on('click', () => { backToList(); if (sheetMode() && sheetState > 1) setSheet(false); });   // click on empty map: back to the list (phones: an open sheet drops to the peek, a hidden one stays hidden)
+
+/* ---------- Phones: the report list is a bottom sheet over the map ----------
+   Collapsed = a "peek" with the count; open = the list (or one report's details).
+   Tap or swipe the handle to toggle. The status line (#status / #count) is moved into the handle,
+   moved, not copied, so the ids stay unique and the existing code keeps updating it. */
+const statusEl = document.querySelector('.map-status'), statusHome = statusEl.parentNode, statusNext = statusEl.nextSibling;
+const sheetHead = document.createElement('div');
+sheetHead.className = 'sheet-head';
+sheetHead.setAttribute('role', 'button');
+sheetHead.tabIndex = 0;
+sheetHead.setAttribute('aria-controls', 'side-body');
+sheetHead.innerHTML = '<span class="sheet-grab" aria-hidden="true"></span>';
+/* Three heights: 0 = minimised (a small pill with the count, the whole map is visible), 1 = peek, 2 = open */
+let sheetState = 1;
+const sheetOpen = () => sheetState === 2;
+/* open height: most of the screen, but never tall enough to cover the top bar, search and chips (they end ~180px from the top) */
+const sheetPx = () => sheetState === 0 ? MINI_H : sheetState === 1 ? PEEK_H : Math.round(Math.max(PEEK_H + 60, Math.min(innerHeight * (selectedId ? .56 : .64), 640, innerHeight - 270)));
+/* The sheet and the tab bar cover the bottom of the map, and the top bar + search cover the top. The map is locked to Dagupan,
+   so without this the southern edge of the city could never be panned out from under them. On phones the "wall" is moved out by
+   exactly the covered height (in pixels at the current zoom), so every part of the city can be brought into the visible area. */
+function lockBounds() {
+  const base = L.latLngBounds(DAGUPAN_BOUNDS);
+  if (!sheetMode()) { map.setMaxBounds(base); return; }
+  const z = map.getZoom(), sw = map.project(base.getSouthWest(), z), ne = map.project(base.getNorthEast(), z);
+  map.setMaxBounds(L.latLngBounds(map.unproject(sw.add([0, BOT_H + sheetPx()]), z), map.unproject(ne.subtract([0, TOP_H]), z)));
+}
+map.on('zoomend resize', lockBounds);
+function paintSheet() {
+  const on = sheetMode();
+  document.body.style.setProperty('--sheet-h', (on ? sheetPx() : PEEK_H) + 'px');
+  side.classList.toggle('is-open', on && sheetState === 2);
+  side.classList.toggle('is-mini', on && sheetState === 0);
+  document.body.classList.toggle('sheet-open', on && sheetState === 2);
+  sheetHead.setAttribute('aria-expanded', String(sheetState === 2));
+  sheetHead.setAttribute('aria-label', sheetState === 0 ? 'Show reports' : sheetState === 1 ? 'Expand reports list' : 'Collapse reports list');
+  lockBounds();
+}
+function setSheetState(n) { sheetState = Math.max(0, Math.min(2, n)); paintSheet(); }
+function setSheet(open) { setSheetState(open ? 2 : 1); }
+function placeSheet() {   // phones: header + status inside the sheet; elsewhere everything is back where it was
+  if (sheetMode()) { side.prepend(sheetHead); sheetHead.append(statusEl); }
+  else { sheetHead.remove(); statusHome.insertBefore(statusEl, statusNext); }
+  paintSheet();
+}
+/* tap = next size up (minimised -> peek -> open -> peek), swipe up = one size up, swipe down = one size down */
+let dragY = null;
+sheetHead.addEventListener('pointerdown', e => { dragY = e.clientY; sheetHead.setPointerCapture?.(e.pointerId); });
+sheetHead.addEventListener('pointerup', e => {
+  if (dragY == null) return;
+  const dy = e.clientY - dragY; dragY = null;
+  setSheetState(Math.abs(dy) < 10 ? (sheetState === 2 ? 1 : sheetState + 1) : sheetState + (dy < 0 ? 1 : -1));
+});
+sheetHead.addEventListener('pointercancel', () => { dragY = null; });
+sheetHead.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSheetState(sheetState === 2 ? 1 : sheetState + 1); } });
+matchMedia('(max-width: 640px)').addEventListener('change', placeSheet);
+addEventListener('resize', paintSheet);
+placeSheet();
 
 /* Search + filter chips */
 $('#q').addEventListener('input', e => { query = e.target.value.trim().toLowerCase(); render(false); });

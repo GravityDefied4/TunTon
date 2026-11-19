@@ -1,0 +1,253 @@
+/* =========================================================
+   Dashboard map on phones: a full-screen map with floating controls (Liquid Glass style).
+   - search pill + filter chips float over the top of the map
+   - round glass buttons float on the map (locate, zoom to city)
+   - the report list is a bottom sheet (peek = count, tap or swipe up = list)
+   - the top bar (logo, bell, theme, menu) and the bottom tab bar are the SAME ones every other
+     dashboard page uses (layout.css / sidebar.css / bottom-nav.css), so they are not restyled here
+   - the greeting is hidden
+
+   Everything here is inside @media (max-width: 640px) and scoped to body.map-page, so desktop
+   and tablet layouts, and every other dashboard page, are untouched.
+   ========================================================= */
+@media (max-width: 640px) {
+
+  .map-page {
+    --sheet-h: 156px;            /* current sheet height (dashboard.js updates it) */
+    --nav-h: 71px;               /* the standard bottom tab bar (bottom-nav.css): 56px tab + padding */
+    --bar-h: calc(61px + env(safe-area-inset-top, 0px));   /* the standard top bar (logo, bell, theme, menu) */
+    --edge: 12px;                /* gap to the screen edge */
+    --top: calc(var(--bar-h) + 12px);                       /* floating search starts below the top bar */
+    --sheet-b: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 8px);   /* sheet sits just above the tab bar */
+    --glass: color-mix(in srgb, var(--surface) 82%, transparent);
+    --glass-strong: color-mix(in srgb, var(--surface) 93%, transparent);
+    --glass-edge: color-mix(in srgb, var(--surface) 70%, var(--line));
+    --glass-shadow: 0 6px 20px rgba(10, 50, 30, .18), 0 1px 3px rgba(10, 50, 30, .12);
+    overflow: hidden;
+  }
+
+  /* ---------- The page itself: nothing scrolls, the map is the screen ---------- */
+  .map-page .dash { min-height: 0; height: 100dvh; }
+  .map-page .view-head--dashboard { display: none; }            /* greeting removed on phones */
+  .map-page main { padding: 0; max-width: none; }
+  /* A transform on <main> would turn the fixed map into a 0-height box, so no page-in/out motion here */
+  .map-page .dash-main main { animation: none; transform: none !important; }
+  .map-page .map-grid { display: block; }
+
+  /* ---------- Full-screen map ---------- */
+  .map-page .map-wrap { position: fixed; inset: 0; margin: 0; z-index: 0; order: 0; }
+  .map-page #map { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .map-page .map-skel { border-radius: 0; }
+
+  /* Leaflet's own controls: no +/- (pinch to zoom), the city button becomes a round glass button */
+  .map-page .leaflet-control-zoom { display: none; }
+  .map-page .leaflet-top.leaflet-left {
+    top: auto; left: var(--edge);
+    bottom: calc(var(--sheet-b) + var(--sheet-h) + 48px + 8px + 8px);   /* sheet offset + sheet + (locate 48) + 8 gap + 8 sheet margin */
+    transition: bottom .38s cubic-bezier(.32, .72, 0, 1);
+  }
+  .map-page .leaflet-top.leaflet-left .leaflet-control { margin: 0; }
+  .map-page .map-ctl,
+  .map-page .leaflet-bar .map-ctl {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: var(--glass-shadow);
+    color: var(--ink);
+  }
+  .map-page .map-ctl .ico { width: 22px; height: 22px; }
+
+  /* The OpenStreetMap credit stays visible, just above the sheet */
+  .map-page .leaflet-bottom.leaflet-right {
+    bottom: calc(var(--sheet-b) + var(--sheet-h) + 8px + 31px + 6px);   /* just above the legend pill */
+    transition: bottom .38s cubic-bezier(.32, .72, 0, 1);
+  }
+  .map-page .leaflet-control-attribution { border-radius: 8px; margin: 0 var(--edge) 0 0; font-size: .6rem; }
+
+  /* Legend: a small glass pill above the sheet, beside the locate button */
+  .map-page .legend {
+    left: calc(var(--edge) + 48px + 8px);
+    bottom: calc(var(--sheet-b) + var(--sheet-h) + 8px + 4px);
+    max-width: calc(100% - (var(--edge) * 2) - 56px);
+    flex-wrap: nowrap; gap: .6rem; white-space: nowrap;
+    padding: .4rem .75rem; font-size: .68rem;
+    border-radius: 999px;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: var(--glass-shadow);
+    transition: bottom .38s cubic-bezier(.32, .72, 0, 1);
+  }
+
+  /* Sheet open: the map extras fade away so nothing floats on top of the list */
+  .map-page .legend, .map-page #locate.btn,
+  .map-page .leaflet-top.leaflet-left, .map-page .leaflet-bottom.leaflet-right { transition-property: bottom, opacity, visibility; transition-duration: .38s, .2s, 0s; transition-delay: 0s; }
+  .map-page.sheet-open .legend, .map-page.sheet-open #locate.btn,
+  .map-page.sheet-open .leaflet-top.leaflet-left, .map-page.sheet-open .leaflet-bottom.leaflet-right { opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, 0s, .2s; }
+
+  /* The drawer's dimming layer never showed (it is display:none in layout.css); on this page it does */
+  .map-page .scrim.open { display: block; }
+
+  /* ---------- Floating top: search pill, then chips + radius ---------- */
+  .map-page .map-bar {
+    position: fixed; z-index: 800;
+    top: var(--top); left: var(--edge); right: var(--edge);
+    display: flex; flex-wrap: wrap; flex-direction: row; align-items: center; gap: 10px;
+    margin: 0;
+    pointer-events: none;                    /* only the controls take taps, the map stays draggable between them */
+  }
+  .map-page .map-bar > *,
+  .map-page .map-actions > * { pointer-events: auto; }
+
+  .map-page .map-search {
+    flex: 1 1 100%; min-height: 52px; padding: 0 1.1rem; gap: .7rem;
+    border-radius: 999px;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6);
+    box-shadow: var(--glass-shadow);
+  }
+  .map-page .map-search:focus-within { border-color: var(--heading); box-shadow: var(--glass-shadow), 0 0 0 3px color-mix(in srgb, var(--leaf) 25%, transparent); }
+  .map-page .map-search .ico { width: 22px; height: 22px; color: var(--ink); }
+  .map-page .map-search input { padding: .75rem 0; font-size: 1rem; font-weight: 600; text-overflow: ellipsis; }   /* 16px: no iOS zoom */
+  .map-page .map-search input::placeholder { color: var(--muted); }
+
+  /* The filter chips become separate floating pills */
+  .map-page .chip-row {
+    flex: none; width: auto; gap: 6px; padding: 0; overflow: visible;
+    background: none; border: 0; border-radius: 0; box-shadow: none;
+  }
+  .map-page .fchip {
+    flex: none; min-height: 40px; padding: 0 .85rem;
+    font-size: .88rem; font-weight: 700; color: var(--ink);
+    border: 1px solid var(--glass-edge); border-radius: 999px;
+    background: color-mix(in srgb, var(--mint) 55%, var(--surface) 30%);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: var(--glass-shadow);
+  }
+  .map-page .fchip:hover { background: var(--surface-hover); }
+  /* Selected filter: filled with the brand green gradient so it clearly stands out from the other pills */
+  .map-page .fchip.is-on,
+  .map-page .fchip.is-on:hover {
+    background: linear-gradient(135deg, var(--forest-dark), var(--forest) 55%, var(--leaf));
+    color: #fff; font-weight: 800;
+    border: 1px solid var(--forest-dark);
+    box-shadow: 0 4px 12px rgba(15, 107, 63, .38), inset 0 1px 0 rgba(255, 255, 255, .22);
+  }
+  .map-page .fchip.is-on small { background: rgba(255, 255, 255, .22); }
+
+  /* Radius picker: the third pill in the row */
+  .map-page .map-actions { display: contents; }
+  .map-page .radius-pick { flex: 1 1 0; min-width: 0; max-width: 10rem; }
+  .map-page .radius-pick select {
+    width: 100%; min-height: 40px; padding: 0 .5em 0 .75em;
+    font-size: .82rem; font-weight: 700; text-overflow: ellipsis;
+    border: 1px solid var(--glass-edge); border-radius: 999px;
+    background-color: var(--glass);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: var(--glass-shadow);
+  }
+  .map-page .radius-pick select option { color: var(--ink); background: var(--surface); }
+
+  /* "My location": round glass button at the bottom-left, riding on top of the sheet (icon only) */
+  .map-page #locate.btn {
+    position: fixed; z-index: 800;
+    left: var(--edge); bottom: calc(var(--sheet-b) + var(--sheet-h) + 8px);
+    width: 48px; height: 48px; padding: 0;
+    font-size: 0; line-height: 0; color: var(--heading);     /* the label stays for screen readers */
+    border: 1px solid var(--glass-edge); border-radius: 50%;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: var(--glass-shadow);
+    transition: bottom .38s cubic-bezier(.32, .72, 0, 1), transform .2s ease;
+  }
+  .map-page #locate.btn::before {
+    content: ""; width: 22px; height: 22px; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l18-8-8 18-2-8-8-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l18-8-8 18-2-8-8-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .map-page #locate.btn:active { transform: scale(.92); }
+
+  /* ---------- Top bar: the standard one (logo, bell, theme, menu), same as All reports / Matching / Profile ----------
+     Only the notch padding is added, because this page uses viewport-fit=cover. */
+  .map-page .dash-top { padding-top: calc(.6rem + env(safe-area-inset-top, 0px)); }
+
+  /* ---------- Bottom sheet: the report list ---------- */
+  .map-page .map-side {
+    position: fixed; z-index: 900;
+    left: 8px; right: 8px; bottom: var(--sheet-b);
+    height: var(--sheet-h); margin: 0;
+    display: flex; flex-direction: column;
+    padding-bottom: 26px;                                           /* the raised Add button pokes ~22px into the sheet's bottom edge */
+    border: 1px solid var(--glass-edge); border-radius: 28px;
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
+    box-shadow: 0 10px 40px rgba(10, 50, 30, .26), 0 2px 6px rgba(10, 50, 30, .12);
+    overflow: hidden;
+    transition: height .38s cubic-bezier(.32, .72, 0, 1), width .3s ease, border-radius .3s ease;
+  }
+
+  /* Minimised: the sheet shrinks to a small pill (count + arrow) beside the Add button, so the whole map shows.
+     Swipe up or tap it to bring the list back. */
+  .map-page .map-side.is-mini {
+    right: auto; width: calc(50% - 49px); border-radius: 999px; padding-bottom: 0;
+  }
+  .map-page .map-side.is-mini .sheet-head { height: 100%; padding: 0 14px; display: flex; align-items: center; justify-content: center; gap: .5rem; }
+  .map-page .map-side.is-mini .sheet-grab,
+  .map-page .map-side.is-mini .sheet-head .map-status #status { display: none; }
+  .map-page .map-side.is-mini .sheet-head .map-status #count { font-size: .9rem; white-space: nowrap; }
+  .map-page .map-side.is-mini .sheet-head::after {
+    content: ""; flex: none; width: 8px; height: 8px; margin-top: 3px;
+    border-left: 2.5px solid var(--heading); border-top: 2.5px solid var(--heading); transform: rotate(45deg);
+  }
+
+  /* grab handle + count, built by dashboard.js (status line is moved in here) */
+  .map-page .sheet-head {
+    flex: none; display: grid; justify-items: center; gap: 4px;
+    padding: 9px 16px 6px; cursor: pointer;
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .map-page .sheet-head:focus-visible { outline: 3px solid var(--leaf); outline-offset: -3px; border-radius: 32px; }
+  .map-page .sheet-grab { width: 38px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 24%, transparent); }
+  .map-page .sheet-head .map-status {
+    margin: 0; max-width: none; display: grid; justify-items: center; gap: 1px; text-align: center;
+  }
+  .map-page .sheet-head .map-status #count { display: block; order: -1; font-size: 1.05rem; font-weight: 800; color: var(--ink); line-height: 1.3; }
+  .map-page .sheet-head .map-status #status {
+    max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: .74rem; font-weight: 600; color: var(--muted); line-height: 1.25;
+  }
+
+  /* the list / details: hidden while the sheet is a peek, scrolls inside when open */
+  .map-page .map-side .side-body {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: 4px 12px 12px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .25s ease, visibility 0s linear .25s;
+  }
+  .map-page .map-side.is-open .side-body { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .3s ease .08s, visibility 0s; }
+  .map-page .map-side .side-title { display: none; }                /* the count is already in the sheet header */
+  .map-page .map-side .vlist { margin-top: 0; }
+  .map-page .map-side .vcard { background: color-mix(in srgb, var(--surface) 88%, transparent); }
+  /* "Back to results" stays pinned while the details scroll. It needs a solid background, and the list must have no
+     padding above it, otherwise the scrolled text shows through / peeks out above the button. */
+  .map-page .map-side .side-body:has(.side-back) { padding-top: 0; }
+  .map-page .map-side .side-back { top: 0; margin: 0 -12px .5rem; width: calc(100% + 24px); padding: .7rem 12px .55rem; background: var(--surface); box-shadow: 0 1px 0 var(--line-soft); }
+  .map-page .map-side .side-empty { padding: 1rem 0; }
+
+  /* toasts sit above the sheet */
+  .map-page .toast-host { bottom: calc(var(--sheet-b) + var(--sheet-h) + 16px); }
+}
+
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .map-page .map-side, .map-page .legend, .map-page #locate.btn,
+  .map-page .leaflet-top.leaflet-left, .map-page .leaflet-bottom.leaflet-right,
+  .map-page .map-side .side-body { transition: none; }
+}
+
+/* very narrow phones: slightly tighter pills */
+@media (max-width: 360px) {
+  .map-page .fchip { padding: 0 .8rem; font-size: .84rem; }
+  .map-page .legend { font-size: .62rem; gap: .45rem; padding: .35rem .6rem; }
+}

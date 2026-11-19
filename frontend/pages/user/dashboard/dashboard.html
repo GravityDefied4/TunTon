@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>try{if(localStorage.getItem("tunton_side")==="min")document.documentElement.classList.add("side-min")}catch(e){}</script>
   <title>Dashboard | TunTon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="user.css">
   <script src="../../../js/theme.js"></script>
 </head>
-<body>
+<body class="map-page">
 <div class="dash">
   <div id="app-nav"></div>
 
@@ -25,10 +25,6 @@
           <div>
             <h1>Welcome back, <span id="dashboard-name">there</span>!</h1>
             <p>See the latest pet reports near you and help bring pets home.</p>
-          </div>
-          <div class="dashboard-actions" aria-label="Quick actions">
-            <a class="btn btn-small" href="add-report.html">Add a pet report</a>
-            <a class="dashboard-link" href="reports.html">All reports <span aria-hidden="true">&rarr;</span></a>
           </div>
         </div>
 

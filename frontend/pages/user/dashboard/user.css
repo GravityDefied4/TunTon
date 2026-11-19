@@ -3,6 +3,7 @@
 @import url("css/base.css");
 @import url("css/layout.css");
 @import url("css/sidebar.css");
+@import url("css/notifications.css");
 @import url("css/map.css");
 @import url("css/forms.css");
 @import url("css/uploads.css");
@@ -15,3 +16,4 @@
 @import url("css/bottom-nav.css");
 
 @import url("css/mobile.css");
+@import url("css/map-mobile.css");
