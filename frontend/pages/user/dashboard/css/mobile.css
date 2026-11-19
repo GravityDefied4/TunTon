@@ -348,17 +348,15 @@
   .mp-how b { font-size: .92rem; }
 
   /* results heading + filter: heading, then one horizontally scrolling row of chips */
-  .mr-head { flex-direction: column; align-items: stretch; gap: .6rem; padding-bottom: .75rem; margin-bottom: .85rem; }
+  .mr-head { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: .6rem; padding-bottom: .75rem; margin-bottom: .85rem; min-width: 0; }
+  /* nowrap is the fix: a wrapping column sizes its line to the widest child (the chip row), which pushed the page wider than the screen */
+  .mr-head > * { min-width: 0; }
   .match-head h2 { font-size: 1.2rem; }
   .match-head p { font-size: .85rem; }
-  .mr-filter { flex-wrap: nowrap; gap: .5rem; margin-inline: -1rem; padding-inline: 1rem; min-width: 0; }
+  /* every pill is visible: the row wraps onto a second line instead of scrolling sideways */
+  .mr-filter { flex-wrap: wrap; align-items: center; gap: .4rem .6rem; margin-inline: 0; padding-inline: 0; min-width: 0; }
   .mr-filter-label { flex: none; font-size: .8rem; }
-  .mc-chips {
-    flex-wrap: nowrap; gap: .4rem; min-width: 0;
-    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
-    padding: .15rem 1rem .15rem 0;
-  }
-  .mc-chips::-webkit-scrollbar { display: none; }
+  .mc-chips { flex: 1 1 0; flex-wrap: wrap; gap: .4rem; min-width: 0; overflow: visible; padding: 0; }
   .mc-chip { flex: none; }
   .mc-chip span { gap: .35rem; padding: .5em .8em; font-size: .82rem; }
   .mc-chip span em { display: none; }       /* the % ranges are in the tooltip; the label + count is enough here */
@@ -466,4 +464,106 @@
   .map-side { border: 0; box-shadow: none; background: transparent; height: auto; }
   .map-side .side-body { padding: .25rem 0 0; }
   .vcard { background: var(--surface); border: 1px solid var(--line-soft); }
+}
+
+
+/* --- 10. Report details (report.html): compact phone layout ------------------------------------
+   Everything is one step smaller than the desktop design: base text .9rem, a short photo, slim thumbnails,
+   one-line contact rows, small headings and fact tiles, a short map. Above 640px nothing changes. */
+@media (max-width: 640px) {
+  .back-link {
+    display: inline-flex; align-items: center; gap: .3rem;
+    min-height: 36px; margin: -.5rem 0 .25rem;
+    font-size: .88rem;
+  }
+
+  #view-detail { min-width: 0; font-size: .9rem; }
+  #view-detail .box { padding: .75rem; border-radius: 18px; }
+  #view-detail .d-top { gap: .6rem; }
+
+  /* photo: short, shown whole on a soft backdrop, small overlays */
+  #view-detail .d-photo { aspect-ratio: 16 / 10; max-height: 210px; border-radius: 18px; }
+  #view-detail .d-photo-btn { background: var(--surface-tint); }
+  #view-detail .d-photo-btn img { object-fit: contain; }
+  #view-detail .d-photo .tag-missing {
+    top: 7px; left: 7px; gap: .3em;
+    padding: .18em .6em .18em .5em; font-size: .62rem; letter-spacing: .05em;
+  }
+  #view-detail .d-photo .tag-dot { width: 5px; height: 5px; }
+  #view-detail .d-nav { width: 30px; height: 30px; font-size: 1.25rem; }
+  #view-detail .d-prev { left: .4rem; }
+  #view-detail .d-next { right: .4rem; }
+  #view-detail .d-count { right: .4rem; bottom: .4rem; font-size: .68rem; padding: .1em .55em; }
+  #view-detail .d-thumbs { --gap: .35rem; --across: 6; padding: .45rem .1rem .15rem; }
+  #view-detail .d-thumbs button { min-width: 0; aspect-ratio: 1; border-radius: 9px; }
+  #view-detail .d-thumbs button.on { outline-width: 2px; outline-offset: 1px; }
+  #view-detail .d-thumbs img { border-radius: 9px; }
+
+  /* summary card */
+  #view-detail .d-summary { padding: .75rem; gap: .4rem; }
+  #view-detail .d-summary h1 { font-size: 1.25rem; line-height: 1.2; }
+  #view-detail .d-summary h1::after { display: none; }
+  #view-detail .d-summary .badge { font-size: .7rem; padding: .2em .7em; }
+  #view-detail .d-sub { font-size: .8rem; }
+  #view-detail .d-options-btn { width: 32px; height: 32px; border-width: 1.5px; }
+  #view-detail .d-options-btn .ico { width: 17px; height: 17px; }
+  #view-detail .d-summary .pet-info { gap: .2rem; font-size: .82rem; }
+
+  /* owner / finder card: avatar + name, then one-line rows (label left, value right) */
+  #view-detail .contact-card { padding: .6rem; gap: .45rem; border-radius: 14px; }
+  #view-detail .cc-head { gap: .5rem; }
+  #view-detail .cc-avatar { width: 40px; height: 40px; font-size: 1rem; border-width: 2px; }
+  #view-detail .cc-title { font-size: 1rem; }
+  #view-detail .cc-note { font-size: .72rem; margin: 0; }
+  #view-detail .cc-list { gap: .3rem; }
+  #view-detail .cc-row {
+    grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .5rem;
+    padding: .4rem .6rem; border-radius: 10px;
+  }
+  #view-detail .cc-row dt { font-size: .7rem; }
+  #view-detail .cc-row dt .ico { width: .85rem; height: .85rem; }
+  #view-detail .cc-row dd { font-size: .85rem; text-align: right; }
+
+  /* the main button and the map button */
+  #view-detail .d-actions { gap: .4rem; margin-top: .15rem; }
+  #view-detail .d-actions .btn { min-height: 44px; font-size: .9rem; }
+  #view-detail .d-mapbtn { width: 44px; min-height: 44px; }
+  #view-detail .d-mapbtn .ico { width: 19px; height: 19px; }
+  #view-detail .d-posted { font-size: .72rem; margin: 0; }
+
+  /* sections below */
+  #view-detail .d-grid { gap: .6rem; margin-top: .6rem; }
+  #view-detail .d-card h2 { font-size: 1rem; margin-bottom: .5rem; gap: .4rem; }
+  #view-detail .d-card h2 > .ico { width: 1.05em; height: 1.05em; }
+  #view-detail .d-split { gap: .6rem; }
+  #view-detail .d-split .d-map,
+  #view-detail .d-map { height: 180px; min-height: 0; border-radius: 14px; }
+  #view-detail .d-split-text .hint { margin-top: .45rem; font-size: .72rem; line-height: 1.35; }
+
+  /* fact tiles: two per row, small */
+  #view-detail .d-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-bottom: .6rem; }
+  #view-detail .d-fact { padding: .4rem .6rem; border-radius: 10px; }
+  #view-detail .d-fact dt { font-size: .64rem; margin: 0; }
+  #view-detail .d-fact dd { font-size: .82rem; line-height: 1.25; }
+  #view-detail .d-about-text { padding-top: .55rem; }
+  #view-detail .d-about-text h3 { font-size: .88rem; margin-bottom: .3rem; }
+  #view-detail .d-text { font-size: .85rem; line-height: 1.4; }
+
+  /* responses from finders / owners */
+  #view-detail .d-find { padding: .65rem; border-radius: 14px; }
+  #view-detail .d-find-head { gap: .5rem; margin-bottom: .6rem; }
+  #view-detail .d-find-avatar { width: 34px; height: 34px; font-size: .9rem; }
+  #view-detail .d-find-who h3 { font-size: .95rem; }
+  #view-detail .d-find-who p { font-size: .75rem; }
+  #view-detail .d-find-body { gap: .6rem; }
+  #view-detail .d-find-main { max-height: 190px; }
+  #view-detail .d-find-facts { font-size: .85rem; }
+  #view-detail .d-find-actions { display: grid; grid-template-columns: 1fr; gap: .4rem; margin-top: .7rem; }
+  #view-detail .d-find-actions .btn { min-height: 42px; font-size: .88rem; }
+}
+
+@media (max-width: 380px) {
+  #view-detail .d-summary h1 { font-size: 1.15rem; }
+  #view-detail .d-photo { max-height: 190px; }
+  #view-detail .d-map { height: 160px; }
 }
