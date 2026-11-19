@@ -41,8 +41,3 @@ INSERT INTO users (user_id, full_name, email, phone, password_hash, role, status
 (1, 'Juan Dela Cruz', 'user1@example.com', '09171234567', '$2a$10$ZkZ5M0YROSweqb/fCY3JY.jLCxyfRAyj6U5eExuU6m3CGVs2VOVRq', 'user', 'active'),
 (2, 'Maria Santos', 'user2@example.com', '09187654321', '$2a$10$ZkZ5M0YROSweqb/fCY3JY.jLCxyfRAyj6U5eExuU6m3CGVs2VOVRq', 'user', 'active'),
 (3, 'Admin User', 'admin@tunton.com', '09190000000', '$2a$10$ZkZ5M0YROSweqb/fCY3JY.jLCxyfRAyj6U5eExuU6m3CGVs2VOVRq', 'admin', 'active');
-
--- 3. Set up App User (Least Privilege Principle - FDS Security Concept)
-CREATE USER IF NOT EXISTS 'tunton_app'@'localhost' IDENTIFIED BY 'tuntonsahere1!';
-GRANT SELECT, INSERT, UPDATE, DELETE ON tunton.* TO 'tunton_app'@'localhost';
-FLUSH PRIVILEGES;

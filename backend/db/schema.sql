@@ -1,5 +1,3 @@
-DROP DATABASE IF EXISTS tunton;
-CREATE DATABASE tunton CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tunton;
 
 -- 1. BARANGAYS (strong entity: geofencing)
@@ -17,7 +15,7 @@ CREATE TABLE barangays (
 CREATE TABLE users (
     user_id        INT UNSIGNED               NOT NULL AUTO_INCREMENT,
     google_sub     VARCHAR(255)               NULL,
-    full_name      VARCHAR(60)               NOT NULL,
+    full_name      VARCHAR(60)                NOT NULL,
     email          VARCHAR(50)                NOT NULL,
     phone          VARCHAR(15)                NULL,
     facebook_profile_link   VARCHAR(255)      NULL,
@@ -27,9 +25,9 @@ CREATE TABLE users (
     picture_url    VARCHAR(255)               NULL,
     role           ENUM('user','admin')       NOT NULL DEFAULT 'user',
     status         ENUM('active','suspended') NOT NULL DEFAULT 'active',
-    suspension_reason VARCHAR(100) NULL,          -- why an admin suspended the account (shown to the user at login)
-    suspended_at   TIMESTAMP    NULL,
-    suspended_until DATETIME    NULL,          -- when a timed suspension ends and is lifted automatically; NULL = permanent (while status = 'suspended')
+    suspension_reason VARCHAR(100)            NULL,          -- why an admin suspended the account (shown to the user at login)
+    suspended_at   TIMESTAMP                  NULL,
+    suspended_until DATETIME                  NULL,          -- when a timed suspension ends and is lifted automatically; NULL = permanent (while status = 'suspended')
     created_at     TIMESTAMP                  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at  TIMESTAMP                  NULL,
     PRIMARY KEY (user_id),
@@ -141,6 +139,7 @@ CREATE TABLE claims (
     CONSTRAINT fk_claims_barangay  FOREIGN KEY (barangay_id)      REFERENCES barangays (barangay_id)
 ) ENGINE=InnoDB;
 
+-- 7. CLAIM PHOTOS (resolves 1NF repeating groups)
 CREATE TABLE claim_photos (
     photo_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     claim_id    INT UNSIGNED NOT NULL,
@@ -153,7 +152,7 @@ CREATE TABLE claim_photos (
     CONSTRAINT fk_claim_photos_claim FOREIGN KEY (claim_id) REFERENCES claims (claim_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 7. EMAIL NOTIFICATIONS (outbox: one row per e-mail; backend/services/notifier.js sends them in batches)
+-- 8. EMAIL NOTIFICATIONS (outbox: one row per e-mail; backend/services/notifier.js sends them in batches)
 -- kind 'match': a new report matches someone else's report; the OWNER of the existing report is the recipient.
 -- unique key 'uq_notify_pair': a pair of reports notifies an owner only once, even if matching runs again.
 -- kind 'claim': someone sent a claim on a report; the OWNER of that report is the recipient (one e-mail per claim).
@@ -185,10 +184,9 @@ CREATE TABLE email_notifications (
     CONSTRAINT fk_notify_claim FOREIGN KEY (claim_id)        REFERENCES claims (claim_id)       ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 7b. PUSH SUBSCRIPTIONS (web push: one row per browser/device that turned on alerts; backend/services/push.js sends to them)
---   endpoint_hash (SHA-256 of the endpoint URL) is the unique key, because a long URL cannot be indexed directly.
---   A device that logs in as another user is moved to that user (same endpoint, new user_id). Deleted with the user.
---   Existing database? Run backend/db/push_subscriptions.sql once.
+-- 9. PUSH SUBSCRIPTIONS (web push: one row per browser/device that turned on alerts; backend/services/push.js sends to them)
+-- endpoint_hash (SHA-256 of the endpoint URL) is the unique key, because a long URL cannot be indexed directly.
+-- A device that logs in as another user is moved to that user (same endpoint, new user_id). Deleted with the user.
 CREATE TABLE push_subscriptions (
     subscription_id  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     user_id          INT UNSIGNED  NOT NULL,
@@ -205,7 +203,7 @@ CREATE TABLE push_subscriptions (
     CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 8. AUDIT TRAIL (weak Entity dependent on Users/Actions)
+-- 10. AUDIT TRAIL (weak Entity dependent on Users/Actions)
 CREATE TABLE activity_logs (
     log_id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id       INT UNSIGNED NULL,
