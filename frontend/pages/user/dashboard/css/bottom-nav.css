@@ -1,22 +1,32 @@
 /* ---------- Mobile bottom navigation ----------
-   A bar docked to the bottom edge (rounded top corners, no floating pill, no pop-out button).
+   A bar docked to the bottom edge (rounded top corners) with a curved cradle around a raised centre "Add" button.
    Five equal tabs. One highlight slides between tabs (.bnav-ind, moved by js/sidebar.js). */
 .bnav { display: none; }
 
 @media (max-width: 1000px) {
   .bnav {
+    --add-size: 66px;          /* the centre button */
+    --add-lift: 30px;          /* how far the button's top edge rises above the bar's top edge */
+    --notch-r: 41px;           /* radius of the curved cradle cut into the bar around the button */
     position: fixed; z-index: 1050;
     left: 0; right: 0; bottom: 0;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     align-items: stretch;
     padding: .45rem .5rem calc(.45rem + env(safe-area-inset-bottom, 0px));
+    /* The bar's look lives on ::before so the cradle can be masked out of it
+       without also hiding the button. drop-shadow follows the cradle's curve. */
+    filter: drop-shadow(0 -6px 12px rgba(10, 50, 30, .14));
+  }
+  .bnav::before {
+    content: "";
+    position: absolute; inset: 0; z-index: -1;
     border-top: 1px solid var(--line);
     border-radius: 22px 22px 0 0;
-    background: color-mix(in srgb, var(--surface) 94%, transparent);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 -8px 24px rgba(10, 50, 30, .16);
+    background: color-mix(in srgb, var(--surface) 97%, transparent);
+    /* circular cutout centred on the button */
+    -webkit-mask-image: radial-gradient(circle var(--notch-r) at 50% calc(var(--add-size) / 2 - var(--add-lift)), transparent calc(100% - 1px), #000 100%);
+    mask-image: radial-gradient(circle var(--notch-r) at 50% calc(var(--add-size) / 2 - var(--add-lift)), transparent calc(100% - 1px), #000 100%);
   }
 
   /* The sliding highlight behind the active tab */
@@ -76,8 +86,8 @@
     max-height: 0; opacity: 0; transform: translateY(4px);
   }
 
-  /* "Add" tab: icon only, and larger than the others so it is the focal point of the bar.
-     The label stays in the DOM for screen readers (and as aria-label) but is not drawn. */
+  /* "Add" tab: a big round button that rises out of a curved cradle in the bar (the focal point).
+     Icon only: the label stays in the DOM for screen readers (and as aria-label) but is not drawn. */
   .bnav .bnav-add { align-content: center; }
   .bnav .bnav-add span {
     position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -85,14 +95,21 @@
   }
   .bnav .bnav-add i {
     display: grid; place-items: center;
-    width: 52px; height: 52px;
+    width: var(--add-size); height: var(--add-size);
     border-radius: 50%;
     background: var(--forest);
     color: #fff;
+    /* Taken out of the row (absolute) so the bigger button does not make the bar taller, and placed with
+       `top` + auto margins (not transform) so the press / active scale below still works.
+       The <a> starts .45rem below the bar's top edge, hence the extra .45rem. */
+    position: absolute;
+    left: 0; right: 0; margin-inline: auto;
+    top: calc(-1 * (var(--add-lift) + .45rem));
+    box-shadow: 0 3px 8px rgba(10, 50, 30, .22);
     transition: transform .3s cubic-bezier(.3, 1.6, .5, 1);
   }
   :root[data-theme="dark"] .bnav .bnav-add i { background: var(--leaf); }
-  .bnav .bnav-add svg { width: 28px; height: 28px; stroke-width: 2.6; transform: none; }
+  .bnav .bnav-add svg { width: 32px; height: 32px; stroke-width: 2.6; transform: none; }
   .bnav .bnav-add:active i { transform: scale(.92); }
   .bnav .bnav-add[aria-current="page"] i,
   .bnav .bnav-add.is-target i { transform: scale(1.06); }

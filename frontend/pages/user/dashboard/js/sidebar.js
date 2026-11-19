@@ -18,7 +18,7 @@ window.sidebarReady = (async function () {
        function reaches the mount below WITHOUT awaiting anything, so the sidebar is on the page
        before the first paint. The copy is refreshed in the background (edits to sidebar.html show
        up from the next page on). */
-    const CACHE = 'tunton_sidebar_html_v3';
+    const CACHE = 'tunton_sidebar_html_v4';
     const fetchMenu = async () => {
       const res = await fetch('sidebar.html');
       if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
@@ -51,6 +51,58 @@ window.sidebarReady = (async function () {
     };
     placeProfile();
     desktop.addEventListener ? desktop.addEventListener('change', placeProfile) : desktop.addListener(placeProfile);
+
+    /* Desktop account menu (Gizmo-style): the avatar + chevron opens a dropdown with the name,
+       My profile, a dark-mode switch and Log out. The sidebar's own Log out button stays; this one just clicks it. */
+    const who = profileCard && profileCard.querySelector('.who');
+    if (who) {
+      const ic = d => '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
+      const menu = document.createElement('div');
+      menu.className = 'acct-menu';
+      menu.id = 'acct-menu';
+      menu.hidden = true;
+      menu.setAttribute('role', 'menu');
+      menu.innerHTML =
+        '<div class="acct-head"><span class="acct-pic" id="acct-pic" aria-hidden="true"></span><div><b id="acct-name">Guest</b><small>TunTon account</small></div></div>' +
+        '<a class="acct-item" role="menuitem" href="profile.html">' + ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>') + 'My profile</a>' +
+        '<button type="button" class="acct-item acct-theme" role="menuitem" data-theme-toggle>' + ic('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>') + 'Dark mode<span class="acct-switch" aria-hidden="true"></span></button>' +
+        '<div class="acct-sep"></div>' +
+        '<button type="button" class="acct-item acct-item--out" role="menuitem" id="acct-logout">' + ic('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>') + 'Log out</button>';
+      const wrap = document.createElement('div');
+      wrap.className = 'acct-wrap';
+      who.setAttribute('aria-haspopup', 'menu');
+      who.setAttribute('aria-expanded', 'false');
+      who.setAttribute('aria-controls', 'acct-menu');
+      who.after(wrap);
+      wrap.append(menu);
+
+      const fill = () => {
+        const nm = document.getElementById('user-name'), img = document.getElementById('user-avatar'), ini = document.getElementById('user-initial'), pic = menu.querySelector('#acct-pic');
+        menu.querySelector('#acct-name').textContent = nm ? nm.textContent : 'Guest';
+        if (img && !img.hidden && img.src) pic.innerHTML = '<img alt="" referrerpolicy="no-referrer" src="' + img.src.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+        else pic.textContent = ini ? ini.textContent : 'G';
+      };
+      const setMenu = v => {
+        if (v) fill();
+        menu.hidden = !v;
+        who.setAttribute('aria-expanded', String(v));
+      };
+      who.addEventListener('click', e => {
+        if (!desktop.matches) return;          /* phones: the link goes straight to the profile */
+        e.preventDefault(); e.stopPropagation();
+        setMenu(menu.hidden);
+        if (!menu.hidden) menu.querySelector('.acct-item').focus();
+      });
+      document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest('.acct-menu') && !e.target.closest('.who')) setMenu(false); });
+      document.addEventListener('keydown', e => { if (!menu.hidden && e.key === 'Escape') { setMenu(false); who.focus(); } });
+      menu.addEventListener('click', e => {
+        if (e.target.closest('#acct-logout')) { setMenu(false); const lo = document.getElementById('logout'); if (lo) lo.click(); }
+        else if (e.target.closest('a')) setMenu(false);
+      });
+      /* opening the bell closes the menu */
+      profileCard.addEventListener('click', e => { if (e.target.closest('.notif-btn')) setMenu(false); });
+      window.TunTonTheme?.sync();
+    }
     const logoutDlg = doc.querySelector('#logout-dialog');   /* the logout confirmation lives in sidebar.html too */
     if (logoutDlg) document.body.append(logoutDlg);
     window.TunTonTheme?.sync();   /* label/aria of the theme button that just arrived */
