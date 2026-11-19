@@ -120,3 +120,9 @@
   .report-action-dialog__content { padding: 1.8rem 1.4rem 1.5rem; }
   .logout-dialog__actions { grid-template-columns: 1fr; }
 }
+
+/* ---------- Green "success" variant (Confirm match): check icon + green button ---------- */
+.report-action-dialog.is-success .report-action-dialog__icon { color: var(--forest); background: var(--mint); }
+.report-action-dialog.is-success .report-action-dialog__confirm { border-color: var(--leaf); background: var(--leaf); color: #fff; }
+.report-action-dialog.is-success .report-action-dialog__confirm:hover { border-color: var(--forest); background: var(--forest); }
+.report-action-dialog.is-success .report-action-dialog__confirm.is-danger { border-color: var(--leaf); background: var(--leaf); }
