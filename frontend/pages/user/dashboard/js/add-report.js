@@ -91,6 +91,7 @@ function startForm(k) {
 }
 
 function show(k) {
+  mainEl.classList.remove('is-loading');     /* real content replaces the skeleton (before the form starts, so the map can measure its box) */
   mainEl.classList.remove('is-choosing');   /* a type is picked: cards move up, the form shows below */
   Object.entries(panes).forEach(([name, pane]) => { pane.hidden = name !== k; });
   const radio = picker.querySelector(`input[value="${k}"]`);
@@ -121,5 +122,8 @@ if (fixed) {
 } else {
   const t = params.get('type');
   if (t === 'lost' || t === 'found') show(t);
-  else mainEl.classList.add('is-choosing');   /* nothing picked yet: two big cards in the middle of the page */
+  else {
+    mainEl.classList.add('is-choosing');   /* nothing picked yet: two big cards in the middle of the page */
+    mainEl.classList.remove('is-loading');
+  }
 }

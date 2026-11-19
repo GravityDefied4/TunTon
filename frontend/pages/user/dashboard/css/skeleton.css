@@ -151,3 +151,34 @@
 }
 
 .d-map .map-skel { border-radius: inherit; }
+
+/* ---------- Add pet report: skeleton shown until add-report.js has decided which screen to open ----------
+   Without it the chooser flashes in its small "switch" layout (it looks like the phone view) before the big cards or the form appear. */
+main.is-loading > :not(.ar-skel) { display: none !important; }
+main:not(.is-loading) > .ar-skel { display: none; }
+.ar-skel { display: grid; gap: .9rem; }
+.ar-skel-title { height: 2.2rem; width: min(16rem, 70%); border-radius: 10px; }
+.ar-skel-lead { width: min(32rem, 90%); }
+.ar-skel-pick, .ar-skel-form { display: none; }
+
+/* choosing: two big cards, centred like the real page */
+.ar-skel[data-skel="pick"] { justify-items: center; align-content: center; min-height: 70vh; text-align: center; }
+.ar-skel[data-skel="pick"] .ar-skel-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%; max-width: 820px; margin-top: 1rem; }
+.ar-skel-card { height: 14rem; border-radius: 22px; }
+
+/* a form is opening: stepper, step header, two fields, Back / Next */
+.ar-skel[data-skel="form"] .ar-skel-form { display: grid; gap: 1.1rem; margin-top: .5rem; }
+.ar-skel-steps { display: flex; justify-content: space-between; max-width: 32rem; width: 100%; margin: 0 auto .4rem; }
+.ar-skel-steps .sk-circle { width: 2.2rem; height: 2.2rem; }
+.ar-skel-head { display: flex; align-items: center; gap: .9rem; }
+.ar-skel-head .sk-circle { width: 3rem; height: 3rem; }
+.ar-skel-head > div { display: grid; gap: .5rem; flex: 1; }
+.ar-skel-field { height: 3.2rem; border-radius: 16px; }
+.ar-skel-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: .5rem; }
+.ar-skel-nav .sk-btn { width: 7rem; }
+
+@media (max-width: 700px) {
+  .ar-skel[data-skel="pick"] { min-height: 0; justify-items: stretch; }
+  .ar-skel[data-skel="pick"] .ar-skel-pick { grid-template-columns: 1fr; gap: 1rem; }
+  .ar-skel-card { height: 8rem; }
+}

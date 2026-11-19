@@ -19,7 +19,31 @@
   <div id="app-nav"></div>
 
   <div class="dash-main">
-    <main>
+    <main class="is-loading">
+      <div class="ar-skel" id="ar-skel" role="status">
+        <span class="sr-only">Loading…</span>
+        <span class="sk ar-skel-title"></span>
+        <span class="sk sk-line ar-skel-lead"></span>
+        <div class="ar-skel-pick">
+          <span class="sk ar-skel-card"></span>
+          <span class="sk ar-skel-card"></span>
+        </div>
+        <div class="ar-skel-form box">
+          <div class="ar-skel-steps"><span class="sk sk-circle"></span><span class="sk sk-circle"></span><span class="sk sk-circle"></span><span class="sk sk-circle"></span><span class="sk sk-circle"></span></div>
+          <div class="ar-skel-head"><span class="sk sk-circle"></span><div><span class="sk sk-line sk-line--short"></span><span class="sk sk-line sk-line--title"></span></div></div>
+          <span class="sk ar-skel-field"></span>
+          <span class="sk ar-skel-field"></span>
+          <div class="ar-skel-nav"><span class="sk sk-btn"></span><span class="sk sk-btn"></span></div>
+        </div>
+      </div>
+      <script>
+        /* Pick the skeleton that matches the screen that is about to open, and never leave it up forever */
+        (function () {
+          var q = new URLSearchParams(location.search), s = document.getElementById('ar-skel');
+          s.setAttribute('data-skel', (q.get('type') || q.get('claim') || q.get('match') || q.get('edit')) ? 'form' : 'pick');
+          setTimeout(function () { var m = document.querySelector('main.is-loading'); if (m) m.classList.remove('is-loading'); }, 10000);
+        })();
+      </script>
       <div class="view-head">
         <h1>Add pet report</h1>
         <p class="type-lead">Start by telling us what happened. We will show the right form.</p>
