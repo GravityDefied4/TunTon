@@ -1,0 +1,192 @@
+/* =========================================================
+   Phone dashboard: a full-screen map with floating controls
+   (search, filter chips, locate button) and a bottom sheet of
+   results above the tab bar. Glass surfaces, rounded shapes.
+
+   PHONES ONLY (640px and below) and only on the dashboard page
+   (<body class="page-map">). Tablet and desktop are untouched.
+   js/mobile-map.js adds the sheet handle and open / close.
+   ========================================================= */
+
+/* The handle exists in the DOM on every screen size but only phones draw it */
+.sheet-grip { display: none; }
+
+@media (max-width: 640px) {
+  .page-map {
+    --top: 60px;                                                   /* height of the green top bar */
+    --bn: calc(4.45rem + env(safe-area-inset-bottom, 0px));       /* height of the bottom tab bar */
+    --sheet-peek: 96px;                                            /* sheet height when closed */
+    --glass: color-mix(in srgb, var(--surface) 80%, transparent);
+    --glass-line: color-mix(in srgb, var(--line) 75%, transparent);
+    --glass-shadow: 0 6px 20px rgba(10, 50, 30, .18);
+    overflow: hidden;   /* the map fills the screen, the page itself never scrolls */
+  }
+
+  /* No greeting on phones */
+  .page-map .view-head--dashboard { display: none; }
+  .page-map .map-status { display: none; }   /* its text is shown in the sheet handle instead */
+
+  /* The page container: no padding, no entrance transform (a transform would trap the fixed children) */
+  .page-map .dash-main main { padding: 0; max-width: none; animation: none; transition: none; }
+  html.is-leaving .page-map .dash-main main { transform: none; }
+  .page-map .dash-top { height: var(--top); padding-block: 0; box-sizing: border-box; }
+
+  /* ---------- The map: the whole screen under the top bar ---------- */
+  .page-map .map-grid { display: block; }
+  .page-map .map-wrap {
+    position: fixed;
+    top: var(--top);
+    left: 0; right: 0; bottom: 0;
+    margin: 0;
+    z-index: 1;
+  }
+  .page-map #map { height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .page-map .leaflet-top.leaflet-left { display: none; }   /* zoom buttons: pinch to zoom instead, like the reference */
+  .page-map .leaflet-bottom { bottom: calc(var(--bn) + var(--sheet-peek) + 6px); }   /* attribution stays visible above the sheet */
+
+  /* ---------- Floating search + chips ---------- */
+  .page-map .map-bar {
+    position: fixed;
+    top: calc(var(--top) + 10px);
+    left: 12px; right: 12px;
+    z-index: 500;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 0;
+    pointer-events: none;           /* only the controls themselves catch touches, the map shows through */
+  }
+  .page-map .map-bar > *,
+  .page-map .map-bar .map-actions > * { pointer-events: auto; }
+  .page-map .map-actions { display: contents; }
+
+  .page-map .map-search,
+  .page-map .fchip,
+  .page-map .radius-pick select,
+  .page-map #locate {
+    border: 1px solid var(--glass-line);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
+    backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .page-map .map-search { flex: 1 1 100%; height: 52px; padding: 0 1.1rem; border-radius: 999px; }
+  .page-map .map-search input { padding: 0; font-size: 1rem; }
+  .page-map .map-search:focus-within { border-color: var(--leaf); }
+
+  .page-map .chip-row { gap: .4rem; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .page-map .fchip { height: 40px; padding: 0 .75rem; font-size: .88rem; color: var(--ink); }
+  .page-map .fchip:hover { background: var(--surface-hover); }
+  .page-map .fchip.is-on { background: var(--forest); border-color: var(--forest); color: #fff; }
+
+  .page-map .chip-row,
+  .page-map .radius-pick { flex: none; width: auto; overflow: visible; }
+  .page-map .fchip { flex: none; }
+  .page-map .radius-pick select { width: auto; height: 40px; padding: 0 .5rem 0 .8rem; border-radius: 999px; font-size: .88rem; color: var(--ink); }
+
+  /* ---------- Locate button: round, floating above the sheet ---------- */
+  .page-map #locate {
+    position: fixed;
+    right: 12px;
+    bottom: calc(var(--bn) + var(--sheet-peek) + 40px);
+    z-index: 500;
+    display: grid;
+    place-items: center;
+    width: 50px; height: 50px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--heading);
+    font-size: 0;            /* the words stay for screen readers, only the arrow is drawn */
+    line-height: 0;
+    transition: opacity .2s ease;
+  }
+  .page-map #locate::before {
+    content: "";
+    width: 22px; height: 22px;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='3 11 22 2 13 21 11 13 3 11'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='3 11 22 2 13 21 11 13 3 11'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  /* ---------- Legend: small glass pill, bottom-left above the sheet ---------- */
+  .page-map .legend {
+    left: 12px;
+    bottom: calc(var(--bn) + var(--sheet-peek) + 40px);
+    border: 1px solid var(--glass-line);
+    border-radius: 14px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    transition: opacity .2s ease;
+  }
+
+  /* Controls that float over the lower map step aside while the sheet is open */
+  .page-map.sheet-open #locate,
+  .page-map.sheet-open .legend { opacity: 0; pointer-events: none; }
+
+  /* ---------- Bottom sheet ---------- */
+  .page-map .map-side {
+    position: fixed;
+    left: 8px; right: 8px;
+    bottom: var(--bn);
+    z-index: 600;
+    display: flex;
+    flex-direction: column;
+    height: var(--sheet-peek);
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--glass-line);
+    border-radius: 28px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow: 0 -4px 24px rgba(10, 50, 30, .2);
+    transition: height .32s cubic-bezier(.4, 0, .2, 1);
+  }
+  .page-map .map-side.is-open { height: min(60vh, calc(100vh - var(--top) - var(--bn) - 150px)); }
+  .page-map .map-side.is-open { height: min(60dvh, calc(100dvh - var(--top) - var(--bn) - 150px)); }
+  .page-map .map-side.is-open.is-detail { height: min(52vh, calc(100vh - var(--top) - var(--bn) - 150px)); }
+  .page-map .map-side.is-open.is-detail { height: min(52dvh, calc(100dvh - var(--top) - var(--bn) - 150px)); }
+
+  .page-map .sheet-grip {
+    display: grid;
+    justify-items: center;
+    gap: .12rem;
+    flex: none;
+    width: 100%;
+    padding: .55rem 1rem .45rem;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .page-map .sheet-bar { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .page-map .sheet-count { margin-top: .25rem; font: 800 1.02rem var(--font-body); }
+  .page-map .sheet-sub { max-width: 100%; min-height: 1em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: .76rem; font-weight: 600; }
+  .page-map .sheet-grip:focus-visible { outline: 3px solid var(--leaf); outline-offset: -3px; border-radius: 24px; }
+
+  .page-map .map-side .side-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: .25rem 1rem 2.4rem;   /* bottom room so the raised Add button never covers the last card */
+    overscroll-behavior: contain;
+  }
+  .page-map .map-side:not(.is-open) .side-body { visibility: hidden; }
+  .page-map .side-title { display: none; }                 /* the handle already says "N reports" */
+
+  /* Compact result cards: small square photo on the left */
+  .page-map .vlist { grid-template-columns: 1fr; margin-top: 0; gap: .5rem; }
+  .page-map .vcard { grid-template-columns: 84px minmax(0, 1fr); gap: .75rem; padding: .45rem; border-radius: 18px; }
+  .page-map .vthumb { aspect-ratio: 1; border-radius: 14px; }
+
+  .page-map .toast-host { bottom: calc(var(--bn) + var(--sheet-peek) + 12px); }
+}
+
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .page-map .map-side, .page-map #locate, .page-map .legend { transition: none; }
+}

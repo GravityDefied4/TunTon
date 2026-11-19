@@ -55,6 +55,15 @@
 .map-search:focus-within { border-color: var(--leaf); }
 .map-search .ico { width: 20px; height: 20px; color: var(--muted); flex: none; }
 .map-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-weight: 600; padding: .65rem 0; color: var(--ink); }
+/* The browser's built-in clear (x) button is blue. Replace it with a palette-coloured one. */
+.map-search input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; margin: 0 0 0 .4rem; cursor: pointer;
+  background-color: var(--heading);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / 14px no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / 14px no-repeat;
+}
+.map-search input[type="search"]::-webkit-search-cancel-button:hover { background-color: var(--heading-strong); }
 
 /* Filter chips share one soft pill, so they read as a single control */
 .chip-row {
